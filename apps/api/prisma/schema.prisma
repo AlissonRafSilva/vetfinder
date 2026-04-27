@@ -1,0 +1,481 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+enum UserRole {
+  VETERINARIAN
+  INTERN
+  CLINIC
+  HOSPITAL
+  ADMIN
+}
+
+enum AccountStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum VerificationStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum InstitutionType {
+  CLINIC
+  HOSPITAL
+}
+
+enum DocumentOwnerType {
+  USER
+  INSTITUTION
+}
+
+enum DocumentType {
+  PROFILE_PHOTO
+  CRMV_PROOF
+  ENROLLMENT_STATEMENT
+  CNPJ_PROOF
+  IDENTITY_DOCUMENT
+  SELFIE
+}
+
+enum AvailabilityType {
+  RECURRING
+  SPECIFIC_DATE
+  BLOCKED
+}
+
+enum OpportunityType {
+  SHIFT
+  COVERAGE
+  TEMPORARY
+  INTERNSHIP
+}
+
+enum OpportunityStatus {
+  DRAFT
+  OPEN
+  IN_NEGOTIATION
+  FILLED
+  COMPLETED
+  CANCELLED
+}
+
+enum UrgencyLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum InteractionStatus {
+  APPLIED
+  WITHDRAWN
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  SENT
+  DECLINED
+  CANCELLED
+}
+
+enum EngagementSourceType {
+  APPLICATION
+  INVITE
+}
+
+enum EngagementStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum SplitRecipientType {
+  PLATFORM
+  PROFESSIONAL
+}
+
+enum SplitStatus {
+  PENDING
+  SCHEDULED
+  TRANSFERRED
+  FAILED
+}
+
+model User {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  email               String                  @unique
+  phone               String?                 @db.VarChar(20)
+  passwordHash        String                  @map("password_hash")
+  role                UserRole
+  status              AccountStatus           @default(PENDING_VERIFICATION)
+  lastLoginAt         DateTime?               @map("last_login_at")
+  createdAt           DateTime                @default(now()) @map("created_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+  profile             Profile?
+  veterinarianProfile VeterinarianProfile?
+  internProfile       InternProfile?
+  institution         Institution?
+  documents           Document[]              @relation("user_documents")
+  specialties         ProfessionalSpecialty[]
+  availabilitySlots   AvailabilitySlot[]
+  applications        OpportunityApplication[]
+  invites             OpportunityInvite[]
+  professionalEngagements Engagement[]        @relation("professional_engagements")
+  notifications       Notification[]
+  reviewWritten       Review[]                @relation("written_reviews")
+  reviewReceived      Review[]                @relation("received_reviews")
+  auditLogs           AuditLog[]
+
+  @@map("users")
+}
+
+model Profile {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @unique @map("user_id") @db.Uuid
+  fullName   String   @map("full_name")
+  photoUrl   String?  @map("photo_url")
+  city       String?
+  state      String?  @db.VarChar(2)
+  bio        String?
+  isVisible  Boolean  @default(true) @map("is_visible")
+  addressId  String?  @map("address_id") @db.Uuid
+  location   Unsupported("geography(Point, 4326)")?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  user       User     @relation(fields: [userId], references: [id])
+  address    Address? @relation(fields: [addressId], references: [id])
+
+  @@index([addressId])
+  @@map("profiles")
+}
+
+model VeterinarianProfile {
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @unique @map("user_id") @db.Uuid
+  crmvNumber         String             @map("crmv_number")
+  crmvState          String             @map("crmv_state") @db.VarChar(2)
+  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
+  baseShiftRate      Decimal?           @map("base_shift_rate") @db.Decimal(10, 2)
+  yearsExperience    Int?               @map("years_experience")
+  emergencyCare      Boolean            @default(false) @map("emergency_care")
+  canTravel          Boolean            @default(false) @map("can_travel")
+  maxDistanceKm      Int?               @map("max_distance_km")
+  user               User               @relation(fields: [userId], references: [id])
+
+  @@unique([crmvNumber, crmvState])
+  @@map("veterinarian_profiles")
+}
+
+model InternProfile {
+  id                     String             @id @default(uuid()) @db.Uuid
+  userId                 String             @unique @map("user_id") @db.Uuid
+  universityName         String             @map("university_name")
+  coursePeriod           String?            @map("course_period")
+  expectedGraduationDate DateTime?          @map("expected_graduation_date")
+  verificationStatus     VerificationStatus @default(PENDING) @map("verification_status")
+  user                   User               @relation(fields: [userId], references: [id])
+
+  @@map("intern_profiles")
+}
+
+model Institution {
+  id                 String             @id @default(uuid()) @db.Uuid
+  userId             String             @unique @map("user_id") @db.Uuid
+  institutionType    InstitutionType    @map("institution_type")
+  legalName          String             @map("legal_name")
+  tradeName          String             @map("trade_name")
+  cnpj               String             @unique
+  stateRegistration  String?            @map("state_registration")
+  description        String?
+  contactName        String?            @map("contact_name")
+  contactPhone       String?            @map("contact_phone")
+  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
+  addressId          String?            @map("address_id") @db.Uuid
+  location           Unsupported("geography(Point, 4326)")?
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  user               User               @relation(fields: [userId], references: [id])
+  address            Address?           @relation(fields: [addressId], references: [id])
+  documents          Document[]         @relation("institution_documents")
+  opportunities      Opportunity[]
+  engagements        Engagement[]       @relation("institution_engagements")
+
+  @@index([addressId])
+  @@map("institutions")
+}
+
+model Address {
+  id           String        @id @default(uuid()) @db.Uuid
+  zipCode      String?       @map("zip_code")
+  street       String?
+  number       String?
+  complement   String?
+  district     String?
+  city         String?
+  state        String?       @db.VarChar(2)
+  country      String?       @default("BR")
+  lat          Decimal?      @db.Decimal(10, 7)
+  lng          Decimal?      @db.Decimal(10, 7)
+  profiles     Profile[]
+  institutions Institution[]
+  opportunities Opportunity[]
+
+  @@map("addresses")
+}
+
+model Document {
+  id               String             @id @default(uuid()) @db.Uuid
+  ownerType        DocumentOwnerType  @map("owner_type")
+  userId           String?            @map("user_id") @db.Uuid
+  institutionId    String?            @map("institution_id") @db.Uuid
+  documentType     DocumentType       @map("document_type")
+  fileUrl          String             @map("file_url")
+  mimeType         String?            @map("mime_type")
+  status           VerificationStatus @default(PENDING)
+  rejectionReason  String?            @map("rejection_reason")
+  reviewedBy       String?            @map("reviewed_by") @db.Uuid
+  reviewedAt       DateTime?          @map("reviewed_at")
+  expiresAt        DateTime?          @map("expires_at")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  user             User?              @relation("user_documents", fields: [userId], references: [id])
+  institution      Institution?       @relation("institution_documents", fields: [institutionId], references: [id])
+
+  @@index([ownerType])
+  @@index([userId])
+  @@index([institutionId])
+  @@map("documents")
+}
+
+model Specialty {
+  id            String                  @id @default(uuid()) @db.Uuid
+  name          String
+  slug          String                  @unique
+  active        Boolean                 @default(true)
+  professionals ProfessionalSpecialty[]
+  opportunities Opportunity[]
+
+  @@map("specialties")
+}
+
+model ProfessionalSpecialty {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  specialtyId String    @map("specialty_id") @db.Uuid
+  user        User      @relation(fields: [userId], references: [id])
+  specialty   Specialty @relation(fields: [specialtyId], references: [id])
+
+  @@unique([userId, specialtyId])
+  @@map("professional_specialties")
+}
+
+model AvailabilitySlot {
+  id               String           @id @default(uuid()) @db.Uuid
+  userId           String           @map("user_id") @db.Uuid
+  availabilityType AvailabilityType @map("availability_type")
+  weekday          Int?
+  specificDate     DateTime?        @map("specific_date")
+  startTime        String           @map("start_time")
+  endTime          String           @map("end_time")
+  timezone         String           @default("America/Sao_Paulo")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  user             User             @relation(fields: [userId], references: [id])
+
+  @@index([userId, availabilityType])
+  @@map("availability_slots")
+}
+
+model Opportunity {
+  id                      String                    @id @default(uuid()) @db.Uuid
+  institutionId           String                    @map("institution_id") @db.Uuid
+  title                   String
+  description             String
+  opportunityType         OpportunityType          @map("opportunity_type")
+  specialtyId             String?                  @map("specialty_id") @db.Uuid
+  customSpecialtyLabel    String?                  @map("custom_specialty_label")
+  startAt                 DateTime                 @map("start_at")
+  endAt                   DateTime                 @map("end_at")
+  durationHours           Decimal?                 @map("duration_hours") @db.Decimal(5, 2)
+  grossAmount             Decimal                  @map("gross_amount") @db.Decimal(10, 2)
+  urgencyLevel            UrgencyLevel             @default(MEDIUM) @map("urgency_level")
+  status                  OpportunityStatus        @default(DRAFT)
+  addressId               String?                  @map("address_id") @db.Uuid
+  location                Unsupported("geography(Point, 4326)")?
+  requiresVerifiedProfile Boolean                  @default(true) @map("requires_verified_profile")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
+  institution             Institution              @relation(fields: [institutionId], references: [id])
+  specialty               Specialty?               @relation(fields: [specialtyId], references: [id])
+  address                 Address?                 @relation(fields: [addressId], references: [id])
+  applications            OpportunityApplication[]
+  invites                 OpportunityInvite[]
+  engagements             Engagement[]
+
+  @@index([institutionId, status])
+  @@index([specialtyId])
+  @@index([addressId])
+  @@map("opportunities")
+}
+
+model OpportunityApplication {
+  id                 String            @id @default(uuid()) @db.Uuid
+  opportunityId      String            @map("opportunity_id") @db.Uuid
+  professionalUserId String            @map("professional_user_id") @db.Uuid
+  status             InteractionStatus @default(APPLIED)
+  message            String?
+  appliedAt          DateTime          @default(now()) @map("applied_at")
+  respondedAt        DateTime?         @map("responded_at")
+  opportunity        Opportunity       @relation(fields: [opportunityId], references: [id])
+  professional       User              @relation(fields: [professionalUserId], references: [id])
+
+  @@unique([opportunityId, professionalUserId])
+  @@index([professionalUserId, status])
+  @@map("opportunity_applications")
+}
+
+model OpportunityInvite {
+  id                 String            @id @default(uuid()) @db.Uuid
+  opportunityId      String            @map("opportunity_id") @db.Uuid
+  professionalUserId String            @map("professional_user_id") @db.Uuid
+  status             InteractionStatus @default(SENT)
+  message            String?
+  invitedAt          DateTime          @default(now()) @map("invited_at")
+  respondedAt        DateTime?         @map("responded_at")
+  opportunity        Opportunity       @relation(fields: [opportunityId], references: [id])
+  professional       User              @relation(fields: [professionalUserId], references: [id])
+
+  @@unique([opportunityId, professionalUserId])
+  @@index([professionalUserId, status])
+  @@map("opportunity_invites")
+}
+
+model Engagement {
+  id                 String               @id @default(uuid()) @db.Uuid
+  opportunityId      String               @map("opportunity_id") @db.Uuid
+  institutionId      String               @map("institution_id") @db.Uuid
+  professionalUserId String               @map("professional_user_id") @db.Uuid
+  sourceType         EngagementSourceType @map("source_type")
+  sourceId           String               @map("source_id") @db.Uuid
+  grossAmount        Decimal              @map("gross_amount") @db.Decimal(10, 2)
+  platformFeeAmount  Decimal              @map("platform_fee_amount") @db.Decimal(10, 2)
+  netAmount          Decimal              @map("net_amount") @db.Decimal(10, 2)
+  status             EngagementStatus     @default(PENDING_PAYMENT)
+  confirmedAt        DateTime?            @map("confirmed_at")
+  completedAt        DateTime?            @map("completed_at")
+  cancelledAt        DateTime?            @map("cancelled_at")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  opportunity        Opportunity          @relation(fields: [opportunityId], references: [id])
+  institution        Institution          @relation("institution_engagements", fields: [institutionId], references: [id])
+  professional       User                 @relation("professional_engagements", fields: [professionalUserId], references: [id])
+  payment            Payment?
+  reviews            Review[]
+
+  @@index([institutionId, status])
+  @@index([professionalUserId, status])
+  @@map("engagements")
+}
+
+model Payment {
+  id                String          @id @default(uuid()) @db.Uuid
+  engagementId      String          @unique @map("engagement_id") @db.Uuid
+  provider          String
+  providerPaymentId String?         @map("provider_payment_id")
+  status            PaymentStatus   @default(PENDING)
+  grossAmount       Decimal         @map("gross_amount") @db.Decimal(10, 2)
+  platformFeeAmount Decimal         @map("platform_fee_amount") @db.Decimal(10, 2)
+  netAmount         Decimal         @map("net_amount") @db.Decimal(10, 2)
+  paidAt            DateTime?       @map("paid_at")
+  refundedAt        DateTime?       @map("refunded_at")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  engagement        Engagement      @relation(fields: [engagementId], references: [id])
+  splits            PaymentSplit[]
+
+  @@index([status])
+  @@map("payments")
+}
+
+model PaymentSplit {
+  id                String             @id @default(uuid()) @db.Uuid
+  paymentId         String             @map("payment_id") @db.Uuid
+  recipientType     SplitRecipientType @map("recipient_type")
+  recipientId       String?            @map("recipient_id") @db.Uuid
+  amount            Decimal            @db.Decimal(10, 2)
+  status            SplitStatus        @default(PENDING)
+  transferReference String?            @map("transfer_reference")
+  processedAt       DateTime?          @map("processed_at")
+  payment           Payment            @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId, status])
+  @@map("payment_splits")
+}
+
+model Review {
+  id             String     @id @default(uuid()) @db.Uuid
+  engagementId   String     @map("engagement_id") @db.Uuid
+  reviewerUserId String     @map("reviewer_user_id") @db.Uuid
+  revieweeUserId String     @map("reviewee_user_id") @db.Uuid
+  rating         Int
+  comment        String?
+  createdAt      DateTime   @default(now()) @map("created_at")
+  engagement     Engagement @relation(fields: [engagementId], references: [id])
+  reviewer       User       @relation("written_reviews", fields: [reviewerUserId], references: [id])
+  reviewee       User       @relation("received_reviews", fields: [revieweeUserId], references: [id])
+
+  @@unique([engagementId, reviewerUserId, revieweeUserId])
+  @@map("reviews")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  type      String
+  title     String
+  body      String
+  dataJson  Json?     @map("data_json")
+  sentAt    DateTime? @map("sent_at")
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  actorType   String?  @map("actor_type")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  metadataJson Json?   @map("metadata_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+  actor       User?    @relation(fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}

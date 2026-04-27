@@ -1,0 +1,14 @@
+{
+  "name": "vetfinder",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/api"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace apps/api",
+    "build:api": "npm run build --workspace apps/api",
+    "prisma:generate": "npm run prisma:generate --workspace apps/api",
+    "prisma:migrate": "npm run prisma:migrate --workspace apps/api"
+  }
+}

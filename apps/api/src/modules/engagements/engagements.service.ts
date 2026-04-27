@@ -1,0 +1,242 @@
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  EngagementSourceType,
+  EngagementStatus,
+  InteractionStatus,
+  OpportunityStatus,
+} from '@prisma/client';
+import { PrismaService } from '../../common/database/prisma.service';
+import { AuthenticatedUser } from '../auth/current-user.decorator';
+import { CreateEngagementDto } from './dto/create-engagement.dto';
+
+@Injectable()
+export class EngagementsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(dto: CreateEngagementDto, user: AuthenticatedUser) {
+    const opportunity = await this.prisma.opportunity.findUnique({
+      where: { id: dto.opportunityId },
+      select: {
+        id: true,
+        status: true,
+        institutionId: true,
+        institution: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+
+    if (!opportunity) {
+      throw new NotFoundException('Oportunidade nao encontrada.');
+    }
+
+    if (opportunity.institution.userId !== user.userId) {
+      throw new ForbiddenException('Voce nao pode fechar esta oportunidade.');
+    }
+
+    if (opportunity.status !== OpportunityStatus.OPEN) {
+      throw new ConflictException('A oportunidade precisa estar aberta para ser fechada.');
+    }
+
+    const existingEngagement = await this.prisma.engagement.findFirst({
+      where: {
+        opportunityId: dto.opportunityId,
+      },
+      select: { id: true },
+    });
+
+    if (existingEngagement) {
+      throw new ConflictException('Esta oportunidade ja possui um fechamento registrado.');
+    }
+
+    if (dto.sourceType === EngagementSourceType.APPLICATION) {
+      const application = await this.prisma.opportunityApplication.findUnique({
+        where: { id: dto.sourceId },
+        select: {
+          id: true,
+          opportunityId: true,
+          professionalUserId: true,
+          status: true,
+        },
+      });
+
+      if (
+        !application ||
+        application.opportunityId !== dto.opportunityId ||
+        application.professionalUserId !== dto.professionalUserId
+      ) {
+        throw new NotFoundException('Candidatura origem nao encontrada para este fechamento.');
+      }
+
+      if (application.status !== InteractionStatus.ACCEPTED) {
+        throw new ConflictException(
+          'A candidatura precisa estar aceita antes de fechar o plantao.',
+        );
+      }
+    }
+
+    if (dto.sourceType === EngagementSourceType.INVITE) {
+      const invite = await this.prisma.opportunityInvite.findUnique({
+        where: { id: dto.sourceId },
+        select: {
+          id: true,
+          opportunityId: true,
+          professionalUserId: true,
+          status: true,
+        },
+      });
+
+      if (
+        !invite ||
+        invite.opportunityId !== dto.opportunityId ||
+        invite.professionalUserId !== dto.professionalUserId
+      ) {
+        throw new NotFoundException('Convite origem nao encontrado para este fechamento.');
+      }
+
+      if (invite.status !== InteractionStatus.ACCEPTED) {
+        throw new ConflictException(
+          'O convite precisa estar aceito antes de fechar o plantao.',
+        );
+      }
+    }
+
+    const platformFeeAmount = dto.platformFeeAmount ?? 0;
+    const netAmount = dto.grossAmount - platformFeeAmount;
+
+    const engagement = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.engagement.create({
+        data: {
+          opportunityId: dto.opportunityId,
+          institutionId: opportunity.institutionId,
+          professionalUserId: dto.professionalUserId,
+          sourceType: dto.sourceType,
+          sourceId: dto.sourceId,
+          grossAmount: dto.grossAmount,
+          platformFeeAmount,
+          netAmount,
+          status: EngagementStatus.PENDING_PAYMENT,
+        },
+      });
+
+      await tx.opportunity.update({
+        where: { id: dto.opportunityId },
+        data: {
+          status: OpportunityStatus.FILLED,
+        },
+      });
+
+      if (dto.sourceType === EngagementSourceType.APPLICATION) {
+        await tx.opportunityApplication.update({
+          where: { id: dto.sourceId },
+          data: {
+            status: InteractionStatus.ACCEPTED,
+            respondedAt: new Date(),
+          },
+        });
+      }
+
+      if (dto.sourceType === EngagementSourceType.INVITE) {
+        await tx.opportunityInvite.update({
+          where: { id: dto.sourceId },
+          data: {
+            status: InteractionStatus.ACCEPTED,
+            respondedAt: new Date(),
+          },
+        });
+      }
+
+      return created;
+    });
+
+    return {
+      message: 'Plantao fechado com sucesso.',
+      engagement,
+    };
+  }
+
+  async findForInstitution(user: AuthenticatedUser) {
+    const institution = await this.prisma.institution.findUnique({
+      where: { userId: user.userId },
+      select: { id: true },
+    });
+
+    if (!institution) {
+      throw new NotFoundException('Instituicao do usuario autenticado nao encontrada.');
+    }
+
+    return this.prisma.engagement.findMany({
+      where: {
+        institutionId: institution.id,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        opportunity: {
+          select: {
+            id: true,
+            title: true,
+            customSpecialtyLabel: true,
+            specialty: {
+              select: {
+                name: true,
+              },
+            },
+            startAt: true,
+            endAt: true,
+          },
+        },
+        professional: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            profile: {
+              select: {
+                fullName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async findOne(id: string, user: AuthenticatedUser) {
+    const engagement = await this.prisma.engagement.findUnique({
+      where: { id },
+      include: {
+        opportunity: true,
+        institution: true,
+        professional: {
+          include: {
+            profile: true,
+            veterinarianProfile: true,
+            internProfile: true,
+          },
+        },
+      },
+    });
+
+    if (!engagement) {
+      throw new NotFoundException('Fechamento nao encontrado.');
+    }
+
+    const canAccess =
+      engagement.institution.userId === user.userId || engagement.professionalUserId === user.userId;
+
+    if (!canAccess) {
+      throw new ForbiddenException('Voce nao pode visualizar este fechamento.');
+    }
+
+    return engagement;
+  }
+}
