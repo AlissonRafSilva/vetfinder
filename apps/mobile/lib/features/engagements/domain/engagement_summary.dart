@@ -7,6 +7,7 @@ class EngagementSummary {
     required this.professionalName,
     required this.professionalEmail,
     required this.professionalRoleLabel,
+    required this.institutionName,
     required this.specialtyLabel,
     required this.shiftLabel,
     required this.grossAmountLabel,
@@ -22,6 +23,7 @@ class EngagementSummary {
   final String professionalName;
   final String professionalEmail;
   final String professionalRoleLabel;
+  final String institutionName;
   final String specialtyLabel;
   final String shiftLabel;
   final String grossAmountLabel;
@@ -36,27 +38,33 @@ class EngagementSummary {
     final specialty = opportunity?['specialty'] as Map<String, dynamic>?;
     final professional = json['professional'] as Map<String, dynamic>?;
     final profile = professional?['profile'] as Map<String, dynamic>?;
-    final customSpecialtyLabel = opportunity?['customSpecialtyLabel']?.toString();
+    final institution = json['institution'] as Map<String, dynamic>?;
+    final customSpecialtyLabel =
+        opportunity?['customSpecialtyLabel']?.toString();
 
     return EngagementSummary(
       id: json['id']?.toString() ?? '',
-      opportunityTitle:
-          opportunity?['title']?.toString() ?? 'Plantao fechado',
-      professionalName:
-          profile?['fullName']?.toString() ??
+      opportunityTitle: opportunity?['title']?.toString() ?? 'Plantao fechado',
+      professionalName: profile?['fullName']?.toString() ??
           professional?['email']?.toString() ??
           'Profissional',
       professionalEmail: professional?['email']?.toString() ?? '',
-      professionalRoleLabel: _roleLabel(professional?['role']?.toString() ?? ''),
-      specialtyLabel: customSpecialtyLabel != null && customSpecialtyLabel.trim().isNotEmpty
-          ? customSpecialtyLabel
-          : specialty?['name']?.toString() ?? 'Especialidade a definir',
+      professionalRoleLabel:
+          _roleLabel(professional?['role']?.toString() ?? ''),
+      institutionName: institution?['tradeName']?.toString() ??
+          institution?['legalName']?.toString() ??
+          'Instituicao',
+      specialtyLabel:
+          customSpecialtyLabel != null && customSpecialtyLabel.trim().isNotEmpty
+              ? customSpecialtyLabel
+              : specialty?['name']?.toString() ?? 'Especialidade a definir',
       shiftLabel: OpportunityFormatter.shiftSummary(
         startAt: opportunity?['startAt']?.toString() ?? '',
         endAt: opportunity?['endAt']?.toString() ?? '',
       ),
       grossAmountLabel: OpportunityFormatter.amountLabel(json['grossAmount']),
-      platformFeeLabel: OpportunityFormatter.amountLabel(json['platformFeeAmount']),
+      platformFeeLabel:
+          OpportunityFormatter.amountLabel(json['platformFeeAmount']),
       netAmountLabel: OpportunityFormatter.amountLabel(json['netAmount']),
       statusLabel: _statusLabel(json['status']?.toString() ?? ''),
       sourceLabel: _sourceLabel(json['sourceType']?.toString() ?? ''),

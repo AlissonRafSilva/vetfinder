@@ -7,16 +7,16 @@ import '../data/engagements_repository.dart';
 import '../domain/engagement_summary.dart';
 import 'engagement_detail_page.dart';
 
-class InstitutionEngagementsPage extends StatefulWidget {
-  const InstitutionEngagementsPage({super.key});
+class ProfessionalEngagementsPage extends StatefulWidget {
+  const ProfessionalEngagementsPage({super.key});
 
   @override
-  State<InstitutionEngagementsPage> createState() =>
-      _InstitutionEngagementsPageState();
+  State<ProfessionalEngagementsPage> createState() =>
+      _ProfessionalEngagementsPageState();
 }
 
-class _InstitutionEngagementsPageState
-    extends State<InstitutionEngagementsPage> {
+class _ProfessionalEngagementsPageState
+    extends State<ProfessionalEngagementsPage> {
   final EngagementsRepository _engagementsRepository = EngagementsRepository();
   Future<List<EngagementSummary>>? _engagementsFuture;
 
@@ -28,12 +28,12 @@ class _InstitutionEngagementsPageState
 
   void _refresh() {
     final session = AppSessionScope.of(context);
-    if (!session.isAuthenticated || !session.isInstitutionUser) {
+    if (!session.isAuthenticated || !session.canApplyToOpportunities) {
       _engagementsFuture = null;
       return;
     }
 
-    _engagementsFuture = _engagementsRepository.fetchMyInstitutionEngagements(
+    _engagementsFuture = _engagementsRepository.fetchMyProfessionalEngagements(
       accessToken: session.accessToken!,
     );
   }
@@ -43,7 +43,7 @@ class _InstitutionEngagementsPageState
       MaterialPageRoute<void>(
         builder: (_) => EngagementDetailPage(
           item: item,
-          isInstitutionView: true,
+          isInstitutionView: false,
         ),
       ),
     );
@@ -61,15 +61,15 @@ class _InstitutionEngagementsPageState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SectionHeader(
-              title: 'Contratacoes',
+              title: 'Meus plantoes',
               subtitle:
-                  'Faca login como clinica ou hospital para acompanhar os plantoes fechados.',
+                  'Faca login como profissional para acompanhar os plantoes fechados.',
             ),
             SizedBox(height: 18),
             Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
-                child: Text('Nenhuma sessao institucional ativa no momento.'),
+                child: Text('Nenhuma sessao profissional ativa no momento.'),
               ),
             ),
           ],
@@ -77,23 +77,22 @@ class _InstitutionEngagementsPageState
       );
     }
 
-    if (!session.isInstitutionUser) {
+    if (!session.canApplyToOpportunities) {
       return const SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(20, 18, 20, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SectionHeader(
-              title: 'Contratacoes',
-              subtitle:
-                  'Esta area e exclusiva para clinicas e hospitais acompanharem plantoes fechados.',
+              title: 'Meus plantoes',
+              subtitle: 'Esta area e destinada a veterinarios e estagiarios.',
             ),
             SizedBox(height: 18),
             Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
                 child: Text(
-                  'Entre com um perfil institucional para ver os fechamentos realizados.',
+                  'Entre com um perfil profissional para visualizar os plantoes fechados.',
                 ),
               ),
             ),
@@ -108,18 +107,18 @@ class _InstitutionEngagementsPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionHeader(
-            title: 'Contratacoes',
+            title: 'Meus plantoes',
             subtitle:
-                'Acompanhe os plantoes ja fechados, o profissional confirmado e os valores da operacao.',
+                'Acompanhe os plantoes confirmados, valores a receber e status operacional.',
           ),
           const SizedBox(height: 18),
           const Wrap(
             spacing: 10,
             runSpacing: 10,
             children: [
-              InfoBadge(label: 'Plantoes fechados'),
-              InfoBadge(label: 'Valores detalhados'),
-              InfoBadge(label: 'Fluxo institucional'),
+              InfoBadge(label: 'Confirmados'),
+              InfoBadge(label: 'Valores a receber'),
+              InfoBadge(label: 'Historico profissional'),
             ],
           ),
           const SizedBox(height: 14),
@@ -128,7 +127,7 @@ class _InstitutionEngagementsPageState
             child: OutlinedButton.icon(
               onPressed: () => setState(_refresh),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Atualizar contratacoes'),
+              label: const Text('Atualizar contratos'),
             ),
           ),
           const SizedBox(height: 18),
@@ -150,12 +149,12 @@ class _InstitutionEngagementsPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Nao foi possivel carregar as contratacoes.',
+                          'Nao foi possivel carregar seus plantoes.',
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Tente novamente para atualizar os plantoes ja fechados.',
+                          'Tente novamente para atualizar os plantoes confirmados.',
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
@@ -177,12 +176,12 @@ class _InstitutionEngagementsPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Nenhum plantao fechado foi encontrado ainda.',
+                          'Nenhum plantao fechado foi encontrado para voce ainda.',
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Depois de confirmar um plantao, toque em atualizar para recarregar a lista.',
+                          'Se a clinica acabou de confirmar, toque em atualizar para buscar o fechamento mais recente.',
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
@@ -198,7 +197,7 @@ class _InstitutionEngagementsPageState
               return Column(
                 children: [
                   for (var index = 0; index < items.length; index++) ...[
-                    _EngagementCard(
+                    _ProfessionalEngagementCard(
                       item: items[index],
                       onTap: () => _openDetail(items[index]),
                     ),
@@ -214,8 +213,8 @@ class _InstitutionEngagementsPageState
   }
 }
 
-class _EngagementCard extends StatelessWidget {
-  const _EngagementCard({
+class _ProfessionalEngagementCard extends StatelessWidget {
+  const _ProfessionalEngagementCard({
     required this.item,
     required this.onTap,
   });
@@ -251,16 +250,9 @@ class _EngagementCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '${item.professionalName} - ${item.professionalRoleLabel}',
+              item.institutionName,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item.professionalEmail,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 14),
@@ -290,9 +282,9 @@ class _EngagementCard extends StatelessWidget {
                     style: theme.textTheme.titleSmall,
                   ),
                   const SizedBox(height: 10),
-                  Text('Bruto: ${item.grossAmountLabel}'),
+                  Text('Valor bruto: ${item.grossAmountLabel}'),
                   Text('Taxa da plataforma: ${item.platformFeeLabel}'),
-                  Text('Liquido do profissional: ${item.netAmountLabel}'),
+                  Text('Valor liquido previsto: ${item.netAmountLabel}'),
                 ],
               ),
             ),

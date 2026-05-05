@@ -40,8 +40,8 @@ class _InstitutionOpportunitiesPageState
       return;
     }
 
-    _myOpportunitiesFuture = _opportunitiesRepository
-        .fetchMyInstitutionOpportunities(
+    _myOpportunitiesFuture =
+        _opportunitiesRepository.fetchMyInstitutionOpportunities(
       accessToken: session.accessToken!,
     );
   }
@@ -63,7 +63,8 @@ class _InstitutionOpportunitiesPageState
     }
 
     try {
-      final message = await _opportunitiesRepository.createInstitutionOpportunity(
+      final message =
+          await _opportunitiesRepository.createInstitutionOpportunity(
         accessToken: session.accessToken!,
         input: input,
       );
@@ -82,12 +83,13 @@ class _InstitutionOpportunitiesPageState
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
+        SnackBar(content: Text(_friendlyOpportunityError(error.message))),
       );
     }
   }
 
-  Future<void> _openEditOpportunityFlow(InstitutionOpportunityOption item) async {
+  Future<void> _openEditOpportunityFlow(
+      InstitutionOpportunityOption item) async {
     final session = AppSessionScope.of(context);
     if (!session.isAuthenticated || !session.isInstitutionUser) {
       return;
@@ -106,7 +108,8 @@ class _InstitutionOpportunitiesPageState
     }
 
     try {
-      final message = await _opportunitiesRepository.updateInstitutionOpportunity(
+      final message =
+          await _opportunitiesRepository.updateInstitutionOpportunity(
         accessToken: session.accessToken!,
         opportunityId: item.id,
         input: input,
@@ -126,9 +129,17 @@ class _InstitutionOpportunitiesPageState
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
+        SnackBar(content: Text(_friendlyOpportunityError(error.message))),
       );
     }
+  }
+
+  String _friendlyOpportunityError(String message) {
+    if (message.contains('Instituicao do usuario autenticado nao encontrada')) {
+      return 'Complete e salve o cadastro institucional na aba Perfil antes de criar vagas.';
+    }
+
+    return message;
   }
 
   Future<void> _changeOpportunityStatus({
@@ -288,7 +299,8 @@ class _InstitutionOpportunitiesPageState
                 );
               }
 
-              final items = snapshot.data ?? const <InstitutionOpportunityOption>[];
+              final items =
+                  snapshot.data ?? const <InstitutionOpportunityOption>[];
               if (items.isEmpty) {
                 return Card(
                   child: Padding(
@@ -463,7 +475,9 @@ class _InstitutionOpportunityCard extends StatelessWidget {
                       style: theme.textTheme.titleSmall,
                     ),
                     const SizedBox(height: 10),
-                    for (var index = 0; index < applications.length; index++) ...[
+                    for (var index = 0;
+                        index < applications.length;
+                        index++) ...[
                       _OpportunityApplicationStatusRow(
                         item: applications[index],
                         accessToken: accessToken,
@@ -497,7 +511,8 @@ class _InstitutionOpportunityCard extends StatelessWidget {
                   );
                 }
 
-                final invites = snapshot.data ?? const <OpportunityInviteSummary>[];
+                final invites =
+                    snapshot.data ?? const <OpportunityInviteSummary>[];
                 if (invites.isEmpty) {
                   return Text(
                     'Nenhum convite enviado para esta vaga ainda.',
@@ -522,7 +537,8 @@ class _InstitutionOpportunityCard extends StatelessWidget {
                         opportunity: item,
                         onEngagementCreated: onEngagementCreated,
                       ),
-                      if (index < invites.length - 1) const SizedBox(height: 10),
+                      if (index < invites.length - 1)
+                        const SizedBox(height: 10),
                     ],
                   ],
                 );
@@ -687,7 +703,7 @@ class _OpportunityApplicationStatusRowState
   }
 
   double _calculatePlatformFee(num grossAmount) {
-    return (grossAmount.toDouble() * 0.12);
+    return _roundMoney(grossAmount.toDouble() * 0.03);
   }
 
   @override
@@ -700,7 +716,8 @@ class _OpportunityApplicationStatusRowState
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        color:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -806,7 +823,8 @@ class _OpportunityInviteStatusRow extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        color:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -845,7 +863,8 @@ class _OpportunityInviteStatusRow extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: () async {
                   final grossAmount = opportunity.grossAmount ?? 0;
-                  final platformFeeAmount = grossAmount.toDouble() * 0.12;
+                  final platformFeeAmount =
+                      _roundMoney(grossAmount.toDouble() * 0.03);
 
                   final confirmed = await showDialog<bool>(
                         context: context,
@@ -873,7 +892,8 @@ class _OpportunityInviteStatusRow extends StatelessWidget {
                   }
 
                   try {
-                    final message = await engagementsRepository.createEngagement(
+                    final message =
+                        await engagementsRepository.createEngagement(
                       accessToken: accessToken,
                       opportunityId: opportunity.id,
                       professionalUserId: item.professionalUserId,
@@ -912,6 +932,10 @@ class _OpportunityInviteStatusRow extends StatelessWidget {
   }
 }
 
+double _roundMoney(double value) {
+  return (value * 100).roundToDouble() / 100;
+}
+
 class _CreateOpportunitySheet extends StatefulWidget {
   const _CreateOpportunitySheet({
     this.initialOpportunity,
@@ -920,7 +944,50 @@ class _CreateOpportunitySheet extends StatefulWidget {
   final InstitutionOpportunityOption? initialOpportunity;
 
   @override
-  State<_CreateOpportunitySheet> createState() => _CreateOpportunitySheetState();
+  State<_CreateOpportunitySheet> createState() =>
+      _CreateOpportunitySheetState();
+}
+
+class _OpportunityAudienceNotice extends StatelessWidget {
+  const _OpportunityAudienceNotice({
+    required this.message,
+  });
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.visibility_outlined,
+            size: 18,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
@@ -1028,8 +1095,9 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                   labelText: 'Titulo da vaga',
                   hintText: 'Ex.: Plantao noturno em clinica 24h',
                 ),
-                validator: (value) =>
-                    (value == null || value.trim().isEmpty) ? 'Informe o titulo.' : null,
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'Informe o titulo.'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -1041,19 +1109,25 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                   hintText:
                       'Descreva o tipo de atendimento, publico, especialidade e contexto do plantao.',
                 ),
-                validator: (value) => (value == null || value.trim().length < 10)
-                    ? 'Descreva melhor a vaga.'
-                    : null,
+                validator: (value) =>
+                    (value == null || value.trim().length < 10)
+                        ? 'Descreva melhor a vaga.'
+                        : null,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _opportunityType,
                 decoration: const InputDecoration(labelText: 'Tipo de vaga'),
                 items: const [
-                  DropdownMenuItem(value: 'SHIFT', child: Text('Plantao')),
+                  DropdownMenuItem(
+                      value: 'SHIFT', child: Text('Plantao veterinario')),
                   DropdownMenuItem(value: 'COVERAGE', child: Text('Cobertura')),
-                  DropdownMenuItem(value: 'TEMPORARY', child: Text('Temporario')),
-                  DropdownMenuItem(value: 'INTERNSHIP', child: Text('Estagio')),
+                  DropdownMenuItem(
+                      value: 'TEMPORARY', child: Text('Temporario')),
+                  DropdownMenuItem(
+                    value: 'INTERNSHIP',
+                    child: Text('Estagio - somente estagiarios'),
+                  ),
                 ],
                 onChanged: (value) {
                   if (value != null) {
@@ -1063,6 +1137,19 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                   }
                 },
               ),
+              if (_opportunityType == 'INTERNSHIP') ...[
+                const SizedBox(height: 10),
+                const _OpportunityAudienceNotice(
+                  message:
+                      'Esta vaga sera exibida apenas para perfis de estagiario.',
+                ),
+              ] else ...[
+                const SizedBox(height: 10),
+                const _OpportunityAudienceNotice(
+                  message:
+                      'Esta vaga sera exibida para veterinarios volantes, nao para estagiarios.',
+                ),
+              ],
               const SizedBox(height: 12),
               TextFormField(
                 controller: _customSpecialtyController,
@@ -1105,9 +1192,10 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                         suffixIcon: Icon(Icons.calendar_month_rounded),
                       ),
                       onTap: () => _pickDate(isStart: true),
-                      validator: (value) => (value == null || value.trim().isEmpty)
-                          ? 'Selecione a data.'
-                          : null,
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                              ? 'Selecione a data.'
+                              : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1121,9 +1209,10 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                         suffixIcon: Icon(Icons.access_time_rounded),
                       ),
                       onTap: () => _pickTime(isStart: true),
-                      validator: (value) => (value == null || value.trim().isEmpty)
-                          ? 'Selecione a hora.'
-                          : null,
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                              ? 'Selecione a hora.'
+                              : null,
                     ),
                   ),
                 ],
@@ -1141,9 +1230,10 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                         suffixIcon: Icon(Icons.calendar_month_rounded),
                       ),
                       onTap: () => _pickDate(isStart: false),
-                      validator: (value) => (value == null || value.trim().isEmpty)
-                          ? 'Selecione a data.'
-                          : null,
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                              ? 'Selecione a data.'
+                              : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1157,9 +1247,10 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                         suffixIcon: Icon(Icons.access_time_rounded),
                       ),
                       onTap: () => _pickTime(isStart: false),
-                      validator: (value) => (value == null || value.trim().isEmpty)
-                          ? 'Selecione a hora.'
-                          : null,
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                              ? 'Selecione a hora.'
+                              : null,
                     ),
                   ),
                 ],
@@ -1170,13 +1261,15 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                   Expanded(
                     child: TextFormField(
                       controller: _grossAmountController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'Valor bruto',
                         hintText: '850',
                       ),
                       validator: (value) {
-                        final amount = double.tryParse(value?.replaceAll(',', '.') ?? '');
+                        final amount =
+                            double.tryParse(value?.replaceAll(',', '.') ?? '');
                         if (amount == null || amount <= 0) {
                           return 'Informe um valor valido.';
                         }
@@ -1290,7 +1383,8 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
         _selectedStartDate = pickedDate;
         _startDateController.text = _formatBrazilianDate(pickedDate);
 
-        if (_selectedEndDate != null && _selectedEndDate!.isBefore(pickedDate)) {
+        if (_selectedEndDate != null &&
+            _selectedEndDate!.isBefore(pickedDate)) {
           _selectedEndDate = pickedDate;
           _endDateController.text = _formatBrazilianDate(pickedDate);
         }

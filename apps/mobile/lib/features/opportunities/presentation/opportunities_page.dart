@@ -6,6 +6,7 @@ import '../../../core/widgets/section_header.dart';
 import '../../availability/data/availability_repository.dart';
 import '../../availability/domain/available_professional_summary.dart';
 import '../../applications/data/applications_repository.dart';
+import '../../auth/domain/app_user_role.dart';
 import '../data/opportunities_repository.dart';
 import '../domain/institution_opportunity_option.dart';
 import '../domain/opportunity_summary.dart';
@@ -21,10 +22,13 @@ class OpportunitiesPage extends StatefulWidget {
 class _OpportunitiesPageState extends State<OpportunitiesPage> {
   late Future<List<OpportunitySummary>> _future;
   final OpportunitiesRepository _repository = OpportunitiesRepository();
-  final AvailabilityRepository _availabilityRepository = AvailabilityRepository();
-  final ApplicationsRepository _applicationsRepository = ApplicationsRepository();
+  final AvailabilityRepository _availabilityRepository =
+      AvailabilityRepository();
+  final ApplicationsRepository _applicationsRepository =
+      ApplicationsRepository();
   Future<List<AvailableProfessionalSummary>>? _professionalsFuture;
   Future<List<InstitutionOpportunityOption>>? _myOpportunitiesFuture;
+  String? _lastAudience;
   int _selectedWeekday = 1;
   final TextEditingController _startTimeController = TextEditingController(
     text: '08:00',
@@ -42,7 +46,36 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _syncOpportunityAudience();
     _loadProfessionalsIfNeeded();
+  }
+
+  String? _audienceForCurrentSession() {
+    final session = AppSessionScope.of(context);
+    if (session.roleValue == AppUserRole.intern.apiValue) {
+      return 'INTERN';
+    }
+
+    if (session.roleValue == AppUserRole.veterinarian.apiValue) {
+      return 'VETERINARIAN';
+    }
+
+    return null;
+  }
+
+  void _syncOpportunityAudience() {
+    final session = AppSessionScope.of(context);
+    if (session.isInstitutionUser) {
+      return;
+    }
+
+    final audience = _audienceForCurrentSession();
+    if (audience == _lastAudience) {
+      return;
+    }
+
+    _lastAudience = audience;
+    _future = _repository.fetchOpenOpportunities(audience: audience);
   }
 
   @override
@@ -71,14 +104,19 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
 
   void _reload() {
     setState(() {
-      _future = _repository.fetchOpenOpportunities();
+      _future = _repository.fetchOpenOpportunities(
+        audience: _audienceForCurrentSession(),
+      );
       _loadProfessionalsIfNeeded();
     });
   }
 
-  Future<void> _inviteProfessional(AvailableProfessionalSummary professional) async {
+  Future<void> _inviteProfessional(
+      AvailableProfessionalSummary professional) async {
     final session = AppSessionScope.of(context);
-    if (!session.isAuthenticated || !session.isInstitutionUser || session.accessToken == null) {
+    if (!session.isAuthenticated ||
+        !session.isInstitutionUser ||
+        session.accessToken == null) {
       return;
     }
 
@@ -107,7 +145,31 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
     if (opportunities.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Crie ou mantenha uma vaga ativa para enviar convites.'),
+          content:
+              Text('Crie ou mantenha uma vaga ativa para enviar convites.'),
+        ),
+      );
+      return;
+    }
+
+    final compatibleOpportunities = opportunities.where((opportunity) {
+      final isIntern = professional.roleValue == AppUserRole.intern.apiValue;
+      if (isIntern) {
+        return opportunity.opportunityType == 'INTERNSHIP';
+      }
+
+      return opportunity.opportunityType != 'INTERNSHIP';
+    }).toList();
+
+    if (compatibleOpportunities.isEmpty) {
+      final isIntern = professional.roleValue == AppUserRole.intern.apiValue;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isIntern
+                ? 'Crie uma vaga do tipo estagio para convidar este estagiario.'
+                : 'Crie uma vaga veterinaria para convidar este profissional.',
+          ),
         ),
       );
       return;
@@ -118,7 +180,7 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
       isScrollControlled: true,
       builder: (context) => _InviteProfessionalSheet(
         professional: professional,
-        opportunities: opportunities,
+        opportunities: compatibleOpportunities,
       ),
     );
 
@@ -178,6 +240,7 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
     return _OpportunitiesBody(
       opportunitiesFuture: _future,
       onRetry: _reload,
+      audience: _audienceForCurrentSession(),
     );
   }
 }
@@ -303,7 +366,8 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                 );
               }
 
-              final items = snapshot.data ?? const <AvailableProfessionalSummary>[];
+              final items =
+                  snapshot.data ?? const <AvailableProfessionalSummary>[];
               if (items.isEmpty) {
                 return const Card(
                   child: Padding(
@@ -452,7 +516,8 @@ class _InviteProfessionalSheet extends StatefulWidget {
   final List<InstitutionOpportunityOption> opportunities;
 
   @override
-  State<_InviteProfessionalSheet> createState() => _InviteProfessionalSheetState();
+  State<_InviteProfessionalSheet> createState() =>
+      _InviteProfessionalSheetState();
 }
 
 class _InviteProfessionalSheetState extends State<_InviteProfessionalSheet> {
@@ -521,7 +586,8 @@ class _InviteProfessionalSheetState extends State<_InviteProfessionalSheet> {
             maxLines: 4,
             decoration: const InputDecoration(
               labelText: 'Mensagem opcional',
-              hintText: 'Ex.: Gostaria de te convidar para um plantao noturno na nossa unidade.',
+              hintText:
+                  'Ex.: Gostaria de te convidar para um plantao noturno na nossa unidade.',
             ),
           ),
           const SizedBox(height: 18),
@@ -549,36 +615,47 @@ class _OpportunitiesBody extends StatelessWidget {
   const _OpportunitiesBody({
     required this.opportunitiesFuture,
     required this.onRetry,
+    required this.audience,
   });
 
   final Future<List<OpportunitySummary>> opportunitiesFuture;
   final VoidCallback onRetry;
+  final String? audience;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final isIntern = audience == 'INTERN';
+
     return CustomScrollView(
       slivers: [
-        const SliverPadding(
-          padding: EdgeInsets.fromLTRB(20, 18, 20, 16),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
           sliver: SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SectionHeader(
-                  title: 'Plantoes proximos',
-                  subtitle: 'Veja vagas abertas com base em proximidade e urgencia.',
+                  title:
+                      isIntern ? 'Estagios disponiveis' : 'Plantoes proximos',
+                  subtitle: isIntern
+                      ? 'Veja apenas oportunidades marcadas para estagiarios.'
+                      : 'Veja vagas abertas para veterinarios volantes, sem oportunidades de estagio.',
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
                   children: [
-                    InfoBadge(label: 'Ate 10 km', icon: Icons.place_outlined),
-                    InfoBadge(label: 'Clinica geral'),
-                    InfoBadge(label: 'Hoje'),
-                    InfoBadge(label: 'Perfil validado'),
+                    InfoBadge(
+                      label: isIntern ? 'Somente estagios' : 'Sem estagios',
+                      icon: Icons.filter_alt_outlined,
+                    ),
+                    const InfoBadge(
+                        label: 'Ate 10 km', icon: Icons.place_outlined),
+                    const InfoBadge(label: 'Hoje'),
+                    const InfoBadge(label: 'Perfil validado'),
                   ],
                 ),
               ],
@@ -601,7 +678,8 @@ class _OpportunitiesBody extends StatelessWidget {
                 if (snapshot.hasError) {
                   return _OpportunitiesErrorState(
                     onRetry: onRetry,
-                    message: 'Nao foi possivel carregar as oportunidades agora.',
+                    message:
+                        'Nao foi possivel carregar as oportunidades agora.',
                   );
                 }
 
@@ -668,6 +746,10 @@ class _OpportunityCard extends StatelessWidget {
               runSpacing: 10,
               children: [
                 _QuickInfoChip(
+                  icon: Icons.badge_outlined,
+                  label: item.opportunityTypeLabel,
+                ),
+                _QuickInfoChip(
                   icon: Icons.local_hospital_outlined,
                   label: item.specialty,
                 ),
@@ -682,7 +764,8 @@ class _OpportunityCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+                color: theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.45),
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Row(
@@ -747,7 +830,8 @@ class _QuickInfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        color:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(

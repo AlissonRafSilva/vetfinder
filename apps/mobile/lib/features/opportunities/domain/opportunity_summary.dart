@@ -5,6 +5,8 @@ class OpportunitySummary {
     required this.id,
     required this.title,
     required this.institution,
+    required this.opportunityType,
+    required this.opportunityTypeLabel,
     required this.specialty,
     required this.shiftLabel,
     required this.amountLabel,
@@ -15,6 +17,8 @@ class OpportunitySummary {
   final String id;
   final String title;
   final String institution;
+  final String opportunityType;
+  final String opportunityTypeLabel;
   final String specialty;
   final String shiftLabel;
   final String amountLabel;
@@ -29,21 +33,40 @@ class OpportunitySummary {
     final startAt = json['startAt']?.toString() ?? '';
     final endAt = json['endAt']?.toString() ?? '';
     final urgencyLevel = json['urgencyLevel']?.toString() ?? 'NORMAL';
+    final opportunityType = json['opportunityType']?.toString() ?? 'SHIFT';
 
     return OpportunitySummary(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Oportunidade sem titulo',
-      institution:
-          institution?['tradeName']?.toString() ??
+      institution: institution?['tradeName']?.toString() ??
           institution?['institutionType']?.toString() ??
           'Instituicao',
-      specialty: customSpecialtyLabel != null && customSpecialtyLabel.trim().isNotEmpty
-          ? customSpecialtyLabel
-          : specialty?['name']?.toString() ?? 'Especialidade a definir',
-      shiftLabel: OpportunityFormatter.shiftSummary(startAt: startAt, endAt: endAt),
+      opportunityType: opportunityType,
+      opportunityTypeLabel: _opportunityTypeLabel(opportunityType),
+      specialty:
+          customSpecialtyLabel != null && customSpecialtyLabel.trim().isNotEmpty
+              ? customSpecialtyLabel
+              : specialty?['name']?.toString() ?? 'Especialidade a definir',
+      shiftLabel:
+          OpportunityFormatter.shiftSummary(startAt: startAt, endAt: endAt),
       amountLabel: OpportunityFormatter.amountLabel(amount),
       distanceLabel: 'Proximidade em breve',
       urgencyLabel: OpportunityFormatter.urgencyLabel(urgencyLevel),
     );
+  }
+
+  static String _opportunityTypeLabel(String type) {
+    switch (type.toUpperCase()) {
+      case 'INTERNSHIP':
+        return 'Estagio';
+      case 'COVERAGE':
+        return 'Cobertura';
+      case 'TEMPORARY':
+        return 'Temporario';
+      case 'SHIFT':
+        return 'Plantao';
+      default:
+        return 'Vaga';
+    }
   }
 }

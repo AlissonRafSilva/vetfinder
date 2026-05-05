@@ -140,6 +140,10 @@ class ApiClient {
       if (message is String && message.isNotEmpty) {
         throw ApiException(message);
       }
+
+      if (message is List && message.isNotEmpty) {
+        throw ApiException(message.map((item) => item.toString()).join('\n'));
+      }
     }
 
     throw ApiException(

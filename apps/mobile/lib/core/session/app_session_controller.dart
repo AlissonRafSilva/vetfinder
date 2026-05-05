@@ -49,13 +49,30 @@ class AppSessionController extends ChangeNotifier {
     required String password,
     required AppUserRole role,
     String? phone,
-  }) {
-    return _authRepository.register(
+  }) async {
+    final registered = await _authRepository.register(
       email: email,
       password: password,
       role: role,
       phone: phone,
     );
+
+    final loggedIn = await _authRepository.login(
+      email: email,
+      password: password,
+    );
+
+    _currentSession = AuthResult(
+      message: registered.message,
+      accessToken: loggedIn.accessToken,
+      refreshToken: loggedIn.refreshToken,
+      userId: loggedIn.userId,
+      email: loggedIn.email,
+      role: loggedIn.role,
+      status: loggedIn.status,
+    );
+    notifyListeners();
+    return _currentSession!;
   }
 
   void logout() {

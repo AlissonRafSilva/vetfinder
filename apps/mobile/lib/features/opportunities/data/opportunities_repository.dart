@@ -11,8 +11,13 @@ class OpportunitiesRepository {
 
   final ApiClient _apiClient;
 
-  Future<List<OpportunitySummary>> fetchOpenOpportunities() async {
-    final response = await _apiClient.getJson('/opportunities');
+  Future<List<OpportunitySummary>> fetchOpenOpportunities({
+    String? audience,
+  }) async {
+    final query = audience == null || audience.isEmpty
+        ? ''
+        : '?audience=${Uri.encodeQueryComponent(audience)}';
+    final response = await _apiClient.getJson('/opportunities$query');
     final items = response['items'];
 
     if (items is! List) {
@@ -57,11 +62,13 @@ class OpportunitiesRepository {
       '/applications/opportunities/$opportunityId/apply',
       accessToken: accessToken,
       body: {
-        if (message != null && message.trim().isNotEmpty) 'message': message.trim(),
+        if (message != null && message.trim().isNotEmpty)
+          'message': message.trim(),
       },
     );
 
-    return response['message']?.toString() ?? 'Candidatura realizada com sucesso.';
+    return response['message']?.toString() ??
+        'Candidatura realizada com sucesso.';
   }
 
   Future<String> createInstitutionOpportunity({
@@ -74,7 +81,8 @@ class OpportunitiesRepository {
       body: input.toJson(),
     );
 
-    return response['message']?.toString() ?? 'Oportunidade criada com sucesso.';
+    return response['message']?.toString() ??
+        'Oportunidade criada com sucesso.';
   }
 
   Future<String> updateOpportunityStatus({
@@ -105,6 +113,7 @@ class OpportunitiesRepository {
       body: input.toJson(),
     );
 
-    return response['message']?.toString() ?? 'Oportunidade atualizada com sucesso.';
+    return response['message']?.toString() ??
+        'Oportunidade atualizada com sucesso.';
   }
 }

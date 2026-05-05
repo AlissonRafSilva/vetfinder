@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { OpportunityStatus, Prisma, UserRole } from '@prisma/client';
+import { OpportunityStatus, OpportunityType, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { ListOpportunitiesDto } from './dto/list-opportunities.dto';
@@ -16,7 +16,7 @@ export class OpportunitiesService {
 
     const where: Prisma.OpportunityWhereInput = {
       status: query.status ?? OpportunityStatus.OPEN,
-      opportunityType: query.opportunityType,
+      opportunityType: this.getOpportunityTypeFilter(query),
       urgencyLevel: query.urgencyLevel,
       specialtyId: query.specialtyId,
       grossAmount: {
@@ -339,5 +339,21 @@ export class OpportunitiesService {
       message: 'Oportunidade atualizada com sucesso.',
       opportunity: updatedOpportunity,
     };
+  }
+
+  private getOpportunityTypeFilter(
+    query: ListOpportunitiesDto,
+  ): Prisma.OpportunityWhereInput['opportunityType'] {
+    if (query.audience === 'INTERN') {
+      return OpportunityType.INTERNSHIP;
+    }
+
+    if (query.audience === 'VETERINARIAN') {
+      return {
+        not: OpportunityType.INTERNSHIP,
+      };
+    }
+
+    return query.opportunityType;
   }
 }

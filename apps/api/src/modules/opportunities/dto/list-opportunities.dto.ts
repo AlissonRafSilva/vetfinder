@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
+import { IsEnum, IsIn, IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
 import { OpportunityStatus, OpportunityType, UrgencyLevel } from '@prisma/client';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
@@ -11,6 +11,10 @@ export class ListOpportunitiesDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(OpportunityType)
   opportunityType?: OpportunityType;
+
+  @IsOptional()
+  @IsIn(['VETERINARIAN', 'INTERN'])
+  audience?: 'VETERINARIAN' | 'INTERN';
 
   @IsOptional()
   @IsEnum(UrgencyLevel)

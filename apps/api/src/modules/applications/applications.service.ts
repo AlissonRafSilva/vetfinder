@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InteractionStatus, OpportunityStatus, UserRole } from '@prisma/client';
+import {
+  InteractionStatus,
+  OpportunityStatus,
+  OpportunityType,
+  UserRole,
+} from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
 import { ApplyOpportunityDto } from './dto/apply-opportunity.dto';
@@ -34,8 +39,15 @@ export class ApplicationsService {
       throw new ConflictException('Esta oportunidade nao esta aberta para candidaturas.');
     }
 
-    if (user.role === UserRole.INTERN && opportunity.opportunityType !== 'INTERNSHIP') {
+    if (user.role === UserRole.INTERN && opportunity.opportunityType !== OpportunityType.INTERNSHIP) {
       throw new ForbiddenException('Estagiarios so podem se candidatar a vagas de estagio.');
+    }
+
+    if (
+      user.role === UserRole.VETERINARIAN &&
+      opportunity.opportunityType === OpportunityType.INTERNSHIP
+    ) {
+      throw new ForbiddenException('Veterinarios volantes nao podem se candidatar a vagas de estagio.');
     }
 
     const existing = await this.prisma.opportunityApplication.findUnique({
@@ -78,6 +90,7 @@ export class ApplicationsService {
           },
         },
         status: true,
+        opportunityType: true,
       },
     });
 
@@ -106,6 +119,22 @@ export class ApplicationsService {
       (professional.role !== UserRole.VETERINARIAN && professional.role !== UserRole.INTERN)
     ) {
       throw new NotFoundException('Profissional nao encontrado.');
+    }
+
+    if (
+      professional.role === UserRole.INTERN &&
+      opportunity.opportunityType !== OpportunityType.INTERNSHIP
+    ) {
+      throw new ForbiddenException('Estagiarios so podem ser convidados para vagas de estagio.');
+    }
+
+    if (
+      professional.role === UserRole.VETERINARIAN &&
+      opportunity.opportunityType === OpportunityType.INTERNSHIP
+    ) {
+      throw new ForbiddenException(
+        'Veterinarios volantes nao podem ser convidados para vagas de estagio.',
+      );
     }
 
     const existing = await this.prisma.opportunityInvite.findUnique({

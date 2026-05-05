@@ -5,6 +5,7 @@ class AvailableProfessionalSummary {
     required this.id,
     required this.name,
     required this.email,
+    required this.roleValue,
     required this.roleLabel,
     required this.cityLabel,
     required this.rateLabel,
@@ -16,6 +17,7 @@ class AvailableProfessionalSummary {
   final String id;
   final String name;
   final String email;
+  final String roleValue;
   final String roleLabel;
   final String cityLabel;
   final String rateLabel;
@@ -25,17 +27,22 @@ class AvailableProfessionalSummary {
 
   factory AvailableProfessionalSummary.fromJson(Map<String, dynamic> json) {
     final profile = json['profile'] as Map<String, dynamic>?;
-    final veterinarianProfile = json['veterinarianProfile'] as Map<String, dynamic>?;
+    final veterinarianProfile =
+        json['veterinarianProfile'] as Map<String, dynamic>?;
     final internProfile = json['internProfile'] as Map<String, dynamic>?;
-    final availability = (json['availabilitySlots'] as List<dynamic>? ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .map(AvailabilitySlotModel.fromJson)
-        .toList();
+    final availability =
+        (json['availabilitySlots'] as List<dynamic>? ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .map(AvailabilitySlotModel.fromJson)
+            .toList();
 
     return AvailableProfessionalSummary(
       id: json['id']?.toString() ?? '',
-      name: profile?['fullName']?.toString() ?? json['email']?.toString() ?? 'Profissional',
+      name: profile?['fullName']?.toString() ??
+          json['email']?.toString() ??
+          'Profissional',
       email: json['email']?.toString() ?? '',
+      roleValue: json['role']?.toString() ?? '',
       roleLabel: _roleLabel(json['role']?.toString() ?? ''),
       cityLabel: _cityLabel(profile),
       rateLabel: _rateLabel(veterinarianProfile),
@@ -92,8 +99,10 @@ class AvailableProfessionalSummary {
   }
 
   static String _specialtyLabel(Map<String, dynamic> json) {
-    final veterinarianProfile = json['veterinarianProfile'] as Map<String, dynamic>?;
-    if (veterinarianProfile != null && veterinarianProfile['emergencyCare'] == true) {
+    final veterinarianProfile =
+        json['veterinarianProfile'] as Map<String, dynamic>?;
+    if (veterinarianProfile != null &&
+        veterinarianProfile['emergencyCare'] == true) {
       return 'Emergencia';
     }
 

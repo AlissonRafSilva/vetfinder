@@ -9,6 +9,8 @@ import {
   EngagementStatus,
   InteractionStatus,
   OpportunityStatus,
+  OpportunityType,
+  UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
@@ -25,6 +27,7 @@ export class EngagementsService {
         id: true,
         status: true,
         institutionId: true,
+        opportunityType: true,
         institution: {
           select: {
             userId: true,
@@ -106,6 +109,35 @@ export class EngagementsService {
           'O convite precisa estar aceito antes de fechar o plantao.',
         );
       }
+    }
+
+    const professional = await this.prisma.user.findUnique({
+      where: { id: dto.professionalUserId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (
+      !professional ||
+      (professional.role !== UserRole.VETERINARIAN && professional.role !== UserRole.INTERN)
+    ) {
+      throw new NotFoundException('Profissional nao encontrado para este fechamento.');
+    }
+
+    if (
+      professional.role === UserRole.INTERN &&
+      opportunity.opportunityType !== OpportunityType.INTERNSHIP
+    ) {
+      throw new ForbiddenException('Estagiarios so podem fechar vagas de estagio.');
+    }
+
+    if (
+      professional.role === UserRole.VETERINARIAN &&
+      opportunity.opportunityType === OpportunityType.INTERNSHIP
+    ) {
+      throw new ForbiddenException('Veterinarios volantes nao podem fechar vagas de estagio.');
     }
 
     const platformFeeAmount = dto.platformFeeAmount ?? 0;
@@ -192,6 +224,53 @@ export class EngagementsService {
             },
             startAt: true,
             endAt: true,
+          },
+        },
+        professional: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            profile: {
+              select: {
+                fullName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async findForProfessional(user: AuthenticatedUser) {
+    return this.prisma.engagement.findMany({
+      where: {
+        professionalUserId: user.userId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        opportunity: {
+          select: {
+            id: true,
+            title: true,
+            customSpecialtyLabel: true,
+            specialty: {
+              select: {
+                name: true,
+              },
+            },
+            startAt: true,
+            endAt: true,
+          },
+        },
+        institution: {
+          select: {
+            id: true,
+            tradeName: true,
+            legalName: true,
+            institutionType: true,
           },
         },
         professional: {

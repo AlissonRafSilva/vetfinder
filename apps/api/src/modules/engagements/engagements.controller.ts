@@ -24,6 +24,12 @@ export class EngagementsController {
     return this.engagementsService.findForInstitution(user);
   }
 
+  @Roles(UserRole.VETERINARIAN, UserRole.INTERN)
+  @Get('professional/me')
+  findMineAsProfessional(@CurrentUser() user: AuthenticatedUser) {
+    return this.engagementsService.findForProfessional(user);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.engagementsService.findOne(id, user);

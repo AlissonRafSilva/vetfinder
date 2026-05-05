@@ -50,4 +50,22 @@ class EngagementsRepository {
         .map(EngagementSummary.fromJson)
         .toList();
   }
+
+  Future<List<EngagementSummary>> fetchMyProfessionalEngagements({
+    required String accessToken,
+  }) async {
+    final response = await _apiClient.getDynamic(
+      '/engagements/professional/me',
+      accessToken: accessToken,
+    );
+
+    if (response is! List) {
+      throw const ApiException('Lista de plantoes fechados invalida.');
+    }
+
+    return response
+        .whereType<Map<String, dynamic>>()
+        .map(EngagementSummary.fromJson)
+        .toList();
+  }
 }
