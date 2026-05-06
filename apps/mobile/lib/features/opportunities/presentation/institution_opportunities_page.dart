@@ -8,6 +8,7 @@ import '../../applications/data/applications_repository.dart';
 import '../../applications/domain/opportunity_application_summary.dart';
 import '../../applications/domain/opportunity_invite_summary.dart';
 import '../../engagements/data/engagements_repository.dart';
+import '../../platform/data/platform_config_repository.dart';
 import '../data/opportunities_repository.dart';
 import '../domain/create_institution_opportunity_input.dart';
 import '../domain/institution_opportunity_option.dart';
@@ -24,7 +25,17 @@ class _InstitutionOpportunitiesPageState
     extends State<InstitutionOpportunitiesPage> {
   final OpportunitiesRepository _opportunitiesRepository =
       OpportunitiesRepository();
+  final PlatformConfigRepository _platformConfigRepository =
+      PlatformConfigRepository();
   Future<List<InstitutionOpportunityOption>>? _myOpportunitiesFuture;
+  double _platformFeeRate = 0.03;
+  String _platformFeePercentLabel = '3%';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlatformConfig();
+  }
 
   @override
   void didChangeDependencies() {
@@ -44,6 +55,22 @@ class _InstitutionOpportunitiesPageState
         _opportunitiesRepository.fetchMyInstitutionOpportunities(
       accessToken: session.accessToken!,
     );
+  }
+
+  Future<void> _loadPlatformConfig() async {
+    try {
+      final config = await _platformConfigRepository.fetchConfig();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _platformFeeRate = config.platformFeeRate;
+        _platformFeePercentLabel = config.platformFeePercentLabel;
+      });
+    } catch (_) {
+      // Mantem o fallback local para permitir uso do app se a API cair.
+    }
   }
 
   Future<void> _openCreateOpportunityFlow() async {
@@ -334,6 +361,8 @@ class _InstitutionOpportunitiesPageState
                     _InstitutionOpportunityCard(
                       item: items[index],
                       accessToken: session.accessToken!,
+                      platformFeeRate: _platformFeeRate,
+                      platformFeePercentLabel: _platformFeePercentLabel,
                       onEngagementCreated: () => setState(_refresh),
                       onEdit: () => _openEditOpportunityFlow(items[index]),
                       onStatusChange: (status) => _changeOpportunityStatus(
@@ -357,6 +386,8 @@ class _InstitutionOpportunityCard extends StatelessWidget {
   const _InstitutionOpportunityCard({
     required this.item,
     required this.accessToken,
+    required this.platformFeeRate,
+    required this.platformFeePercentLabel,
     required this.onEngagementCreated,
     required this.onEdit,
     required this.onStatusChange,
@@ -364,6 +395,8 @@ class _InstitutionOpportunityCard extends StatelessWidget {
 
   final InstitutionOpportunityOption item;
   final String accessToken;
+  final double platformFeeRate;
+  final String platformFeePercentLabel;
   final VoidCallback onEngagementCreated;
   final VoidCallback onEdit;
   final ValueChanged<String> onStatusChange;
@@ -482,6 +515,8 @@ class _InstitutionOpportunityCard extends StatelessWidget {
                         item: applications[index],
                         accessToken: accessToken,
                         opportunity: item,
+                        platformFeeRate: platformFeeRate,
+                        platformFeePercentLabel: platformFeePercentLabel,
                         onEngagementCreated: onEngagementCreated,
                       ),
                       if (index < applications.length - 1)
@@ -535,6 +570,8 @@ class _InstitutionOpportunityCard extends StatelessWidget {
                         item: invites[index],
                         accessToken: accessToken,
                         opportunity: item,
+                        platformFeeRate: platformFeeRate,
+                        platformFeePercentLabel: platformFeePercentLabel,
                         onEngagementCreated: onEngagementCreated,
                       ),
                       if (index < invites.length - 1)
@@ -556,12 +593,16 @@ class _OpportunityApplicationStatusRow extends StatefulWidget {
     required this.item,
     required this.accessToken,
     required this.opportunity,
+    required this.platformFeeRate,
+    required this.platformFeePercentLabel,
     required this.onEngagementCreated,
   });
 
   final OpportunityApplicationSummary item;
   final String accessToken;
   final InstitutionOpportunityOption opportunity;
+  final double platformFeeRate;
+  final String platformFeePercentLabel;
   final VoidCallback onEngagementCreated;
 
   @override
@@ -642,7 +683,7 @@ class _OpportunityApplicationStatusRowState
           builder: (context) => AlertDialog(
             title: const Text('Fechar plantao'),
             content: Text(
-              'Deseja confirmar ${_currentItem.professionalName} para esta vaga?\n\nValor bruto: ${widget.opportunity.amountLabel}\nTaxa da plataforma: R\$ ${platformFeeAmount.toStringAsFixed(2)}',
+              'Deseja confirmar ${_currentItem.professionalName} para esta vaga?\n\nValor bruto: ${widget.opportunity.amountLabel}\nTaxa da plataforma (${widget.platformFeePercentLabel}): R\$ ${platformFeeAmount.toStringAsFixed(2)}',
             ),
             actions: [
               TextButton(
@@ -702,7 +743,7 @@ class _OpportunityApplicationStatusRowState
   }
 
   double _calculatePlatformFee(num grossAmount) {
-    return _roundMoney(grossAmount.toDouble() * 0.03);
+    return _roundMoney(grossAmount.toDouble() * widget.platformFeeRate);
   }
 
   @override
@@ -804,12 +845,16 @@ class _OpportunityInviteStatusRow extends StatelessWidget {
     required this.item,
     required this.accessToken,
     required this.opportunity,
+    required this.platformFeeRate,
+    required this.platformFeePercentLabel,
     required this.onEngagementCreated,
   });
 
   final OpportunityInviteSummary item;
   final String accessToken;
   final InstitutionOpportunityOption opportunity;
+  final double platformFeeRate;
+  final String platformFeePercentLabel;
   final VoidCallback onEngagementCreated;
 
   @override
@@ -863,14 +908,14 @@ class _OpportunityInviteStatusRow extends StatelessWidget {
                 onPressed: () async {
                   final grossAmount = opportunity.grossAmount ?? 0;
                   final platformFeeAmount =
-                      _roundMoney(grossAmount.toDouble() * 0.03);
+                      _roundMoney(grossAmount.toDouble() * platformFeeRate);
 
                   final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
                           title: const Text('Fechar plantao'),
                           content: Text(
-                            'Deseja confirmar ${item.professionalName} para esta vaga?\n\nValor bruto: ${opportunity.amountLabel}\nTaxa da plataforma: R\$ ${platformFeeAmount.toStringAsFixed(2)}',
+                            'Deseja confirmar ${item.professionalName} para esta vaga?\n\nValor bruto: ${opportunity.amountLabel}\nTaxa da plataforma ($platformFeePercentLabel): R\$ ${platformFeeAmount.toStringAsFixed(2)}',
                           ),
                           actions: [
                             TextButton(

@@ -13,6 +13,7 @@ import { InstitutionsModule } from './modules/institutions/institutions.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OpportunitiesModule } from './modules/opportunities/opportunities.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { PlatformConfigModule } from './modules/platform/platform-config.module';
 import { ProfessionalsModule } from './modules/professionals/professionals.module';
 import { UsersModule } from './modules/users/users.module';
 import { SpecialtiesModule } from './modules/specialties/specialties.module';
@@ -37,6 +38,7 @@ import { SpecialtiesModule } from './modules/specialties/specialties.module';
     ApplicationsModule,
     EngagementsModule,
     PaymentsModule,
+    PlatformConfigModule,
     NotificationsModule,
     AdminModule,
   ],

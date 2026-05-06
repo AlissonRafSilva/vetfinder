@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   EngagementSourceType,
   EngagementStatus,
@@ -15,13 +14,14 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
+import { PlatformConfigService } from '../platform/platform-config.service';
 import { CreateEngagementDto } from './dto/create-engagement.dto';
 
 @Injectable()
 export class EngagementsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
+    private readonly platformConfigService: PlatformConfigService,
   ) {}
 
   async create(dto: CreateEngagementDto, user: AuthenticatedUser) {
@@ -144,8 +144,13 @@ export class EngagementsService {
       throw new ForbiddenException('Veterinarios volantes nao podem fechar vagas de estagio.');
     }
 
-    const platformFeeAmount = this.calculatePlatformFee(dto.grossAmount);
-    const netAmount = this.roundMoney(dto.grossAmount - platformFeeAmount);
+    const platformFeeAmount = this.platformConfigService.calculatePlatformFee(
+      dto.grossAmount,
+    );
+    const netAmount = this.platformConfigService.calculateNetAmount(
+      dto.grossAmount,
+      platformFeeAmount,
+    );
 
     const engagement = await this.prisma.$transaction(async (tx) => {
       const created = await tx.engagement.create({
@@ -323,22 +328,4 @@ export class EngagementsService {
     return engagement;
   }
 
-  private calculatePlatformFee(grossAmount: number) {
-    return this.roundMoney(grossAmount * this.getPlatformFeeRate());
-  }
-
-  private getPlatformFeeRate() {
-    const rawRate = this.configService.get<string>('PLATFORM_FEE_RATE');
-    const parsedRate = Number(rawRate ?? '0.03');
-
-    if (!Number.isFinite(parsedRate) || parsedRate < 0 || parsedRate > 1) {
-      return 0.03;
-    }
-
-    return parsedRate;
-  }
-
-  private roundMoney(value: number) {
-    return Math.round(value * 100) / 100;
-  }
 }
