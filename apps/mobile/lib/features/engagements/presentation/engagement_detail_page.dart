@@ -741,7 +741,7 @@ class _ReviewDialogState extends State<_ReviewDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           DropdownButtonFormField<int>(
-            value: _rating,
+            initialValue: _rating,
             decoration: const InputDecoration(
               labelText: 'Nota',
             ),
