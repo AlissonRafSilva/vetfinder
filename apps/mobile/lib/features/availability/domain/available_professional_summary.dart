@@ -9,6 +9,7 @@ class AvailableProfessionalSummary {
     required this.roleLabel,
     required this.cityLabel,
     required this.rateLabel,
+    required this.reputationLabel,
     required this.verificationLabel,
     required this.specialtyLabel,
     required this.availability,
@@ -21,6 +22,7 @@ class AvailableProfessionalSummary {
   final String roleLabel;
   final String cityLabel;
   final String rateLabel;
+  final String reputationLabel;
   final String verificationLabel;
   final String specialtyLabel;
   final List<AvailabilitySlotModel> availability;
@@ -46,6 +48,7 @@ class AvailableProfessionalSummary {
       roleLabel: _roleLabel(json['role']?.toString() ?? ''),
       cityLabel: _cityLabel(profile),
       rateLabel: _rateLabel(veterinarianProfile),
+      reputationLabel: _reputationLabel(json['reviewReceived']),
       verificationLabel: _verificationLabel(
         veterinarianProfile?['verificationStatus']?.toString() ??
             internProfile?['verificationStatus']?.toString() ??
@@ -85,6 +88,27 @@ class AvailableProfessionalSummary {
     }
 
     return 'Base R\$ ${rate.toString()}';
+  }
+
+  static String _reputationLabel(dynamic reviews) {
+    if (reviews is! List || reviews.isEmpty) {
+      return 'Sem avaliacoes ainda';
+    }
+
+    final ratings = reviews
+        .whereType<Map<String, dynamic>>()
+        .map((review) => int.tryParse(review['rating']?.toString() ?? '') ?? 0)
+        .where((rating) => rating > 0)
+        .toList();
+
+    if (ratings.isEmpty) {
+      return 'Sem avaliacoes ainda';
+    }
+
+    final average = ratings.reduce((sum, rating) => sum + rating) / ratings.length;
+    final countLabel = ratings.length == 1 ? '1 avaliacao' : '${ratings.length} avaliacoes';
+
+    return '★ ${average.toStringAsFixed(1)} ($countLabel)';
   }
 
   static String _verificationLabel(String status) {

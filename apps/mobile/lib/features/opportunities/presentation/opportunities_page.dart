@@ -457,6 +457,10 @@ class _ProfessionalAvailabilityCard extends StatelessWidget {
                 InfoBadge(label: item.specialtyLabel),
                 InfoBadge(label: item.cityLabel),
                 InfoBadge(label: item.rateLabel),
+                InfoBadge(
+                  label: item.reputationLabel,
+                  icon: Icons.star_rounded,
+                ),
               ],
             ),
             const SizedBox(height: 14),
@@ -739,6 +743,11 @@ class _OpportunityCard extends StatelessWidget {
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.primary,
               ),
+            ),
+            const SizedBox(height: 8),
+            InfoBadge(
+              label: item.institutionReputationLabel,
+              icon: Icons.star_rounded,
             ),
             const SizedBox(height: 14),
             Wrap(

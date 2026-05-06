@@ -5,6 +5,7 @@ class OpportunitySummary {
     required this.id,
     required this.title,
     required this.institution,
+    required this.institutionReputationLabel,
     required this.opportunityType,
     required this.opportunityTypeLabel,
     required this.specialty,
@@ -17,6 +18,7 @@ class OpportunitySummary {
   final String id;
   final String title;
   final String institution;
+  final String institutionReputationLabel;
   final String opportunityType;
   final String opportunityTypeLabel;
   final String specialty;
@@ -41,6 +43,9 @@ class OpportunitySummary {
       institution: institution?['tradeName']?.toString() ??
           institution?['institutionType']?.toString() ??
           'Instituicao',
+      institutionReputationLabel: _reputationLabel(
+        (institution?['user'] as Map<String, dynamic>?)?['reviewReceived'],
+      ),
       opportunityType: opportunityType,
       opportunityTypeLabel: _opportunityTypeLabel(opportunityType),
       specialty:
@@ -68,5 +73,28 @@ class OpportunitySummary {
       default:
         return 'Vaga';
     }
+  }
+
+  static String _reputationLabel(dynamic reviews) {
+    if (reviews is! List || reviews.isEmpty) {
+      return 'Instituicao sem avaliacoes';
+    }
+
+    final ratings = reviews
+        .whereType<Map<String, dynamic>>()
+        .map((review) => int.tryParse(review['rating']?.toString() ?? '') ?? 0)
+        .where((rating) => rating > 0)
+        .toList();
+
+    if (ratings.isEmpty) {
+      return 'Instituicao sem avaliacoes';
+    }
+
+    final average =
+        ratings.reduce((sum, rating) => sum + rating) / ratings.length;
+    final countLabel =
+        ratings.length == 1 ? '1 avaliacao' : '${ratings.length} avaliacoes';
+
+    return '★ ${average.toStringAsFixed(1)} ($countLabel)';
   }
 }

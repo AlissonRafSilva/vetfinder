@@ -38,6 +38,15 @@ export class OpportunitiesService {
               tradeName: true,
               institutionType: true,
               verificationStatus: true,
+              user: {
+                select: {
+                  reviewReceived: {
+                    select: {
+                      rating: true,
+                    },
+                  },
+                },
+              },
             },
           },
           specialty: {

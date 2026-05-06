@@ -115,6 +115,11 @@ export class AvailabilityService {
             startTime: 'asc',
           },
         },
+        reviewReceived: {
+          select: {
+            rating: true,
+          },
+        },
       },
       take: 50,
     });
