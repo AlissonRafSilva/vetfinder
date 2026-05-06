@@ -15,7 +15,6 @@ class EngagementsRepository {
     required String sourceType,
     required String sourceId,
     required num grossAmount,
-    required num platformFeeAmount,
   }) async {
     final response = await _apiClient.postJson(
       '/engagements',
@@ -26,7 +25,6 @@ class EngagementsRepository {
         'sourceType': sourceType,
         'sourceId': sourceId,
         'grossAmount': grossAmount,
-        'platformFeeAmount': platformFeeAmount,
       },
     );
 

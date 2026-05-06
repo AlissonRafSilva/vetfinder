@@ -674,7 +674,6 @@ class _OpportunityApplicationStatusRowState
         sourceType: 'APPLICATION',
         sourceId: _currentItem.id,
         grossAmount: grossAmount,
-        platformFeeAmount: platformFeeAmount,
       );
 
       if (!mounted) {
@@ -900,7 +899,6 @@ class _OpportunityInviteStatusRow extends StatelessWidget {
                       sourceType: 'INVITE',
                       sourceId: item.id,
                       grossAmount: grossAmount,
-                      platformFeeAmount: platformFeeAmount,
                     );
 
                     if (!context.mounted) {
