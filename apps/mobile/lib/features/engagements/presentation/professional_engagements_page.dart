@@ -38,15 +38,19 @@ class _ProfessionalEngagementsPageState
     );
   }
 
-  void _openDetail(EngagementSummary item) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
+  Future<void> _openDetail(EngagementSummary item) async {
+    final shouldRefresh = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
         builder: (_) => EngagementDetailPage(
           item: item,
           isInstitutionView: false,
         ),
       ),
     );
+
+    if (shouldRefresh == true && mounted) {
+      setState(_refresh);
+    }
   }
 
   @override

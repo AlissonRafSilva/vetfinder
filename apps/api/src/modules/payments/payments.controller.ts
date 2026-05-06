@@ -18,16 +18,16 @@ export class PaymentsController {
     return this.paymentsService.create(dto, user);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.paymentsService.findOne(id, user);
-  }
-
   @Get('engagement/:engagementId')
   findByEngagement(
     @Param('engagementId') engagementId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.paymentsService.findByEngagement(engagementId, user);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.paymentsService.findOne(id, user);
   }
 }

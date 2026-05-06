@@ -15,6 +15,7 @@ import { OpportunitiesModule } from './modules/opportunities/opportunities.modul
 import { PaymentsModule } from './modules/payments/payments.module';
 import { PlatformConfigModule } from './modules/platform/platform-config.module';
 import { ProfessionalsModule } from './modules/professionals/professionals.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 import { UsersModule } from './modules/users/users.module';
 import { SpecialtiesModule } from './modules/specialties/specialties.module';
 
@@ -39,6 +40,7 @@ import { SpecialtiesModule } from './modules/specialties/specialties.module';
     EngagementsModule,
     PaymentsModule,
     PlatformConfigModule,
+    ReviewsModule,
     NotificationsModule,
     AdminModule,
   ],
