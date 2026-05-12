@@ -16,21 +16,25 @@ class ProfessionalShellPage extends StatefulWidget {
 class _ProfessionalShellPageState extends State<ProfessionalShellPage> {
   int _currentIndex = 0;
 
-  static const _pages = [
-    AuthGatePage(),
-    OpportunitiesPage(),
-    SchedulePage(),
-    ProfessionalEngagementsPage(),
-    ProfilePage(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      AuthGatePage(
+        onOpenMarketplace: () => _selectTab(1),
+        onOpenSchedule: () => _selectTab(2),
+        onOpenProfile: () => _selectTab(4),
+      ),
+      const OpportunitiesPage(),
+      const SchedulePage(),
+      const ProfessionalEngagementsPage(),
+      const ProfilePage(),
+    ];
+
     return Scaffold(
       body: SafeArea(
         child: IndexedStack(
           index: _currentIndex,
-          children: _pages,
+          children: pages,
         ),
       ),
       bottomNavigationBar: NavigationBar(
@@ -64,5 +68,11 @@ class _ProfessionalShellPageState extends State<ProfessionalShellPage> {
         ],
       ),
     );
+  }
+
+  void _selectTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
   }
 }

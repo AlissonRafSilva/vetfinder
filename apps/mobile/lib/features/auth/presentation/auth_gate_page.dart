@@ -2,11 +2,21 @@ import 'package:flutter/material.dart';
 import '../../../core/session/app_session_scope.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/network/api_client.dart';
+import '../../profile/data/profile_repository.dart';
 import '../domain/app_user_role.dart';
 import '../domain/auth_result.dart';
 
 class AuthGatePage extends StatefulWidget {
-  const AuthGatePage({super.key});
+  const AuthGatePage({
+    super.key,
+    this.onOpenProfile,
+    this.onOpenSchedule,
+    this.onOpenMarketplace,
+  });
+
+  final VoidCallback? onOpenProfile;
+  final VoidCallback? onOpenSchedule;
+  final VoidCallback? onOpenMarketplace;
 
   @override
   State<AuthGatePage> createState() => _AuthGatePageState();
@@ -16,12 +26,30 @@ enum _AuthMode { login, register }
 
 class _AuthGatePageState extends State<AuthGatePage> {
   final _formKey = GlobalKey<FormState>();
+  final ProfileRepository _profileRepository = ProfileRepository();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _vetCrmvController = TextEditingController();
+  final _vetCrmvStateController = TextEditingController(text: 'SP');
+  final _vetRateController = TextEditingController();
+  final _vetExperienceController = TextEditingController();
+  final _vetDistanceController = TextEditingController();
+  final _internUniversityController = TextEditingController();
+  final _internPeriodController = TextEditingController();
+  final _internGraduationController = TextEditingController();
+  final _legalNameController = TextEditingController();
+  final _tradeNameController = TextEditingController();
+  final _cnpjController = TextEditingController();
+  final _stateRegistrationController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _contactNameController = TextEditingController();
+  final _contactPhoneController = TextEditingController();
 
   _AuthMode _mode = _AuthMode.login;
   AppUserRole _selectedRole = AppUserRole.veterinarian;
+  bool _vetEmergencyCare = true;
+  bool _vetCanTravel = true;
   bool _isSubmitting = false;
   String? _feedbackMessage;
   bool _isSuccessFeedback = false;
@@ -31,6 +59,21 @@ class _AuthGatePageState extends State<AuthGatePage> {
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
+    _vetCrmvController.dispose();
+    _vetCrmvStateController.dispose();
+    _vetRateController.dispose();
+    _vetExperienceController.dispose();
+    _vetDistanceController.dispose();
+    _internUniversityController.dispose();
+    _internPeriodController.dispose();
+    _internGraduationController.dispose();
+    _legalNameController.dispose();
+    _tradeNameController.dispose();
+    _cnpjController.dispose();
+    _stateRegistrationController.dispose();
+    _descriptionController.dispose();
+    _contactNameController.dispose();
+    _contactPhoneController.dispose();
     super.dispose();
   }
 
@@ -46,6 +89,8 @@ class _AuthGatePageState extends State<AuthGatePage> {
 
     try {
       final AuthResult result;
+      String feedbackMessage;
+      var isSuccessFeedback = true;
       final session = AppSessionScope.of(context);
 
       if (_mode == _AuthMode.login) {
@@ -53,6 +98,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
           email: _emailController.text,
           password: _passwordController.text,
         );
+        feedbackMessage = _buildSuccessMessage(result);
       } else {
         result = await session.register(
           email: _emailController.text,
@@ -60,6 +106,15 @@ class _AuthGatePageState extends State<AuthGatePage> {
           phone: _phoneController.text,
           role: _selectedRole,
         );
+
+        try {
+          final profileMessage = await _saveInitialProfile(result);
+          feedbackMessage = '${result.message}\n$profileMessage';
+        } on ApiException catch (error) {
+          isSuccessFeedback = false;
+          feedbackMessage =
+              'Conta criada e login realizado, mas o perfil inicial nao foi salvo: ${error.message}';
+        }
       }
 
       if (!mounted) {
@@ -67,8 +122,8 @@ class _AuthGatePageState extends State<AuthGatePage> {
       }
 
       setState(() {
-        _isSuccessFeedback = true;
-        _feedbackMessage = _buildSuccessMessage(result);
+        _isSuccessFeedback = isSuccessFeedback;
+        _feedbackMessage = feedbackMessage;
       });
     } on ApiException catch (error) {
       if (!mounted) {
@@ -94,6 +149,51 @@ class _AuthGatePageState extends State<AuthGatePage> {
           _isSubmitting = false;
         });
       }
+    }
+  }
+
+  Future<String> _saveInitialProfile(AuthResult result) {
+    final accessToken = result.accessToken;
+    if (accessToken == null || accessToken.isEmpty) {
+      throw const ApiException('Token de acesso nao retornado apos cadastro.');
+    }
+
+    switch (_selectedRole) {
+      case AppUserRole.veterinarian:
+        return _profileRepository.createVeterinarianProfile(
+          accessToken: accessToken,
+          crmvNumber: _vetCrmvController.text,
+          crmvState: _vetCrmvStateController.text,
+          baseShiftRate: _vetRateController.text,
+          yearsExperience: _vetExperienceController.text,
+          emergencyCare: _vetEmergencyCare,
+          canTravel: _vetCanTravel,
+          maxDistanceKm: _vetDistanceController.text,
+        );
+      case AppUserRole.intern:
+        return _profileRepository.createInternProfile(
+          accessToken: accessToken,
+          universityName: _internUniversityController.text,
+          coursePeriod: _internPeriodController.text,
+          expectedGraduationDate: _internGraduationController.text,
+        );
+      case AppUserRole.clinic:
+      case AppUserRole.hospital:
+        return _profileRepository.createInstitutionProfile(
+          accessToken: accessToken,
+          institutionType: _selectedRole == AppUserRole.hospital
+              ? 'HOSPITAL'
+              : 'CLINIC',
+          legalName: _legalNameController.text,
+          tradeName: _tradeNameController.text,
+          cnpj: _cnpjController.text,
+          stateRegistration: _stateRegistrationController.text,
+          description: _descriptionController.text,
+          contactName: _contactNameController.text,
+          contactPhone: _contactPhoneController.text.isNotEmpty
+              ? _contactPhoneController.text
+              : _phoneController.text,
+        );
     }
   }
 
@@ -198,10 +298,19 @@ class _AuthGatePageState extends State<AuthGatePage> {
                 ),
               ),
             ),
+            const SizedBox(height: 14),
+            _OnboardingChecklistCard(
+              roleValue: session.roleValue,
+              onOpenProfile: widget.onOpenProfile,
+              onOpenSchedule: widget.onOpenSchedule,
+              onOpenMarketplace: widget.onOpenMarketplace,
+            ),
             const SizedBox(height: 28),
           ],
           SectionHeader(
-            title: _mode == _AuthMode.login ? 'Acesse sua conta' : 'Crie sua conta',
+            title: _mode == _AuthMode.login
+                ? 'Acesse sua conta'
+                : 'Crie sua conta',
             subtitle: _mode == _AuthMode.login
                 ? 'Use o mesmo backend do VetFinder para autenticar.'
                 : 'O cadastro ja respeita os perfis aceitos pela API.',
@@ -214,6 +323,23 @@ class _AuthGatePageState extends State<AuthGatePage> {
             emailController: _emailController,
             passwordController: _passwordController,
             phoneController: _phoneController,
+            vetCrmvController: _vetCrmvController,
+            vetCrmvStateController: _vetCrmvStateController,
+            vetRateController: _vetRateController,
+            vetExperienceController: _vetExperienceController,
+            vetDistanceController: _vetDistanceController,
+            vetEmergencyCare: _vetEmergencyCare,
+            vetCanTravel: _vetCanTravel,
+            internUniversityController: _internUniversityController,
+            internPeriodController: _internPeriodController,
+            internGraduationController: _internGraduationController,
+            legalNameController: _legalNameController,
+            tradeNameController: _tradeNameController,
+            cnpjController: _cnpjController,
+            stateRegistrationController: _stateRegistrationController,
+            descriptionController: _descriptionController,
+            contactNameController: _contactNameController,
+            contactPhoneController: _contactPhoneController,
             isSubmitting: _isSubmitting,
             feedbackMessage: _feedbackMessage,
             isSuccessFeedback: _isSuccessFeedback,
@@ -228,6 +354,12 @@ class _AuthGatePageState extends State<AuthGatePage> {
                 _selectedRole = role;
               });
             },
+            onVetEmergencyCareChanged: (value) {
+              setState(() => _vetEmergencyCare = value);
+            },
+            onVetCanTravelChanged: (value) {
+              setState(() => _vetCanTravel = value);
+            },
             onSubmit: _submit,
           ),
           const SizedBox(height: 28),
@@ -239,19 +371,165 @@ class _AuthGatePageState extends State<AuthGatePage> {
           const _RoleOptionCard(
             icon: Icons.local_hospital_rounded,
             title: 'Veterinario volante',
-            description: 'Receba plantoes proximos, convites e pagamentos pelo app.',
+            description:
+                'Receba plantoes proximos, convites e pagamentos pelo app.',
           ),
           const SizedBox(height: 14),
           const _RoleOptionCard(
             icon: Icons.school_rounded,
             title: 'Estagiario',
-            description: 'Encontre oportunidades compativeis com sua formacao e agenda.',
+            description:
+                'Encontre oportunidades compativeis com sua formacao e agenda.',
           ),
           const SizedBox(height: 14),
           const _RoleOptionCard(
             icon: Icons.storefront_rounded,
             title: 'Clinica ou hospital',
-            description: 'Publique demandas urgentes e feche plantoes com seguranca.',
+            description:
+                'Publique demandas urgentes e feche plantoes com seguranca.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OnboardingChecklistCard extends StatelessWidget {
+  const _OnboardingChecklistCard({
+    required this.roleValue,
+    required this.onOpenProfile,
+    required this.onOpenSchedule,
+    required this.onOpenMarketplace,
+  });
+
+  final String? roleValue;
+  final VoidCallback? onOpenProfile;
+  final VoidCallback? onOpenSchedule;
+  final VoidCallback? onOpenMarketplace;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isVeterinarian = roleValue == AppUserRole.veterinarian.apiValue;
+    final isIntern = roleValue == AppUserRole.intern.apiValue;
+    final isInstitution = roleValue == AppUserRole.clinic.apiValue ||
+        roleValue == AppUserRole.hospital.apiValue;
+
+    final title = isInstitution
+        ? 'Proximos passos da instituicao'
+        : 'Proximos passos do profissional';
+    final subtitle = isInstitution
+        ? 'Complete o cadastro institucional para publicar vagas e convidar profissionais com mais confianca.'
+        : 'Complete seu perfil e agenda para aparecer melhor nas buscas e receber oportunidades compativeis.';
+    final profileStep = isInstitution
+        ? 'Validar dados de CNPJ e contato'
+        : isIntern
+            ? 'Informar instituicao de ensino'
+            : isVeterinarian
+                ? 'Informar CRMV e valor base'
+                : 'Completar dados principais';
+    final marketStep = isInstitution
+        ? 'Buscar profissionais disponiveis'
+        : isIntern
+            ? 'Ver estagios disponiveis'
+            : 'Ver plantoes disponiveis';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _ChecklistItem(
+              icon: Icons.verified_user_outlined,
+              label: profileStep,
+            ),
+            if (!isInstitution)
+              const _ChecklistItem(
+                icon: Icons.calendar_month_outlined,
+                label: 'Configurar dias e horarios disponiveis',
+              ),
+            _ChecklistItem(
+              icon: isInstitution
+                  ? Icons.search_rounded
+                  : Icons.work_outline_rounded,
+              label: marketStep,
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                FilledButton.icon(
+                  onPressed: onOpenProfile,
+                  icon: const Icon(Icons.person_rounded),
+                  label: const Text('Completar perfil'),
+                ),
+                if (!isInstitution)
+                  OutlinedButton.icon(
+                    onPressed: onOpenSchedule,
+                    icon: const Icon(Icons.calendar_month_rounded),
+                    label: const Text('Configurar agenda'),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: onOpenMarketplace,
+                  icon: const Icon(Icons.search_rounded),
+                  label: Text(
+                      isInstitution ? 'Buscar profissionais' : 'Ver vagas'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChecklistItem extends StatelessWidget {
+  const _ChecklistItem({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -267,11 +545,30 @@ class _AuthFormCard extends StatelessWidget {
     required this.emailController,
     required this.passwordController,
     required this.phoneController,
+    required this.vetCrmvController,
+    required this.vetCrmvStateController,
+    required this.vetRateController,
+    required this.vetExperienceController,
+    required this.vetDistanceController,
+    required this.vetEmergencyCare,
+    required this.vetCanTravel,
+    required this.internUniversityController,
+    required this.internPeriodController,
+    required this.internGraduationController,
+    required this.legalNameController,
+    required this.tradeNameController,
+    required this.cnpjController,
+    required this.stateRegistrationController,
+    required this.descriptionController,
+    required this.contactNameController,
+    required this.contactPhoneController,
     required this.isSubmitting,
     required this.feedbackMessage,
     required this.isSuccessFeedback,
     required this.onModeChanged,
     required this.onRoleChanged,
+    required this.onVetEmergencyCareChanged,
+    required this.onVetCanTravelChanged,
     required this.onSubmit,
   });
 
@@ -281,11 +578,30 @@ class _AuthFormCard extends StatelessWidget {
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final TextEditingController phoneController;
+  final TextEditingController vetCrmvController;
+  final TextEditingController vetCrmvStateController;
+  final TextEditingController vetRateController;
+  final TextEditingController vetExperienceController;
+  final TextEditingController vetDistanceController;
+  final bool vetEmergencyCare;
+  final bool vetCanTravel;
+  final TextEditingController internUniversityController;
+  final TextEditingController internPeriodController;
+  final TextEditingController internGraduationController;
+  final TextEditingController legalNameController;
+  final TextEditingController tradeNameController;
+  final TextEditingController cnpjController;
+  final TextEditingController stateRegistrationController;
+  final TextEditingController descriptionController;
+  final TextEditingController contactNameController;
+  final TextEditingController contactPhoneController;
   final bool isSubmitting;
   final String? feedbackMessage;
   final bool isSuccessFeedback;
   final ValueChanged<_AuthMode> onModeChanged;
   final ValueChanged<AppUserRole> onRoleChanged;
+  final ValueChanged<bool> onVetEmergencyCareChanged;
+  final ValueChanged<bool> onVetCanTravelChanged;
   final Future<void> Function() onSubmit;
 
   @override
@@ -388,6 +704,29 @@ class _AuthFormCard extends StatelessWidget {
                     hintText: '(11) 99999-9999',
                   ),
                 ),
+                const SizedBox(height: 18),
+                _RegistrationProfileFields(
+                  selectedRole: selectedRole,
+                  vetCrmvController: vetCrmvController,
+                  vetCrmvStateController: vetCrmvStateController,
+                  vetRateController: vetRateController,
+                  vetExperienceController: vetExperienceController,
+                  vetDistanceController: vetDistanceController,
+                  vetEmergencyCare: vetEmergencyCare,
+                  vetCanTravel: vetCanTravel,
+                  internUniversityController: internUniversityController,
+                  internPeriodController: internPeriodController,
+                  internGraduationController: internGraduationController,
+                  legalNameController: legalNameController,
+                  tradeNameController: tradeNameController,
+                  cnpjController: cnpjController,
+                  stateRegistrationController: stateRegistrationController,
+                  descriptionController: descriptionController,
+                  contactNameController: contactNameController,
+                  contactPhoneController: contactPhoneController,
+                  onVetEmergencyCareChanged: onVetEmergencyCareChanged,
+                  onVetCanTravelChanged: onVetCanTravelChanged,
+                ),
               ],
               if (feedbackMessage != null) ...[
                 const SizedBox(height: 16),
@@ -422,13 +761,308 @@ class _AuthFormCard extends StatelessWidget {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          mode == _AuthMode.login ? 'Entrar na conta' : 'Criar conta',
+                          mode == _AuthMode.login
+                              ? 'Entrar na conta'
+                              : 'Criar conta',
                         ),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _RegistrationProfileFields extends StatelessWidget {
+  const _RegistrationProfileFields({
+    required this.selectedRole,
+    required this.vetCrmvController,
+    required this.vetCrmvStateController,
+    required this.vetRateController,
+    required this.vetExperienceController,
+    required this.vetDistanceController,
+    required this.vetEmergencyCare,
+    required this.vetCanTravel,
+    required this.internUniversityController,
+    required this.internPeriodController,
+    required this.internGraduationController,
+    required this.legalNameController,
+    required this.tradeNameController,
+    required this.cnpjController,
+    required this.stateRegistrationController,
+    required this.descriptionController,
+    required this.contactNameController,
+    required this.contactPhoneController,
+    required this.onVetEmergencyCareChanged,
+    required this.onVetCanTravelChanged,
+  });
+
+  final AppUserRole selectedRole;
+  final TextEditingController vetCrmvController;
+  final TextEditingController vetCrmvStateController;
+  final TextEditingController vetRateController;
+  final TextEditingController vetExperienceController;
+  final TextEditingController vetDistanceController;
+  final bool vetEmergencyCare;
+  final bool vetCanTravel;
+  final TextEditingController internUniversityController;
+  final TextEditingController internPeriodController;
+  final TextEditingController internGraduationController;
+  final TextEditingController legalNameController;
+  final TextEditingController tradeNameController;
+  final TextEditingController cnpjController;
+  final TextEditingController stateRegistrationController;
+  final TextEditingController descriptionController;
+  final TextEditingController contactNameController;
+  final TextEditingController contactPhoneController;
+  final ValueChanged<bool> onVetEmergencyCareChanged;
+  final ValueChanged<bool> onVetCanTravelChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (selectedRole) {
+      case AppUserRole.veterinarian:
+        return _RegisterSection(
+          title: 'Dados profissionais',
+          subtitle:
+              'Essas informacoes criam seu perfil veterinario imediatamente apos a conta.',
+          children: [
+            _RequiredTextField(
+              controller: vetCrmvController,
+              label: 'Numero do CRMV',
+            ),
+            _RequiredTextField(
+              controller: vetCrmvStateController,
+              label: 'UF do CRMV',
+              maxLength: 2,
+            ),
+            _RequiredTextField(
+              controller: vetRateController,
+              label: 'Valor base do plantao',
+              keyboardType: TextInputType.number,
+            ),
+            _OptionalTextField(
+              controller: vetExperienceController,
+              label: 'Anos de experiencia',
+              keyboardType: TextInputType.number,
+            ),
+            _OptionalTextField(
+              controller: vetDistanceController,
+              label: 'Distancia maxima em km',
+              keyboardType: TextInputType.number,
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: vetEmergencyCare,
+              onChanged: onVetEmergencyCareChanged,
+              title: const Text('Atende emergencia'),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: vetCanTravel,
+              onChanged: onVetCanTravelChanged,
+              title: const Text('Pode se deslocar'),
+            ),
+          ],
+        );
+      case AppUserRole.intern:
+        return _RegisterSection(
+          title: 'Dados academicos',
+          subtitle:
+              'Essas informacoes ajudam clinicas e hospitais a validar sua candidatura.',
+          children: [
+            _RequiredTextField(
+              controller: internUniversityController,
+              label: 'Instituicao de ensino',
+            ),
+            _OptionalTextField(
+              controller: internPeriodController,
+              label: 'Periodo do curso',
+            ),
+            _OptionalTextField(
+              controller: internGraduationController,
+              label: 'Previsao de formatura (AAAA-MM-DD)',
+            ),
+          ],
+        );
+      case AppUserRole.clinic:
+      case AppUserRole.hospital:
+        return _RegisterSection(
+          title: 'Dados da instituicao',
+          subtitle:
+              'Essas informacoes criam o perfil institucional para publicar vagas.',
+          children: [
+            _RequiredTextField(
+              controller: legalNameController,
+              label: 'Razao social',
+            ),
+            _RequiredTextField(
+              controller: tradeNameController,
+              label: 'Nome fantasia',
+            ),
+            _RequiredTextField(
+              controller: cnpjController,
+              label: 'CNPJ',
+              keyboardType: TextInputType.number,
+            ),
+            _OptionalTextField(
+              controller: stateRegistrationController,
+              label: 'Inscricao estadual',
+            ),
+            _RequiredTextField(
+              controller: contactNameController,
+              label: 'Responsavel pelo contato',
+            ),
+            _OptionalTextField(
+              controller: contactPhoneController,
+              label: 'Telefone institucional',
+              keyboardType: TextInputType.phone,
+            ),
+            _OptionalTextField(
+              controller: descriptionController,
+              label: 'Descricao da instituicao',
+              maxLines: 3,
+            ),
+          ],
+        );
+    }
+  }
+}
+
+class _RegisterSection extends StatelessWidget {
+  const _RegisterSection({
+    required this.title,
+    required this.subtitle,
+    required this.children,
+  });
+
+  final String title;
+  final String subtitle;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.35,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 14),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RequiredTextField extends StatelessWidget {
+  const _RequiredTextField({
+    required this.controller,
+    required this.label,
+    this.keyboardType,
+    this.maxLength,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final TextInputType? keyboardType;
+  final int? maxLength;
+
+  @override
+  Widget build(BuildContext context) {
+    return _RegisterTextField(
+      controller: controller,
+      label: label,
+      keyboardType: keyboardType,
+      maxLength: maxLength,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return 'Informe $label.';
+        }
+
+        return null;
+      },
+    );
+  }
+}
+
+class _OptionalTextField extends StatelessWidget {
+  const _OptionalTextField({
+    required this.controller,
+    required this.label,
+    this.keyboardType,
+    this.maxLines = 1,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final TextInputType? keyboardType;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    return _RegisterTextField(
+      controller: controller,
+      label: label,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+    );
+  }
+}
+
+class _RegisterTextField extends StatelessWidget {
+  const _RegisterTextField({
+    required this.controller,
+    required this.label,
+    this.keyboardType,
+    this.maxLines = 1,
+    this.maxLength,
+    this.validator,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final TextInputType? keyboardType;
+  final int maxLines;
+  final int? maxLength;
+  final FormFieldValidator<String>? validator;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        maxLength: maxLength,
+        decoration: InputDecoration(labelText: label),
+        validator: validator,
       ),
     );
   }
