@@ -42,6 +42,21 @@ async function upsertSpecialties() {
 async function seedDemoData() {
   const passwordHash = await bcrypt.hash('vetfinder123', 10);
 
+  await prisma.user.upsert({
+    where: { email: 'admin.demo@vetfinder.app' },
+    update: {
+      passwordHash,
+      role: UserRole.ADMIN,
+      status: AccountStatus.ACTIVE,
+    },
+    create: {
+      email: 'admin.demo@vetfinder.app',
+      passwordHash,
+      role: UserRole.ADMIN,
+      status: AccountStatus.ACTIVE,
+    },
+  });
+
   const clinicAddress = await prisma.address.create({
     data: {
       zipCode: '01310-100',
@@ -291,6 +306,7 @@ async function main() {
   await seedDemoData();
 
   console.log('Seed concluido com especialidades, contas demo e oportunidades abertas.');
+  console.log('Admin demo: admin.demo@vetfinder.app / vetfinder123');
   console.log('Clinica demo: clinica.demo@vetfinder.app / vetfinder123');
   console.log('Veterinario demo: veterinario.demo@vetfinder.app / vetfinder123');
 }

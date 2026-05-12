@@ -7,6 +7,21 @@ class ProfileRepository {
 
   final ApiClient _apiClient;
 
+  Future<Map<String, dynamic>> fetchProfessionalProfile({
+    required String userId,
+  }) {
+    return _apiClient.getJson('/professionals/$userId');
+  }
+
+  Future<Map<String, dynamic>> fetchMyInstitutionProfile({
+    required String accessToken,
+  }) {
+    return _apiClient.getJsonWithToken(
+      '/institutions/me',
+      accessToken: accessToken,
+    );
+  }
+
   Future<String> createVeterinarianProfile({
     required String accessToken,
     required String crmvNumber,

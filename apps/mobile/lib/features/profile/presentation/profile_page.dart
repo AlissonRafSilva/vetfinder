@@ -38,6 +38,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final _contactPhoneController = TextEditingController();
 
   bool _isSaving = false;
+  String? _loadedProfileKey;
   String? _feedbackMessage;
   bool _isFeedbackError = false;
 
@@ -59,6 +60,112 @@ class _ProfilePageState extends State<ProfilePage> {
     _contactNameController.dispose();
     _contactPhoneController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadExistingProfileIfNeeded();
+  }
+
+  Future<void> _loadExistingProfileIfNeeded() async {
+    final session = AppSessionScope.of(context);
+    final profileKey = '${session.userId}:${session.roleValue}';
+
+    if (!session.isAuthenticated ||
+        session.userId == null ||
+        session.accessToken == null ||
+        _loadedProfileKey == profileKey) {
+      return;
+    }
+
+    _loadedProfileKey = profileKey;
+
+    try {
+      if (session.isInstitutionUser) {
+        final institution = await _profileRepository.fetchMyInstitutionProfile(
+          accessToken: session.accessToken!,
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _legalNameController.text =
+              institution['legalName']?.toString() ?? '';
+          _tradeNameController.text =
+              institution['tradeName']?.toString() ?? '';
+          _cnpjController.text = institution['cnpj']?.toString() ?? '';
+          _stateRegistrationController.text =
+              institution['stateRegistration']?.toString() ?? '';
+          _descriptionController.text =
+              institution['description']?.toString() ?? '';
+          _contactNameController.text =
+              institution['contactName']?.toString() ?? '';
+          _contactPhoneController.text =
+              institution['contactPhone']?.toString() ?? '';
+        });
+        return;
+      }
+
+      final professional = await _profileRepository.fetchProfessionalProfile(
+        userId: session.userId!,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        final veterinarianProfile =
+            professional['veterinarianProfile'] as Map<String, dynamic>?;
+        final internProfile =
+            professional['internProfile'] as Map<String, dynamic>?;
+
+        if (veterinarianProfile != null) {
+          _vetCrmvController.text =
+              veterinarianProfile['crmvNumber']?.toString() ?? '';
+          _vetCrmvStateController.text =
+              veterinarianProfile['crmvState']?.toString() ?? 'SP';
+          _vetRateController.text =
+              veterinarianProfile['baseShiftRate']?.toString() ?? '';
+          _vetExperienceController.text =
+              veterinarianProfile['yearsExperience']?.toString() ?? '';
+          _vetDistanceController.text =
+              veterinarianProfile['maxDistanceKm']?.toString() ?? '';
+          _vetEmergencyCare = veterinarianProfile['emergencyCare'] == true;
+          _vetCanTravel = veterinarianProfile['canTravel'] == true;
+        }
+
+        if (internProfile != null) {
+          _internUniversityController.text =
+              internProfile['universityName']?.toString() ?? '';
+          _internPeriodController.text =
+              internProfile['coursePeriod']?.toString() ?? '';
+          _internGraduationController.text =
+              _dateOnly(internProfile['expectedGraduationDate']?.toString());
+        }
+      });
+    } on ApiException {
+      // Perfil ainda nao existe; o formulario permanece em branco para criacao.
+    }
+  }
+
+  String _dateOnly(String? value) {
+    if (value == null || value.isEmpty) {
+      return '';
+    }
+
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null) {
+      return value;
+    }
+
+    final month = parsed.month.toString().padLeft(2, '0');
+    final day = parsed.day.toString().padLeft(2, '0');
+
+    return '${parsed.year}-$month-$day';
   }
 
   Future<void> _saveVeterinarianProfile() async {

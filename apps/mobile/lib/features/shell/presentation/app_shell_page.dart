@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/session/app_session_scope.dart';
+import 'admin_shell_page.dart';
 import 'institution_shell_page.dart';
 import 'professional_shell_page.dart';
 
@@ -10,6 +11,12 @@ class AppShellPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = AppSessionScope.of(context);
+
+    if (session.roleValue == 'ADMIN') {
+      return const AdminShellPage(
+        key: ValueKey('admin-shell'),
+      );
+    }
 
     if (session.isInstitutionUser) {
       return const InstitutionShellPage(

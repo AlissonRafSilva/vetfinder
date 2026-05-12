@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRole, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
@@ -23,12 +23,7 @@ export class ProfessionalsService {
       throw new NotFoundException('Usuario veterinario nao encontrado.');
     }
 
-    if (user.veterinarianProfile) {
-      throw new ConflictException('Este usuario ja possui perfil veterinario.');
-    }
-
-    const profile = await this.prisma.veterinarianProfile.create({
-      data: {
+    const data = {
         userId: currentUser.userId,
         crmvNumber: dto.crmvNumber,
         crmvState: dto.crmvState.toUpperCase(),
@@ -38,11 +33,21 @@ export class ProfessionalsService {
         canTravel: dto.canTravel ?? false,
         maxDistanceKm: dto.maxDistanceKm,
         verificationStatus: VerificationStatus.PENDING,
-      },
-    });
+      };
+
+    const profile = user.veterinarianProfile
+      ? await this.prisma.veterinarianProfile.update({
+          where: { userId: currentUser.userId },
+          data,
+        })
+      : await this.prisma.veterinarianProfile.create({
+          data,
+        });
 
     return {
-      message: 'Perfil veterinario criado com sucesso.',
+      message: user.veterinarianProfile
+        ? 'Perfil veterinario atualizado com sucesso.'
+        : 'Perfil veterinario criado com sucesso.',
       profile,
     };
   }
@@ -61,12 +66,7 @@ export class ProfessionalsService {
       throw new NotFoundException('Usuario estagiario nao encontrado.');
     }
 
-    if (user.internProfile) {
-      throw new ConflictException('Este usuario ja possui perfil de estagiario.');
-    }
-
-    const profile = await this.prisma.internProfile.create({
-      data: {
+    const data = {
         userId: currentUser.userId,
         universityName: dto.universityName,
         coursePeriod: dto.coursePeriod,
@@ -74,11 +74,21 @@ export class ProfessionalsService {
           ? new Date(dto.expectedGraduationDate)
           : undefined,
         verificationStatus: VerificationStatus.PENDING,
-      },
-    });
+      };
+
+    const profile = user.internProfile
+      ? await this.prisma.internProfile.update({
+          where: { userId: currentUser.userId },
+          data,
+        })
+      : await this.prisma.internProfile.create({
+          data,
+        });
 
     return {
-      message: 'Perfil de estagiario criado com sucesso.',
+      message: user.internProfile
+        ? 'Perfil de estagiario atualizado com sucesso.'
+        : 'Perfil de estagiario criado com sucesso.',
       profile,
     };
   }

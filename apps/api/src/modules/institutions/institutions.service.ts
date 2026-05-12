@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRole, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
@@ -22,12 +22,7 @@ export class InstitutionsService {
       throw new NotFoundException('Usuario institucional nao encontrado.');
     }
 
-    if (user.institution) {
-      throw new ConflictException('Este usuario ja possui instituicao cadastrada.');
-    }
-
-    const institution = await this.prisma.institution.create({
-      data: {
+    const data = {
         userId: currentUser.userId,
         institutionType: dto.institutionType,
         legalName: dto.legalName,
@@ -39,13 +34,47 @@ export class InstitutionsService {
         contactPhone: dto.contactPhone,
         addressId: dto.addressId,
         verificationStatus: dto.verificationStatus ?? VerificationStatus.PENDING,
+      };
+
+    const institution = user.institution
+      ? await this.prisma.institution.update({
+          where: { userId: currentUser.userId },
+          data,
+        })
+      : await this.prisma.institution.create({
+          data,
+        });
+
+    return {
+      message: user.institution
+        ? 'Instituicao atualizada com sucesso.'
+        : 'Instituicao criada com sucesso.',
+      institution,
+    };
+  }
+
+  async findMine(currentUser: AuthenticatedUser) {
+    if (currentUser.role !== UserRole.CLINIC && currentUser.role !== UserRole.HOSPITAL) {
+      throw new NotFoundException('Usuario autenticado nao possui perfil institucional.');
+    }
+
+    const institution = await this.prisma.institution.findUnique({
+      where: { userId: currentUser.userId },
+      include: {
+        address: true,
+        documents: true,
+        opportunities: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
       },
     });
 
-    return {
-      message: 'Instituicao criada com sucesso.',
-      institution,
-    };
+    if (!institution) {
+      throw new NotFoundException('Instituicao nao encontrada para este usuario.');
+    }
+
+    return institution;
   }
 
   async findById(id: string) {

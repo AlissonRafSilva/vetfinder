@@ -17,6 +17,12 @@ export class InstitutionsController {
     return this.institutionsService.create(dto, user);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  findMine(@CurrentUser() user: AuthenticatedUser) {
+    return this.institutionsService.findMine(user);
+  }
+
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.institutionsService.findById(id);
