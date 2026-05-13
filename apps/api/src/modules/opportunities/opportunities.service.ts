@@ -1,5 +1,11 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { OpportunityStatus, OpportunityType, Prisma, UserRole } from '@prisma/client';
+import {
+  OpportunityStatus,
+  OpportunityType,
+  Prisma,
+  UserRole,
+  VerificationStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { ListOpportunitiesDto } from './dto/list-opportunities.dto';
@@ -169,6 +175,8 @@ export class OpportunitiesService {
       throw new NotFoundException('Instituicao do usuario autenticado nao encontrada.');
     }
 
+    this.ensureInstitutionApproved(institution.verificationStatus);
+
     const opportunity = await this.prisma.opportunity.create({
       data: {
         institutionId: institution.id,
@@ -217,11 +225,15 @@ export class OpportunitiesService {
 
     const institution = await this.prisma.institution.findUnique({
       where: { userId: user.userId },
-      select: { id: true },
+      select: { id: true, verificationStatus: true },
     });
 
     if (!institution) {
       throw new NotFoundException('Instituicao do usuario autenticado nao encontrada.');
+    }
+
+    if (status === OpportunityStatus.OPEN) {
+      this.ensureInstitutionApproved(institution.verificationStatus);
     }
 
     const opportunity = await this.prisma.opportunity.findUnique({
@@ -364,5 +376,13 @@ export class OpportunitiesService {
     }
 
     return query.opportunityType;
+  }
+
+  private ensureInstitutionApproved(status: VerificationStatus) {
+    if (status !== VerificationStatus.APPROVED) {
+      throw new ForbiddenException(
+        'A instituicao precisa ter o CNPJ aprovado antes de publicar vagas.',
+      );
+    }
   }
 }
