@@ -1,5 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { DocumentOwnerType, UserRole, VerificationStatus } from '@prisma/client';
+import {
+  AccountStatus,
+  DocumentOwnerType,
+  DocumentType,
+  Prisma,
+  UserRole,
+  VerificationStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { StorageService } from '../../common/storage/storage.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
@@ -218,26 +225,199 @@ export class DocumentsService {
   async review(id: string, dto: ReviewDocumentDto) {
     const existing = await this.prisma.document.findUnique({
       where: { id },
-      select: { id: true },
+      select: {
+        id: true,
+        ownerType: true,
+        userId: true,
+        institutionId: true,
+        documentType: true,
+      },
     });
 
     if (!existing) {
       throw new NotFoundException('Documento nao encontrado.');
     }
 
-    const document = await this.prisma.document.update({
-      where: { id },
-      data: {
-        status: dto.status,
-        rejectionReason: dto.rejectionReason,
-        reviewedBy: dto.reviewedBy,
-        reviewedAt: new Date(),
-      },
+    const document = await this.prisma.$transaction(async (tx) => {
+      const reviewedDocument = await tx.document.update({
+        where: { id },
+        data: {
+          status: dto.status,
+          rejectionReason:
+            dto.status === VerificationStatus.REJECTED
+              ? dto.rejectionReason
+              : null,
+          reviewedBy: dto.reviewedBy,
+          reviewedAt: new Date(),
+        },
+      });
+
+      await this.applyReviewEffects(existing, tx);
+
+      return reviewedDocument;
     });
 
     return {
       message: 'Revisao de documento registrada com sucesso.',
       document,
     };
+  }
+
+  private async applyReviewEffects(
+    document: {
+      ownerType: DocumentOwnerType;
+      userId: string | null;
+      institutionId: string | null;
+      documentType: DocumentType;
+    },
+    tx: Prisma.TransactionClient,
+  ) {
+    if (document.ownerType === DocumentOwnerType.INSTITUTION) {
+      if (!document.institutionId) {
+        return;
+      }
+
+      await this.applyInstitutionVerification(document.institutionId, tx);
+      return;
+    }
+
+    if (!document.userId) {
+      return;
+    }
+
+    await this.applyProfessionalVerification(document.userId, tx);
+  }
+
+  private async applyInstitutionVerification(
+    institutionId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const institution = await tx.institution.findUnique({
+      where: { id: institutionId },
+      select: { userId: true },
+    });
+
+    if (!institution) {
+      return;
+    }
+
+    const hasApprovedCnpj = await this.hasApprovedDocument(tx, {
+      ownerType: DocumentOwnerType.INSTITUTION,
+      institutionId,
+      documentType: DocumentType.CNPJ_PROOF,
+    });
+
+    const nextStatus = hasApprovedCnpj
+      ? VerificationStatus.APPROVED
+      : VerificationStatus.PENDING;
+    const nextAccountStatus = hasApprovedCnpj
+      ? AccountStatus.ACTIVE
+      : AccountStatus.PENDING_VERIFICATION;
+
+    await tx.institution.update({
+      where: { id: institutionId },
+      data: { verificationStatus: nextStatus },
+    });
+    await tx.user.update({
+      where: { id: institution.userId },
+      data: { status: nextAccountStatus },
+    });
+  }
+
+  private async applyProfessionalVerification(
+    userId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user) {
+      return;
+    }
+
+    const hasApprovedPhoto = await this.hasApprovedDocument(tx, {
+      ownerType: DocumentOwnerType.USER,
+      userId,
+      documentType: DocumentType.PROFILE_PHOTO,
+    });
+
+    if (user.role === UserRole.VETERINARIAN) {
+      const hasApprovedCrmv = await this.hasApprovedDocument(tx, {
+        ownerType: DocumentOwnerType.USER,
+        userId,
+        documentType: DocumentType.CRMV_PROOF,
+      });
+
+      const isApproved = hasApprovedPhoto && hasApprovedCrmv;
+      await tx.veterinarianProfile.updateMany({
+        where: { userId },
+        data: {
+          verificationStatus: isApproved
+            ? VerificationStatus.APPROVED
+            : VerificationStatus.PENDING,
+        },
+      });
+      await this.updateUserVerificationStatus(userId, isApproved, tx);
+      return;
+    }
+
+    if (user.role === UserRole.INTERN) {
+      const hasApprovedEnrollment = await this.hasApprovedDocument(tx, {
+        ownerType: DocumentOwnerType.USER,
+        userId,
+        documentType: DocumentType.ENROLLMENT_STATEMENT,
+      });
+
+      const isApproved = hasApprovedPhoto && hasApprovedEnrollment;
+      await tx.internProfile.updateMany({
+        where: { userId },
+        data: {
+          verificationStatus: isApproved
+            ? VerificationStatus.APPROVED
+            : VerificationStatus.PENDING,
+        },
+      });
+      await this.updateUserVerificationStatus(userId, isApproved, tx);
+    }
+  }
+
+  private async updateUserVerificationStatus(
+    userId: string,
+    isApproved: boolean,
+    tx: Prisma.TransactionClient,
+  ) {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        status: isApproved
+          ? AccountStatus.ACTIVE
+          : AccountStatus.PENDING_VERIFICATION,
+      },
+    });
+  }
+
+  private async hasApprovedDocument(
+    tx: Prisma.TransactionClient,
+    where: {
+      ownerType: DocumentOwnerType;
+      documentType: DocumentType;
+      userId?: string;
+      institutionId?: string;
+    },
+  ) {
+    const document = await tx.document.findFirst({
+      where: {
+        ownerType: where.ownerType,
+        documentType: where.documentType,
+        userId: where.userId,
+        institutionId: where.institutionId,
+        status: VerificationStatus.APPROVED,
+      },
+      select: { id: true },
+    });
+
+    return Boolean(document);
   }
 }
