@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { DocumentOwnerType, VerificationStatus } from '@prisma/client';
+import { DocumentOwnerType, UserRole, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { StorageService } from '../../common/storage/storage.service';
+import { AuthenticatedUser } from '../auth/current-user.decorator';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { CreateDocumentUploadDto } from './dto/create-document-upload.dto';
 import { ReviewDocumentDto } from './dto/review-document.dto';
@@ -13,20 +14,14 @@ export class DocumentsService {
     private readonly storageService: StorageService,
   ) {}
 
-  async create(dto: CreateDocumentDto) {
-    if (dto.ownerType === DocumentOwnerType.USER && !dto.userId) {
-      throw new BadRequestException('userId e obrigatorio para documentos de usuario.');
-    }
-
-    if (dto.ownerType === DocumentOwnerType.INSTITUTION && !dto.institutionId) {
-      throw new BadRequestException('institutionId e obrigatorio para documentos de instituicao.');
-    }
+  async create(dto: CreateDocumentDto, user: AuthenticatedUser) {
+    const owner = await this.resolveDocumentOwner(dto.ownerType, user);
 
     const document = await this.prisma.document.create({
       data: {
         ownerType: dto.ownerType,
-        userId: dto.userId,
-        institutionId: dto.institutionId,
+        userId: owner.userId,
+        institutionId: owner.institutionId,
         documentType: dto.documentType,
         fileUrl: dto.fileUrl,
         mimeType: dto.mimeType,
@@ -38,6 +33,35 @@ export class DocumentsService {
       message: 'Documento registrado com sucesso.',
       document,
     };
+  }
+
+  async findMine(user: AuthenticatedUser) {
+    const institution =
+      user.role === UserRole.CLINIC || user.role === UserRole.HOSPITAL
+        ? await this.prisma.institution.findUnique({
+            where: { userId: user.userId },
+            select: { id: true },
+          })
+        : null;
+
+    return this.prisma.document.findMany({
+      where: {
+        OR: [
+          { ownerType: DocumentOwnerType.USER, userId: user.userId },
+          ...(institution
+            ? [
+                {
+                  ownerType: DocumentOwnerType.INSTITUTION,
+                  institutionId: institution.id,
+                },
+              ]
+            : []),
+        ],
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   }
 
   async findAll(status?: VerificationStatus) {
@@ -83,6 +107,40 @@ export class DocumentsService {
       folder: `institutions/${dto.institutionId}/documents/${dto.documentType.toLowerCase()}`,
       fileName: dto.fileName,
     });
+  }
+
+  private async resolveDocumentOwner(
+    ownerType: DocumentOwnerType,
+    user: AuthenticatedUser,
+  ) {
+    if (ownerType === DocumentOwnerType.USER) {
+      return {
+        userId: user.userId,
+        institutionId: null,
+      };
+    }
+
+    if (user.role !== UserRole.CLINIC && user.role !== UserRole.HOSPITAL) {
+      throw new BadRequestException(
+        'Apenas clinicas e hospitais podem enviar documentos institucionais.',
+      );
+    }
+
+    const institution = await this.prisma.institution.findUnique({
+      where: { userId: user.userId },
+      select: { id: true },
+    });
+
+    if (!institution) {
+      throw new BadRequestException(
+        'Cadastre a instituicao antes de enviar documentos institucionais.',
+      );
+    }
+
+    return {
+      userId: null,
+      institutionId: institution.id,
+    };
   }
 
   async findOne(id: string) {

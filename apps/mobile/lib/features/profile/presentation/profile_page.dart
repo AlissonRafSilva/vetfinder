@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/session/app_session_controller.dart';
 import '../../../core/session/app_session_scope.dart';
 import '../../../core/widgets/info_badge.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../auth/domain/app_user_role.dart';
+import '../../documents/data/documents_repository.dart';
+import '../../documents/domain/document_summary.dart';
 import '../data/profile_repository.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -16,6 +19,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final ProfileRepository _profileRepository = ProfileRepository();
+  final DocumentsRepository _documentsRepository = DocumentsRepository();
 
   final _vetCrmvController = TextEditingController();
   final _vetCrmvStateController = TextEditingController(text: 'SP');
@@ -38,7 +42,9 @@ class _ProfilePageState extends State<ProfilePage> {
   final _contactPhoneController = TextEditingController();
 
   bool _isSaving = false;
+  bool _isSubmittingDocument = false;
   String? _loadedProfileKey;
+  Future<List<DocumentSummary>>? _documentsFuture;
   String? _feedbackMessage;
   bool _isFeedbackError = false;
 
@@ -66,6 +72,20 @@ class _ProfilePageState extends State<ProfilePage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _loadExistingProfileIfNeeded();
+    _loadDocumentsIfNeeded();
+  }
+
+  void _loadDocumentsIfNeeded() {
+    final session = AppSessionScope.of(context);
+    if (!session.isAuthenticated ||
+        session.accessToken == null ||
+        _documentsFuture != null) {
+      return;
+    }
+
+    _documentsFuture = _documentsRepository.fetchMine(
+      accessToken: session.accessToken!,
+    );
   }
 
   Future<void> _loadExistingProfileIfNeeded() async {
@@ -260,6 +280,62 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _submitDocument(_RequiredDocument document) async {
+    final session = AppSessionScope.of(context);
+    if (session.accessToken == null || _isSubmittingDocument) {
+      return;
+    }
+
+    final fileUrl = await showDialog<String>(
+      context: context,
+      builder: (context) => _DocumentUrlDialog(document: document),
+    );
+
+    if (fileUrl == null || fileUrl.trim().isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isSubmittingDocument = true;
+      _feedbackMessage = null;
+      _isFeedbackError = false;
+    });
+
+    try {
+      final message = await _documentsRepository.submitDocument(
+        accessToken: session.accessToken!,
+        ownerType: document.ownerType,
+        documentType: document.documentType,
+        fileUrl: fileUrl,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _feedbackMessage = message;
+        _isFeedbackError = false;
+        _documentsFuture = _documentsRepository.fetchMine(
+          accessToken: session.accessToken!,
+        );
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _feedbackMessage = error.message;
+        _isFeedbackError = true;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmittingDocument = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = AppSessionScope.of(context);
@@ -316,6 +392,24 @@ class _ProfilePageState extends State<ProfilePage> {
               isError: _isFeedbackError,
             ),
           if (_feedbackMessage != null) const SizedBox(height: 18),
+          _DocumentsValidationSection(
+            documentsFuture: _documentsFuture,
+            requiredDocuments: _requiredDocumentsForSession(session),
+            isSubmitting: _isSubmittingDocument,
+            onSubmit: _submitDocument,
+            onRefresh: () {
+              if (session.accessToken == null) {
+                return;
+              }
+
+              setState(() {
+                _documentsFuture = _documentsRepository.fetchMine(
+                  accessToken: session.accessToken!,
+                );
+              });
+            },
+          ),
+          const SizedBox(height: 18),
           if (session.roleValue == AppUserRole.veterinarian.apiValue)
             _VeterinarianForm(
               crmvController: _vetCrmvController,
@@ -357,6 +451,60 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+  }
+
+  List<_RequiredDocument> _requiredDocumentsForSession(
+    AppSessionController session,
+  ) {
+    if (session.roleValue == AppUserRole.veterinarian.apiValue) {
+      return const [
+        _RequiredDocument(
+          ownerType: 'USER',
+          documentType: 'PROFILE_PHOTO',
+          title: 'Foto de perfil',
+          description:
+              'Ajuda clinicas e hospitais a reconhecerem o profissional.',
+        ),
+        _RequiredDocument(
+          ownerType: 'USER',
+          documentType: 'CRMV_PROOF',
+          title: 'Comprovante CRMV',
+          description: 'Documento usado pelo admin para validar seu CRMV.',
+        ),
+      ];
+    }
+
+    if (session.roleValue == AppUserRole.intern.apiValue) {
+      return const [
+        _RequiredDocument(
+          ownerType: 'USER',
+          documentType: 'PROFILE_PHOTO',
+          title: 'Foto de perfil',
+          description:
+              'Ajuda instituicoes a identificarem o candidato com seguranca.',
+        ),
+        _RequiredDocument(
+          ownerType: 'USER',
+          documentType: 'ENROLLMENT_STATEMENT',
+          title: 'Declaracao de matricula',
+          description:
+              'Comprovante academico necessario para oportunidades de estagio.',
+        ),
+      ];
+    }
+
+    if (session.isInstitutionUser) {
+      return const [
+        _RequiredDocument(
+          ownerType: 'INSTITUTION',
+          documentType: 'CNPJ_PROOF',
+          title: 'Comprovante CNPJ',
+          description: 'Documento usado pelo admin para validar a instituicao.',
+        ),
+      ];
+    }
+
+    return const [];
   }
 }
 
@@ -439,6 +587,257 @@ class _SessionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DocumentsValidationSection extends StatelessWidget {
+  const _DocumentsValidationSection({
+    required this.documentsFuture,
+    required this.requiredDocuments,
+    required this.isSubmitting,
+    required this.onSubmit,
+    required this.onRefresh,
+  });
+
+  final Future<List<DocumentSummary>>? documentsFuture;
+  final List<_RequiredDocument> requiredDocuments;
+  final bool isSubmitting;
+  final ValueChanged<_RequiredDocument> onSubmit;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Documentos de validacao',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: onRefresh,
+                  icon: const Icon(Icons.refresh_rounded),
+                  tooltip: 'Atualizar documentos',
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'No MVP, informe uma URL do arquivo. Depois trocaremos por upload real no storage.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (documentsFuture == null)
+              const Text('Documentos ainda nao carregados.')
+            else
+              FutureBuilder<List<DocumentSummary>>(
+                future: documentsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const LinearProgressIndicator();
+                  }
+
+                  if (snapshot.hasError) {
+                    return const Text(
+                      'Nao foi possivel carregar os documentos agora.',
+                    );
+                  }
+
+                  final documents = snapshot.data ?? const <DocumentSummary>[];
+
+                  return Column(
+                    children: [
+                      for (final requiredDocument in requiredDocuments) ...[
+                        _RequiredDocumentTile(
+                          requiredDocument: requiredDocument,
+                          document: _latestDocumentFor(
+                            documents,
+                            requiredDocument.documentType,
+                          ),
+                          isSubmitting: isSubmitting,
+                          onSubmit: () => onSubmit(requiredDocument),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (requiredDocuments.isEmpty)
+                        const Text(
+                          'Este tipo de usuario nao possui documentos obrigatorios no MVP.',
+                        ),
+                    ],
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  DocumentSummary? _latestDocumentFor(
+    List<DocumentSummary> documents,
+    String documentType,
+  ) {
+    for (final document in documents) {
+      if (document.documentType == documentType) {
+        return document;
+      }
+    }
+
+    return null;
+  }
+}
+
+class _RequiredDocumentTile extends StatelessWidget {
+  const _RequiredDocumentTile({
+    required this.requiredDocument,
+    required this.document,
+    required this.isSubmitting,
+    required this.onSubmit,
+  });
+
+  final _RequiredDocument requiredDocument;
+  final DocumentSummary? document;
+  final bool isSubmitting;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final statusLabel = document?.statusLabel ?? 'Nao enviado';
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    requiredDocument.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                InfoBadge(label: statusLabel),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(requiredDocument.description),
+            if (document != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                'Enviado em ${document!.createdAtLabel}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (document!.rejectionReason.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Motivo: ${document!.rejectionReason}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: isSubmitting ? null : onSubmit,
+                icon: const Icon(Icons.upload_file_rounded),
+                label: Text(document == null
+                    ? 'Enviar documento'
+                    : 'Reenviar documento'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DocumentUrlDialog extends StatefulWidget {
+  const _DocumentUrlDialog({
+    required this.document,
+  });
+
+  final _RequiredDocument document;
+
+  @override
+  State<_DocumentUrlDialog> createState() => _DocumentUrlDialogState();
+}
+
+class _DocumentUrlDialogState extends State<_DocumentUrlDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.document.title),
+      content: TextField(
+        controller: _controller,
+        keyboardType: TextInputType.url,
+        decoration: const InputDecoration(
+          labelText: 'URL do documento',
+          hintText: 'https://exemplo.com/documento.pdf',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: const Text('Enviar'),
+        ),
+      ],
+    );
+  }
+}
+
+class _RequiredDocument {
+  const _RequiredDocument({
+    required this.ownerType,
+    required this.documentType,
+    required this.title,
+    required this.description,
+  });
+
+  final String ownerType;
+  final String documentType;
+  final String title;
+  final String description;
 }
 
 class _VeterinarianForm extends StatelessWidget {
