@@ -17,6 +17,13 @@ class AdminDocumentSummary {
   final String fileUrl;
   final String createdAtLabel;
 
+  bool get isImage {
+    final lowerUrl = fileUrl.toLowerCase();
+    return lowerUrl.endsWith('.jpg') ||
+        lowerUrl.endsWith('.jpeg') ||
+        lowerUrl.endsWith('.png');
+  }
+
   factory AdminDocumentSummary.fromJson(Map<String, dynamic> json) {
     final user = json['user'] as Map<String, dynamic>?;
     final institution = json['institution'] as Map<String, dynamic>?;

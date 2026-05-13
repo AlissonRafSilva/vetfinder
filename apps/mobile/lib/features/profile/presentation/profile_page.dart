@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/session/app_session_controller.dart';
@@ -43,6 +44,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   bool _isSaving = false;
   bool _isSubmittingDocument = false;
+  bool _isRefreshingSession = false;
   String? _loadedProfileKey;
   Future<List<DocumentSummary>>? _documentsFuture;
   String? _feedbackMessage;
@@ -73,6 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
     super.didChangeDependencies();
     _loadExistingProfileIfNeeded();
     _loadDocumentsIfNeeded();
+    _refreshSessionIfNeeded();
   }
 
   void _loadDocumentsIfNeeded() {
@@ -86,6 +89,62 @@ class _ProfilePageState extends State<ProfilePage> {
     _documentsFuture = _documentsRepository.fetchMine(
       accessToken: session.accessToken!,
     );
+  }
+
+  Future<void> _refreshSessionIfNeeded() async {
+    final session = AppSessionScope.of(context);
+    if (!session.isAuthenticated || _isRefreshingSession) {
+      return;
+    }
+
+    _isRefreshingSession = true;
+    try {
+      await session.refreshCurrentUser();
+    } on ApiException {
+      // Mantem a sessao atual se a API estiver indisponivel.
+    } finally {
+      _isRefreshingSession = false;
+    }
+  }
+
+  Future<void> _refreshSessionManually() async {
+    final session = AppSessionScope.of(context);
+    if (!session.isAuthenticated || _isRefreshingSession) {
+      return;
+    }
+
+    setState(() {
+      _isRefreshingSession = true;
+      _feedbackMessage = null;
+      _isFeedbackError = false;
+    });
+
+    try {
+      await session.refreshCurrentUser();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _feedbackMessage = 'Status da conta atualizado.';
+        _isFeedbackError = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _feedbackMessage = error.message;
+        _isFeedbackError = true;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshingSession = false);
+      } else {
+        _isRefreshingSession = false;
+      }
+    }
   }
 
   Future<void> _loadExistingProfileIfNeeded() async {
@@ -286,12 +345,22 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    final fileUrl = await showDialog<String>(
-      context: context,
-      builder: (context) => _DocumentUrlDialog(document: document),
+    final pickedFile = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png'],
+      withData: true,
     );
 
-    if (fileUrl == null || fileUrl.trim().isEmpty) {
+    if (pickedFile == null || pickedFile.files.isEmpty) {
+      return;
+    }
+
+    final file = pickedFile.files.single;
+    if (file.size > 8 * 1024 * 1024) {
+      setState(() {
+        _feedbackMessage = 'Envie um arquivo de ate 8 MB.';
+        _isFeedbackError = true;
+      });
       return;
     }
 
@@ -302,11 +371,11 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
-      final message = await _documentsRepository.submitDocument(
+      final message = await _documentsRepository.uploadDocument(
         accessToken: session.accessToken!,
         ownerType: document.ownerType,
         documentType: document.documentType,
-        fileUrl: fileUrl,
+        file: file,
       );
 
       if (!mounted) {
@@ -381,6 +450,8 @@ class _ProfilePageState extends State<ProfilePage> {
           _SessionCard(
             isInstitution: isInstitution,
             onLogout: session.logout,
+            onRefreshStatus: _refreshSessionManually,
+            isRefreshingStatus: _isRefreshingSession,
             email: session.email,
             roleValue: session.roleValue,
             status: session.status,
@@ -518,6 +589,8 @@ class _SessionCard extends StatelessWidget {
   const _SessionCard({
     required this.isInstitution,
     required this.onLogout,
+    required this.onRefreshStatus,
+    required this.isRefreshingStatus,
     required this.email,
     required this.roleValue,
     required this.status,
@@ -525,6 +598,8 @@ class _SessionCard extends StatelessWidget {
 
   final bool isInstitution;
   final VoidCallback onLogout;
+  final VoidCallback onRefreshStatus;
+  final bool isRefreshingStatus;
   final String? email;
   final String? roleValue;
   final String? status;
@@ -578,6 +653,13 @@ class _SessionCard extends StatelessWidget {
               spacing: 10,
               runSpacing: 10,
               children: [
+                OutlinedButton.icon(
+                  onPressed: isRefreshingStatus ? null : onRefreshStatus,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(
+                    isRefreshingStatus ? 'Atualizando...' : 'Atualizar status',
+                  ),
+                ),
                 InfoBadge(label: roleValue ?? 'Perfil'),
                 InfoBadge(label: status ?? 'Status'),
                 const InfoBadge(label: 'JWT ativo'),
@@ -740,7 +822,7 @@ class _DocumentsValidationSection extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'No MVP, informe uma URL do arquivo. Depois trocaremos por upload real no storage.',
+              'Envie arquivos em PDF, JPG ou PNG com ate 8 MB para revisao do admin.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -883,52 +965,6 @@ class _RequiredDocumentTile extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _DocumentUrlDialog extends StatefulWidget {
-  const _DocumentUrlDialog({
-    required this.document,
-  });
-
-  final _RequiredDocument document;
-
-  @override
-  State<_DocumentUrlDialog> createState() => _DocumentUrlDialogState();
-}
-
-class _DocumentUrlDialogState extends State<_DocumentUrlDialog> {
-  final TextEditingController _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.document.title),
-      content: TextField(
-        controller: _controller,
-        keyboardType: TextInputType.url,
-        decoration: const InputDecoration(
-          labelText: 'URL do documento',
-          hintText: 'https://exemplo.com/documento.pdf',
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(_controller.text),
-          child: const Text('Enviar'),
-        ),
-      ],
     );
   }
 }

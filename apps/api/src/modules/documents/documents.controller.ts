@@ -1,4 +1,18 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UserRole, VerificationStatus } from '@prisma/client';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -7,6 +21,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { CreateDocumentUploadDto } from './dto/create-document-upload.dto';
 import { ReviewDocumentDto } from './dto/review-document.dto';
+import { UploadDocumentDto } from './dto/upload-document.dto';
 import { DocumentsService } from './documents.service';
 
 @Controller('documents')
@@ -17,6 +32,29 @@ export class DocumentsController {
   @Post()
   create(@Body() dto: CreateDocumentDto, @CurrentUser() user: AuthenticatedUser) {
     return this.documentsService.create(dto, user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 8 * 1024 * 1024,
+      },
+    }),
+  )
+  upload(
+    @Body() dto: UploadDocumentDto,
+    @UploadedFile() file: any,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: any,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Envie um arquivo para validacao.');
+    }
+
+    const baseUrl = `${request.protocol}://${request.get('host')}`;
+    return this.documentsService.createFromUpload(dto, file, user, baseUrl);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -75,6 +75,21 @@ class AppSessionController extends ChangeNotifier {
     return _currentSession!;
   }
 
+  Future<void> refreshCurrentUser() async {
+    final currentSession = _currentSession;
+    final token = currentSession?.accessToken;
+
+    if (currentSession == null || token == null || token.isEmpty) {
+      return;
+    }
+
+    _currentSession = await _authRepository.fetchCurrentUser(
+      accessToken: token,
+      currentSession: currentSession,
+    );
+    notifyListeners();
+  }
+
   void logout() {
     _currentSession = null;
     notifyListeners();

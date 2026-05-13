@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/session/app_session_scope.dart';
@@ -212,10 +213,31 @@ class _DocumentReviewCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            SelectableText(
-              document.fileUrl,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.primary,
+            if (document.isImage) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  document.fileUrl,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _DocumentPreviewFallback(fileUrl: document.fileUrl);
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+            ] else
+              _DocumentPreviewFallback(fileUrl: document.fileUrl),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: document.fileUrl.isEmpty
+                    ? null
+                    : () => _openDocument(context, document.fileUrl),
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: const Text('Abrir documento'),
               ),
             ),
             const SizedBox(height: 16),
@@ -240,6 +262,66 @@ class _DocumentReviewCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _openDocument(BuildContext context, String fileUrl) async {
+    final uri = Uri.tryParse(fileUrl);
+    if (uri == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('URL do documento invalida.')),
+      );
+      return;
+    }
+
+    final opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nao foi possivel abrir o documento.')),
+      );
+    }
+  }
+}
+
+class _DocumentPreviewFallback extends StatelessWidget {
+  const _DocumentPreviewFallback({
+    required this.fileUrl,
+  });
+
+  final String fileUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.description_outlined,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: SelectableText(
+              fileUrl.isEmpty ? 'Arquivo sem URL registrada.' : fileUrl,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -10,6 +10,7 @@ build/
 .env.local
 .env.*.local
 coverage/
+uploads/
+apps/api/uploads/
 .DS_Store
 *.log
-

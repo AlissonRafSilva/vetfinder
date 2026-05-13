@@ -6,6 +6,7 @@ import { AuthenticatedUser } from '../auth/current-user.decorator';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { CreateDocumentUploadDto } from './dto/create-document-upload.dto';
 import { ReviewDocumentDto } from './dto/review-document.dto';
+import { UploadDocumentDto } from './dto/upload-document.dto';
 
 @Injectable()
 export class DocumentsService {
@@ -31,6 +32,34 @@ export class DocumentsService {
 
     return {
       message: 'Documento registrado com sucesso.',
+      document,
+    };
+  }
+
+  async createFromUpload(
+    dto: UploadDocumentDto,
+    file: { originalname?: string; mimetype?: string; buffer?: Buffer },
+    user: AuthenticatedUser,
+    baseUrl: string,
+  ) {
+    this.validateUploadedDocument(file);
+
+    const owner = await this.resolveDocumentOwner(dto.ownerType, user);
+    const storedFile = await this.storageService.saveUploadedDocument(file);
+    const document = await this.prisma.document.create({
+      data: {
+        ownerType: dto.ownerType,
+        userId: owner.userId,
+        institutionId: owner.institutionId,
+        documentType: dto.documentType,
+        fileUrl: `${baseUrl}${storedFile.publicPath}`,
+        mimeType: storedFile.mimeType,
+        status: VerificationStatus.PENDING,
+      },
+    });
+
+    return {
+      message: 'Documento enviado com sucesso.',
       document,
     };
   }
@@ -107,6 +136,33 @@ export class DocumentsService {
       folder: `institutions/${dto.institutionId}/documents/${dto.documentType.toLowerCase()}`,
       fileName: dto.fileName,
     });
+  }
+
+  private validateUploadedDocument(file: {
+    originalname?: string;
+    mimetype?: string;
+    buffer?: Buffer;
+  }) {
+    if (!file.buffer || file.buffer.length === 0) {
+      throw new BadRequestException('Arquivo enviado sem conteudo.');
+    }
+
+    const allowedMimeTypes = new Set(['application/pdf', 'image/jpeg', 'image/png']);
+    const fileName = file.originalname?.toLowerCase() ?? '';
+    const hasAllowedExtension =
+      fileName.endsWith('.pdf') ||
+      fileName.endsWith('.jpg') ||
+      fileName.endsWith('.jpeg') ||
+      fileName.endsWith('.png');
+
+    if (
+      (!file.mimetype || !allowedMimeTypes.has(file.mimetype)) &&
+      !hasAllowedExtension
+    ) {
+      throw new BadRequestException(
+        'Formato invalido. Envie PDF, JPG ou PNG.',
+      );
+    }
   }
 
   private async resolveDocumentOwner(

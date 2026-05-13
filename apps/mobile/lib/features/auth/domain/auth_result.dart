@@ -42,4 +42,19 @@ class AuthResult {
       status: user?['status']?.toString(),
     );
   }
+
+  factory AuthResult.fromUserJson(
+    Map<String, dynamic> json, {
+    required AuthResult currentSession,
+  }) {
+    return AuthResult(
+      message: currentSession.message,
+      accessToken: currentSession.accessToken,
+      refreshToken: currentSession.refreshToken,
+      userId: json['id']?.toString() ?? currentSession.userId,
+      email: json['email']?.toString() ?? currentSession.email,
+      role: json['role']?.toString() ?? currentSession.role,
+      status: json['status']?.toString() ?? currentSession.status,
+    );
+  }
 }

@@ -42,4 +42,19 @@ class AuthRepository {
 
     return AuthResult.fromLoginJson(response);
   }
+
+  Future<AuthResult> fetchCurrentUser({
+    required String accessToken,
+    required AuthResult currentSession,
+  }) async {
+    final response = await _apiClient.getJsonWithToken(
+      '/users/me',
+      accessToken: accessToken,
+    );
+
+    return AuthResult.fromUserJson(
+      response,
+      currentSession: currentSession,
+    );
+  }
 }
