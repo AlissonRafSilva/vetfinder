@@ -223,6 +223,7 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
         selectedWeekday: _selectedWeekday,
         startTimeController: _startTimeController,
         endTimeController: _endTimeController,
+        accountStatus: session.status,
         professionalsFuture: _professionalsFuture,
         onInvite: _inviteProfessional,
         onWeekdayChanged: (value) {
@@ -241,6 +242,7 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
       opportunitiesFuture: _future,
       onRetry: _reload,
       audience: _audienceForCurrentSession(),
+      accountStatus: session.isAuthenticated ? session.status : null,
     );
   }
 }
@@ -250,6 +252,7 @@ class _AvailableProfessionalsPage extends StatelessWidget {
     required this.selectedWeekday,
     required this.startTimeController,
     required this.endTimeController,
+    required this.accountStatus,
     required this.professionalsFuture,
     required this.onInvite,
     required this.onWeekdayChanged,
@@ -259,6 +262,7 @@ class _AvailableProfessionalsPage extends StatelessWidget {
   final int selectedWeekday;
   final TextEditingController startTimeController;
   final TextEditingController endTimeController;
+  final String? accountStatus;
   final Future<List<AvailableProfessionalSummary>>? professionalsFuture;
   final ValueChanged<AvailableProfessionalSummary> onInvite;
   final ValueChanged<int> onWeekdayChanged;
@@ -279,6 +283,14 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                 'Clinicas e hospitais veem apenas profissionais com agenda livre. As vagas de outras instituicoes nao aparecem aqui.',
           ),
           const SizedBox(height: 18),
+          if (accountStatus != 'ACTIVE') ...[
+            const _VerificationNoticeCard(
+              title: 'Instituicao aguardando validacao',
+              message:
+                  'A busca continua visivel, mas convites e fechamento de plantoes podem ser bloqueados ate o CNPJ ser aprovado no admin.',
+            ),
+            const SizedBox(height: 18),
+          ],
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -620,11 +632,13 @@ class _OpportunitiesBody extends StatelessWidget {
     required this.opportunitiesFuture,
     required this.onRetry,
     required this.audience,
+    required this.accountStatus,
   });
 
   final Future<List<OpportunitySummary>> opportunitiesFuture;
   final VoidCallback onRetry;
   final String? audience;
+  final String? accountStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -662,6 +676,17 @@ class _OpportunitiesBody extends StatelessWidget {
                     const InfoBadge(label: 'Perfil validado'),
                   ],
                 ),
+                if (accountStatus != null && accountStatus != 'ACTIVE') ...[
+                  const SizedBox(height: 16),
+                  _VerificationNoticeCard(
+                    title: isIntern
+                        ? 'Estagio pode exigir validacao'
+                        : 'Plantao pode exigir validacao',
+                    message: isIntern
+                        ? 'Envie foto e declaracao de matricula no Perfil. Vagas que exigem validacao podem bloquear candidatura ate aprovacao.'
+                        : 'Envie foto e comprovante CRMV no Perfil. Vagas que exigem validacao podem bloquear candidatura ate aprovacao.',
+                  ),
+                ],
               ],
             ),
           ),
@@ -705,6 +730,52 @@ class _OpportunitiesBody extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _VerificationNoticeCard extends StatelessWidget {
+  const _VerificationNoticeCard({
+    required this.title,
+    required this.message,
+  });
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.verified_user_outlined,
+              color: theme.colorScheme.tertiary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(message),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

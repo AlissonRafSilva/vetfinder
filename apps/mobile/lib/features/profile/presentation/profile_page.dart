@@ -386,6 +386,12 @@ class _ProfilePageState extends State<ProfilePage> {
             status: session.status,
           ),
           const SizedBox(height: 18),
+          _ValidationGuidanceCard(
+            isInstitution: isInstitution,
+            roleValue: session.roleValue,
+            status: session.status,
+          ),
+          const SizedBox(height: 18),
           if (_feedbackMessage != null)
             _FeedbackCard(
               message: _feedbackMessage!,
@@ -586,6 +592,107 @@ class _SessionCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ValidationGuidanceCard extends StatelessWidget {
+  const _ValidationGuidanceCard({
+    required this.isInstitution,
+    required this.roleValue,
+    required this.status,
+  });
+
+  final bool isInstitution;
+  final String? roleValue;
+  final String? status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isApproved = status == 'ACTIVE';
+    final color =
+        isApproved ? theme.colorScheme.primary : theme.colorScheme.tertiary;
+    final title =
+        isApproved ? 'Cadastro validado' : 'Cadastro aguardando validacao';
+    final message = isApproved
+        ? 'Seu perfil esta liberado para usar os fluxos principais do marketplace.'
+        : _pendingMessage();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              backgroundColor: color.withValues(alpha: 0.12),
+              child: Icon(
+                isApproved
+                    ? Icons.verified_rounded
+                    : Icons.hourglass_top_rounded,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      InfoBadge(label: _statusLabel(status)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(message),
+                  if (!isApproved) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      'Depois que o admin aprovar os documentos, faca login novamente para atualizar a liberacao da conta.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _pendingMessage() {
+    if (isInstitution) {
+      return 'Envie o comprovante de CNPJ. Enquanto a instituicao nao for aprovada, publicar vagas e fechar plantoes pode ser bloqueado.';
+    }
+
+    if (roleValue == AppUserRole.intern.apiValue) {
+      return 'Envie a foto de perfil e a declaracao de matricula para liberar oportunidades de estagio que exigem perfil validado.';
+    }
+
+    return 'Envie a foto de perfil e o comprovante CRMV para liberar vagas que exigem profissional validado.';
+  }
+
+  String _statusLabel(String? value) {
+    if (value == 'ACTIVE') {
+      return 'Aprovado';
+    }
+
+    if (value == 'BLOCKED') {
+      return 'Bloqueado';
+    }
+
+    return 'Pendente';
   }
 }
 

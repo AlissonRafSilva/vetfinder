@@ -268,6 +268,10 @@ class _InstitutionOpportunitiesPageState
                 'Publique novas vagas, acompanhe as abertas da sua instituicao e veja o retorno dos convites enviados.',
           ),
           const SizedBox(height: 18),
+          if (session.status != 'ACTIVE') ...[
+            const _InstitutionVerificationNotice(),
+            const SizedBox(height: 18),
+          ],
           Row(
             children: [
               const Expanded(
@@ -377,6 +381,48 @@ class _InstitutionOpportunitiesPageState
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _InstitutionVerificationNotice extends StatelessWidget {
+  const _InstitutionVerificationNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.domain_verification_outlined,
+              color: theme.colorScheme.tertiary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'CNPJ aguardando aprovacao',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Complete o perfil institucional e envie o comprovante de CNPJ. Publicar vagas e fechar plantoes pode ser bloqueado ate a aprovacao no admin.',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
