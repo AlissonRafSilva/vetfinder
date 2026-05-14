@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/session/app_session_scope.dart';
+import '../../auth/presentation/auth_gate_page.dart';
 import 'admin_shell_page.dart';
 import 'institution_shell_page.dart';
 import 'professional_shell_page.dart';
@@ -11,6 +12,16 @@ class AppShellPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = AppSessionScope.of(context);
+
+    if (!session.isAuthenticated) {
+      return const Scaffold(
+        body: SafeArea(
+          child: AuthGatePage(
+            key: ValueKey('guest-auth-gate'),
+          ),
+        ),
+      );
+    }
 
     if (session.roleValue == 'ADMIN') {
       return const AdminShellPage(

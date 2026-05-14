@@ -24,6 +24,7 @@ class _SchedulePageState extends State<SchedulePage> {
   Future<List<InviteSummary>>? _invitesFuture;
   Future<List<AvailabilitySlotModel>>? _availabilityFuture;
   bool _isSavingAvailability = false;
+  String? _loadedSessionKey;
   final Set<String> _respondingInviteIds = {};
 
   @override
@@ -34,14 +35,25 @@ class _SchedulePageState extends State<SchedulePage> {
 
   void _refreshFromSession() {
     final session = AppSessionScope.of(context);
+    final sessionKey = '${session.userId}:${session.accessToken}';
+
     if (!session.isAuthenticated || !session.canApplyToOpportunities) {
       _applicationsFuture = null;
       _invitesFuture = null;
       _availabilityFuture = null;
       _editableSlots.clear();
+      _loadedSessionKey = null;
       return;
     }
 
+    if (_loadedSessionKey == sessionKey &&
+        _applicationsFuture != null &&
+        _invitesFuture != null &&
+        _availabilityFuture != null) {
+      return;
+    }
+
+    _loadedSessionKey = sessionKey;
     _applicationsFuture = _applicationsRepository.fetchMyApplications(
       accessToken: session.accessToken!,
     );
@@ -59,7 +71,10 @@ class _SchedulePageState extends State<SchedulePage> {
   }
 
   void _reload() {
-    setState(_refreshFromSession);
+    setState(() {
+      _loadedSessionKey = null;
+      _refreshFromSession();
+    });
   }
 
   Future<void> _respondInvite({

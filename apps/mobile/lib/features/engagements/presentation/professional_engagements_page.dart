@@ -19,6 +19,7 @@ class _ProfessionalEngagementsPageState
     extends State<ProfessionalEngagementsPage> {
   final EngagementsRepository _engagementsRepository = EngagementsRepository();
   Future<List<EngagementSummary>>? _engagementsFuture;
+  String? _loadedSessionKey;
 
   @override
   void didChangeDependencies() {
@@ -28,14 +29,29 @@ class _ProfessionalEngagementsPageState
 
   void _refresh() {
     final session = AppSessionScope.of(context);
+    final sessionKey = '${session.userId}:${session.accessToken}';
+
     if (!session.isAuthenticated || !session.canApplyToOpportunities) {
       _engagementsFuture = null;
+      _loadedSessionKey = null;
       return;
     }
 
+    if (_loadedSessionKey == sessionKey && _engagementsFuture != null) {
+      return;
+    }
+
+    _loadedSessionKey = sessionKey;
     _engagementsFuture = _engagementsRepository.fetchMyProfessionalEngagements(
       accessToken: session.accessToken!,
     );
+  }
+
+  void _forceRefresh() {
+    setState(() {
+      _loadedSessionKey = null;
+      _refresh();
+    });
   }
 
   Future<void> _openDetail(EngagementSummary item) async {
@@ -49,7 +65,7 @@ class _ProfessionalEngagementsPageState
     );
 
     if (shouldRefresh == true && mounted) {
-      setState(_refresh);
+      _forceRefresh();
     }
   }
 
@@ -129,7 +145,7 @@ class _ProfessionalEngagementsPageState
           Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton.icon(
-              onPressed: () => setState(_refresh),
+              onPressed: _forceRefresh,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Atualizar contratos'),
             ),
@@ -162,7 +178,7 @@ class _ProfessionalEngagementsPageState
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: () => setState(_refresh),
+                          onPressed: _forceRefresh,
                           child: const Text('Atualizar'),
                         ),
                       ],
@@ -189,7 +205,7 @@ class _ProfessionalEngagementsPageState
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: () => setState(_refresh),
+                          onPressed: _forceRefresh,
                           child: const Text('Atualizar'),
                         ),
                       ],

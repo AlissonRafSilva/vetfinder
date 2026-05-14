@@ -19,6 +19,7 @@ class _InstitutionEngagementsPageState
     extends State<InstitutionEngagementsPage> {
   final EngagementsRepository _engagementsRepository = EngagementsRepository();
   Future<List<EngagementSummary>>? _engagementsFuture;
+  String? _loadedSessionKey;
 
   @override
   void didChangeDependencies() {
@@ -28,14 +29,29 @@ class _InstitutionEngagementsPageState
 
   void _refresh() {
     final session = AppSessionScope.of(context);
+    final sessionKey = '${session.userId}:${session.accessToken}';
+
     if (!session.isAuthenticated || !session.isInstitutionUser) {
       _engagementsFuture = null;
+      _loadedSessionKey = null;
       return;
     }
 
+    if (_loadedSessionKey == sessionKey && _engagementsFuture != null) {
+      return;
+    }
+
+    _loadedSessionKey = sessionKey;
     _engagementsFuture = _engagementsRepository.fetchMyInstitutionEngagements(
       accessToken: session.accessToken!,
     );
+  }
+
+  void _forceRefresh() {
+    setState(() {
+      _loadedSessionKey = null;
+      _refresh();
+    });
   }
 
   Future<void> _openDetail(EngagementSummary item) async {
@@ -49,7 +65,7 @@ class _InstitutionEngagementsPageState
     );
 
     if (shouldRefresh == true && mounted) {
-      setState(_refresh);
+      _forceRefresh();
     }
   }
 
@@ -130,7 +146,7 @@ class _InstitutionEngagementsPageState
           Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton.icon(
-              onPressed: () => setState(_refresh),
+              onPressed: _forceRefresh,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Atualizar contratacoes'),
             ),
@@ -163,7 +179,7 @@ class _InstitutionEngagementsPageState
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: () => setState(_refresh),
+                          onPressed: _forceRefresh,
                           child: const Text('Atualizar'),
                         ),
                       ],
@@ -190,7 +206,7 @@ class _InstitutionEngagementsPageState
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: () => setState(_refresh),
+                          onPressed: _forceRefresh,
                           child: const Text('Atualizar'),
                         ),
                       ],
