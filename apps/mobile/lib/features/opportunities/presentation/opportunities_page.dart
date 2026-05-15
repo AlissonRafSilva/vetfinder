@@ -32,8 +32,15 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
   String? _lastAudience;
   String? _loadedProfessionalsSearchKey;
   int? _selectedWeekday;
+  String _professionalTypeFilter = 'ALL';
+  bool _verifiedOnly = false;
+  int? _maxDistanceKm;
   final TextEditingController _startTimeController = TextEditingController();
   final TextEditingController _endTimeController = TextEditingController();
+  final TextEditingController _originLatController = TextEditingController();
+  final TextEditingController _originLngController = TextEditingController();
+  final TextEditingController _specialtyFilterController =
+      TextEditingController();
 
   @override
   void initState() {
@@ -80,6 +87,9 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
   void dispose() {
     _startTimeController.dispose();
     _endTimeController.dispose();
+    _originLatController.dispose();
+    _originLngController.dispose();
+    _specialtyFilterController.dispose();
     super.dispose();
   }
 
@@ -98,6 +108,9 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
       _selectedWeekday?.toString() ?? 'any',
       _startTimeController.text,
       _endTimeController.text,
+      _originLatController.text,
+      _originLngController.text,
+      _maxDistanceKm?.toString() ?? 'any',
     ].join(':');
 
     if (_loadedProfessionalsSearchKey == searchKey &&
@@ -112,6 +125,9 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
       weekday: _selectedWeekday,
       startTime: _startTimeController.text,
       endTime: _endTimeController.text,
+      originLat: _originLatController.text.trim(),
+      originLng: _originLngController.text.trim(),
+      maxDistanceKm: _maxDistanceKm,
     );
     _myOpportunitiesFuture = _repository.fetchMyInstitutionOpportunities(
       accessToken: session.accessToken!,
@@ -239,8 +255,14 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
         selectedWeekday: _selectedWeekday,
         startTimeController: _startTimeController,
         endTimeController: _endTimeController,
+        originLatController: _originLatController,
+        originLngController: _originLngController,
         accountStatus: session.status,
         professionalsFuture: _professionalsFuture,
+        professionalTypeFilter: _professionalTypeFilter,
+        verifiedOnly: _verifiedOnly,
+        maxDistanceKm: _maxDistanceKm,
+        specialtyFilterController: _specialtyFilterController,
         onInvite: _inviteProfessional,
         onWeekdayChanged: (value) {
           setState(() {
@@ -248,6 +270,22 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
             _loadedProfessionalsSearchKey = null;
             _loadProfessionalsIfNeeded();
           });
+        },
+        onProfessionalTypeFilterChanged: (value) {
+          setState(() => _professionalTypeFilter = value);
+        },
+        onVerifiedOnlyChanged: (value) {
+          setState(() => _verifiedOnly = value);
+        },
+        onMaxDistanceChanged: (value) {
+          setState(() {
+            _maxDistanceKm = value;
+            _loadedProfessionalsSearchKey = null;
+            _loadProfessionalsIfNeeded();
+          });
+        },
+        onLocalFiltersChanged: () {
+          setState(() {});
         },
         onSearch: () {
           setState(() {
@@ -272,20 +310,40 @@ class _AvailableProfessionalsPage extends StatelessWidget {
     required this.selectedWeekday,
     required this.startTimeController,
     required this.endTimeController,
+    required this.originLatController,
+    required this.originLngController,
     required this.accountStatus,
     required this.professionalsFuture,
+    required this.professionalTypeFilter,
+    required this.verifiedOnly,
+    required this.maxDistanceKm,
+    required this.specialtyFilterController,
     required this.onInvite,
     required this.onWeekdayChanged,
+    required this.onProfessionalTypeFilterChanged,
+    required this.onVerifiedOnlyChanged,
+    required this.onMaxDistanceChanged,
+    required this.onLocalFiltersChanged,
     required this.onSearch,
   });
 
   final int? selectedWeekday;
   final TextEditingController startTimeController;
   final TextEditingController endTimeController;
+  final TextEditingController originLatController;
+  final TextEditingController originLngController;
   final String? accountStatus;
   final Future<List<AvailableProfessionalSummary>>? professionalsFuture;
+  final String professionalTypeFilter;
+  final bool verifiedOnly;
+  final int? maxDistanceKm;
+  final TextEditingController specialtyFilterController;
   final ValueChanged<AvailableProfessionalSummary> onInvite;
   final ValueChanged<int?> onWeekdayChanged;
+  final ValueChanged<String> onProfessionalTypeFilterChanged;
+  final ValueChanged<bool> onVerifiedOnlyChanged;
+  final ValueChanged<int?> onMaxDistanceChanged;
+  final VoidCallback onLocalFiltersChanged;
   final VoidCallback onSearch;
 
   @override
@@ -368,6 +426,103 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: professionalTypeFilter,
+                    decoration: const InputDecoration(
+                      labelText: 'Tipo de profissional',
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'ALL',
+                        child: Text('Todos'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'VETERINARIAN',
+                        child: Text('Veterinarios'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'INTERN',
+                        child: Text('Estagiarios'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        onProfessionalTypeFilterChanged(value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: specialtyFilterController,
+                    decoration: const InputDecoration(
+                      labelText: 'Especialidade',
+                      hintText: 'Ex.: emergencia, estagio, clinica geral',
+                    ),
+                    onChanged: (_) => onLocalFiltersChanged(),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: originLatController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                            signed: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Latitude da origem',
+                            hintText: '-23.56',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: originLngController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                            signed: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Longitude da origem',
+                            hintText: '-46.65',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int?>(
+                    initialValue: maxDistanceKm,
+                    decoration: const InputDecoration(
+                      labelText: 'Distancia maxima',
+                    ),
+                    items: const [
+                      DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('Sem limite'),
+                      ),
+                      DropdownMenuItem(value: 5, child: Text('Ate 5 km')),
+                      DropdownMenuItem(value: 10, child: Text('Ate 10 km')),
+                      DropdownMenuItem(value: 25, child: Text('Ate 25 km')),
+                      DropdownMenuItem(value: 50, child: Text('Ate 50 km')),
+                    ],
+                    onChanged: onMaxDistanceChanged,
+                  ),
+                  const SizedBox(height: 8),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: verifiedOnly,
+                    onChanged: (value) {
+                      onVerifiedOnlyChanged(value ?? false);
+                    },
+                    title: const Text('Somente perfil verificado'),
+                    subtitle: const Text(
+                      'Mostra apenas profissionais com documentos aprovados.',
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
@@ -402,14 +557,15 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                 );
               }
 
-              final items =
-                  snapshot.data ?? const <AvailableProfessionalSummary>[];
+              final items = _filterProfessionals(
+                snapshot.data ?? const <AvailableProfessionalSummary>[],
+              );
               if (items.isEmpty) {
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(20),
                     child: Text(
-                      'Nenhum profissional disponivel foi encontrado para esse horario.',
+                      'Nenhum profissional foi encontrado para os filtros selecionados.',
                     ),
                   ),
                 );
@@ -441,6 +597,30 @@ class _AvailableProfessionalsPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<AvailableProfessionalSummary> _filterProfessionals(
+    List<AvailableProfessionalSummary> items,
+  ) {
+    return items.where((item) {
+      if (professionalTypeFilter != 'ALL' &&
+          item.roleValue != professionalTypeFilter) {
+        return false;
+      }
+
+      if (verifiedOnly && !item.isVerified) {
+        return false;
+      }
+
+      final specialtyFilter =
+          specialtyFilterController.text.trim().toLowerCase();
+      if (specialtyFilter.isEmpty) {
+        return true;
+      }
+
+      return item.specialtyLabel.toLowerCase().contains(specialtyFilter) ||
+          item.roleLabel.toLowerCase().contains(specialtyFilter);
+    }).toList();
   }
 
   static String _weekdayLabel(int weekday) {

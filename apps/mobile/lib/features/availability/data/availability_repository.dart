@@ -55,11 +55,17 @@ class AvailabilityRepository {
     int? weekday,
     String? startTime,
     String? endTime,
+    String? originLat,
+    String? originLng,
+    int? maxDistanceKm,
   }) async {
     final queryParameters = <String, String>{
       if (weekday != null) 'weekday': weekday.toString(),
       if (startTime != null && startTime.isNotEmpty) 'startTime': startTime,
       if (endTime != null && endTime.isNotEmpty) 'endTime': endTime,
+      if (originLat != null && originLat.isNotEmpty) 'originLat': originLat,
+      if (originLng != null && originLng.isNotEmpty) 'originLng': originLng,
+      if (maxDistanceKm != null) 'maxDistanceKm': maxDistanceKm.toString(),
     };
 
     final path = Uri(

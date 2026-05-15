@@ -85,7 +85,7 @@ export class AvailabilityService {
         availabilitySlots: {
           some: {
             availabilityType: AvailabilityType.RECURRING,
-            weekday: query.weekday,
+            weekday: query.weekday ?? undefined,
             startTime: query.startTime
               ? {
                   lte: query.startTime,
@@ -103,13 +103,17 @@ export class AvailabilityService {
         id: true,
         email: true,
         role: true,
-        profile: true,
+        profile: {
+          include: {
+            address: true,
+          },
+        },
         veterinarianProfile: true,
         internProfile: true,
         availabilitySlots: {
           where: {
             availabilityType: AvailabilityType.RECURRING,
-            weekday: query.weekday,
+            weekday: query.weekday ?? undefined,
           },
           orderBy: {
             startTime: 'asc',
@@ -124,9 +128,61 @@ export class AvailabilityService {
       take: 50,
     });
 
-    return professionals.sort((left, right) => {
-      return this.professionalSearchScore(right) - this.professionalSearchScore(left);
-    });
+    return professionals
+      .map((professional) => ({
+        ...professional,
+        distanceKm: this.calculateDistanceKm(query, professional.profile?.address),
+      }))
+      .filter((professional) => {
+        if (!query.maxDistanceKm || professional.distanceKm == null) {
+          return true;
+        }
+
+        return professional.distanceKm <= query.maxDistanceKm;
+      })
+      .sort((left, right) => {
+        const distanceDelta = (left.distanceKm ?? Number.MAX_SAFE_INTEGER) -
+          (right.distanceKm ?? Number.MAX_SAFE_INTEGER);
+        if (query.originLat != null && query.originLng != null && distanceDelta !== 0) {
+          return distanceDelta;
+        }
+
+        return this.professionalSearchScore(right) - this.professionalSearchScore(left);
+      });
+  }
+
+  private calculateDistanceKm(
+    query: SearchAvailableProfessionalsDto,
+    address?: { lat: unknown; lng: unknown } | null,
+  ) {
+    if (query.originLat == null || query.originLng == null || !address?.lat || !address?.lng) {
+      return null;
+    }
+
+    const lat = Number(address.lat);
+    const lng = Number(address.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return null;
+    }
+
+    const earthRadiusKm = 6371;
+    const dLat = this.toRadians(lat - query.originLat);
+    const dLng = this.toRadians(lng - query.originLng);
+    const originLatRad = this.toRadians(query.originLat);
+    const destinationLatRad = this.toRadians(lat);
+    const haversine =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(originLatRad) *
+        Math.cos(destinationLatRad) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const centralAngle = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+
+    return Math.round(earthRadiusKm * centralAngle * 10) / 10;
+  }
+
+  private toRadians(value: number) {
+    return (value * Math.PI) / 180;
   }
 
   private professionalSearchScore(professional: {

@@ -1,5 +1,6 @@
 import { InstitutionType, VerificationStatus } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CreateInstitutionDto {
   @IsEnum(InstitutionType)
@@ -36,6 +37,26 @@ export class CreateInstitutionDto {
   @IsOptional()
   @IsUUID()
   addressId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2)
+  state?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  lat?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  lng?: number;
 
   @IsOptional()
   @IsEnum(VerificationStatus)

@@ -16,7 +16,13 @@ export class ProfessionalsService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: currentUser.userId },
-      select: { id: true, role: true, veterinarianProfile: { select: { id: true } } },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        veterinarianProfile: { select: { id: true } },
+        profile: { select: { id: true, addressId: true, fullName: true } },
+      },
     });
 
     if (!user || user.role !== UserRole.VETERINARIAN) {
@@ -44,6 +50,16 @@ export class ProfessionalsService {
           data,
         });
 
+    await this.upsertBaseProfileLocation({
+      userId: currentUser.userId,
+      email: user.email,
+      existingProfile: user.profile,
+      city: dto.city,
+      state: dto.state,
+      lat: dto.lat,
+      lng: dto.lng,
+    });
+
     return {
       message: user.veterinarianProfile
         ? 'Perfil veterinario atualizado com sucesso.'
@@ -59,7 +75,13 @@ export class ProfessionalsService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: currentUser.userId },
-      select: { id: true, role: true, internProfile: { select: { id: true } } },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        internProfile: { select: { id: true } },
+        profile: { select: { id: true, addressId: true, fullName: true } },
+      },
     });
 
     if (!user || user.role !== UserRole.INTERN) {
@@ -84,6 +106,16 @@ export class ProfessionalsService {
       : await this.prisma.internProfile.create({
           data,
         });
+
+    await this.upsertBaseProfileLocation({
+      userId: currentUser.userId,
+      email: user.email,
+      existingProfile: user.profile,
+      city: dto.city,
+      state: dto.state,
+      lat: dto.lat,
+      lng: dto.lng,
+    });
 
     return {
       message: user.internProfile
@@ -117,5 +149,56 @@ export class ProfessionalsService {
     }
 
     return user;
+  }
+
+  private async upsertBaseProfileLocation(input: {
+    userId: string;
+    email: string;
+    existingProfile: { id: string; addressId: string | null; fullName: string } | null;
+    city?: string;
+    state?: string;
+    lat?: number;
+    lng?: number;
+  }) {
+    const hasLocationData =
+      Boolean(input.city?.trim()) ||
+      Boolean(input.state?.trim()) ||
+      input.lat != null ||
+      input.lng != null;
+
+    if (!hasLocationData) {
+      return;
+    }
+
+    const addressData = {
+      city: input.city?.trim() || undefined,
+      state: input.state?.trim().toUpperCase() || undefined,
+      country: 'BR',
+      lat: input.lat,
+      lng: input.lng,
+    };
+
+    const address = input.existingProfile?.addressId
+      ? await this.prisma.address.update({
+          where: { id: input.existingProfile.addressId },
+          data: addressData,
+        })
+      : await this.prisma.address.create({ data: addressData });
+
+    await this.prisma.profile.upsert({
+      where: { userId: input.userId },
+      update: {
+        city: input.city?.trim() || undefined,
+        state: input.state?.trim().toUpperCase() || undefined,
+        addressId: address.id,
+      },
+      create: {
+        userId: input.userId,
+        fullName: input.email.split('@')[0],
+        city: input.city?.trim() || null,
+        state: input.state?.trim().toUpperCase() || null,
+        addressId: address.id,
+      },
+    });
   }
 }

@@ -15,12 +15,18 @@ export class InstitutionsService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: currentUser.userId },
-      select: { id: true, role: true, institution: { select: { id: true } } },
+      select: {
+        id: true,
+        role: true,
+        institution: { select: { id: true, addressId: true } },
+      },
     });
 
     if (!user || (user.role !== UserRole.CLINIC && user.role !== UserRole.HOSPITAL)) {
       throw new NotFoundException('Usuario institucional nao encontrado.');
     }
+
+    const addressId = await this.resolveInstitutionAddressId(dto, user.institution?.addressId);
 
     const data = {
         userId: currentUser.userId,
@@ -32,7 +38,7 @@ export class InstitutionsService {
         description: dto.description,
         contactName: dto.contactName,
         contactPhone: dto.contactPhone,
-        addressId: dto.addressId,
+        addressId: addressId ?? dto.addressId,
         verificationStatus: dto.verificationStatus ?? VerificationStatus.PENDING,
       };
 
@@ -95,5 +101,40 @@ export class InstitutionsService {
     }
 
     return institution;
+  }
+
+  private async resolveInstitutionAddressId(
+    dto: CreateInstitutionDto,
+    currentAddressId?: string | null,
+  ) {
+    const hasLocationData =
+      Boolean(dto.city?.trim()) ||
+      Boolean(dto.state?.trim()) ||
+      dto.lat != null ||
+      dto.lng != null;
+
+    if (!hasLocationData) {
+      return undefined;
+    }
+
+    const data = {
+      city: dto.city?.trim() || undefined,
+      state: dto.state?.trim().toUpperCase() || undefined,
+      country: 'BR',
+      lat: dto.lat,
+      lng: dto.lng,
+    };
+
+    if (currentAddressId) {
+      const address = await this.prisma.address.update({
+        where: { id: currentAddressId },
+        data,
+      });
+
+      return address.id;
+    }
+
+    const address = await this.prisma.address.create({ data });
+    return address.id;
   }
 }
