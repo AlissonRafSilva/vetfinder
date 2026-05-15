@@ -10,6 +10,7 @@ import '../../auth/domain/app_user_role.dart';
 import '../data/opportunities_repository.dart';
 import '../domain/institution_opportunity_option.dart';
 import '../domain/opportunity_summary.dart';
+import 'available_professional_profile_page.dart';
 import 'opportunity_detail_page.dart';
 
 class OpportunitiesPage extends StatefulWidget {
@@ -29,13 +30,10 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
   Future<List<AvailableProfessionalSummary>>? _professionalsFuture;
   Future<List<InstitutionOpportunityOption>>? _myOpportunitiesFuture;
   String? _lastAudience;
-  int _selectedWeekday = 1;
-  final TextEditingController _startTimeController = TextEditingController(
-    text: '08:00',
-  );
-  final TextEditingController _endTimeController = TextEditingController(
-    text: '18:00',
-  );
+  String? _loadedProfessionalsSearchKey;
+  int? _selectedWeekday;
+  final TextEditingController _startTimeController = TextEditingController();
+  final TextEditingController _endTimeController = TextEditingController();
 
   @override
   void initState() {
@@ -88,9 +86,27 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
   void _loadProfessionalsIfNeeded() {
     final session = AppSessionScope.of(context);
     if (!session.isAuthenticated || !session.isInstitutionUser) {
+      _professionalsFuture = null;
+      _myOpportunitiesFuture = null;
+      _loadedProfessionalsSearchKey = null;
       return;
     }
 
+    final searchKey = [
+      session.userId,
+      session.accessToken,
+      _selectedWeekday?.toString() ?? 'any',
+      _startTimeController.text,
+      _endTimeController.text,
+    ].join(':');
+
+    if (_loadedProfessionalsSearchKey == searchKey &&
+        _professionalsFuture != null &&
+        _myOpportunitiesFuture != null) {
+      return;
+    }
+
+    _loadedProfessionalsSearchKey = searchKey;
     _professionalsFuture = _availabilityRepository.searchAvailableProfessionals(
       accessToken: session.accessToken!,
       weekday: _selectedWeekday,
@@ -229,11 +245,15 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
         onWeekdayChanged: (value) {
           setState(() {
             _selectedWeekday = value;
+            _loadedProfessionalsSearchKey = null;
             _loadProfessionalsIfNeeded();
           });
         },
         onSearch: () {
-          setState(_loadProfessionalsIfNeeded);
+          setState(() {
+            _loadedProfessionalsSearchKey = null;
+            _loadProfessionalsIfNeeded();
+          });
         },
       );
     }
@@ -259,13 +279,13 @@ class _AvailableProfessionalsPage extends StatelessWidget {
     required this.onSearch,
   });
 
-  final int selectedWeekday;
+  final int? selectedWeekday;
   final TextEditingController startTimeController;
   final TextEditingController endTimeController;
   final String? accountStatus;
   final Future<List<AvailableProfessionalSummary>>? professionalsFuture;
   final ValueChanged<AvailableProfessionalSummary> onInvite;
-  final ValueChanged<int> onWeekdayChanged;
+  final ValueChanged<int?> onWeekdayChanged;
   final VoidCallback onSearch;
 
   @override
@@ -302,22 +322,26 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                     style: theme.textTheme.titleLarge,
                   ),
                   const SizedBox(height: 14),
-                  DropdownButtonFormField<int>(
+                  DropdownButtonFormField<int?>(
                     initialValue: selectedWeekday,
                     decoration: const InputDecoration(
                       labelText: 'Dia da semana',
                     ),
-                    items: List.generate(
-                      7,
-                      (index) => DropdownMenuItem(
-                        value: index + 1,
-                        child: Text(_weekdayLabel(index + 1)),
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('Qualquer dia'),
                       ),
-                    ),
+                      ...List.generate(
+                        7,
+                        (index) => DropdownMenuItem<int?>(
+                          value: index + 1,
+                          child: Text(_weekdayLabel(index + 1)),
+                        ),
+                      ),
+                    ],
                     onChanged: (value) {
-                      if (value != null) {
-                        onWeekdayChanged(value);
-                      }
+                      onWeekdayChanged(value);
                     },
                   ),
                   const SizedBox(height: 12),
@@ -327,7 +351,7 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                         child: TextField(
                           controller: startTimeController,
                           decoration: const InputDecoration(
-                            labelText: 'Inicio',
+                            labelText: 'Inicio opcional',
                             hintText: '08:00',
                           ),
                         ),
@@ -337,7 +361,7 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                         child: TextField(
                           controller: endTimeController,
                           decoration: const InputDecoration(
-                            labelText: 'Fim',
+                            labelText: 'Fim opcional',
                             hintText: '18:00',
                           ),
                         ),
@@ -397,6 +421,16 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                     _ProfessionalAvailabilityCard(
                       item: items[index],
                       onInvite: () => onInvite(items[index]),
+                      onOpenProfile: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => AvailableProfessionalProfilePage(
+                              professional: items[index],
+                              onInvite: () => onInvite(items[index]),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     if (index < items.length - 1) const SizedBox(height: 14),
                   ],
@@ -428,10 +462,12 @@ class _ProfessionalAvailabilityCard extends StatelessWidget {
   const _ProfessionalAvailabilityCard({
     required this.item,
     required this.onInvite,
+    required this.onOpenProfile,
   });
 
   final AvailableProfessionalSummary item;
   final VoidCallback onInvite;
+  final VoidCallback onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -558,12 +594,23 @@ class _ProfessionalAvailabilityCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onInvite,
-                child: const Text('Convidar para uma vaga'),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onOpenProfile,
+                    icon: const Icon(Icons.person_search_rounded),
+                    label: const Text('Ver perfil'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onInvite,
+                    child: const Text('Convidar'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
