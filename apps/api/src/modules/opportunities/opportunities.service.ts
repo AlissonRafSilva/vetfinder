@@ -191,7 +191,7 @@ export class OpportunitiesService {
         grossAmount: dto.grossAmount,
         urgencyLevel: dto.urgencyLevel,
         addressId: dto.addressId,
-        requiresVerifiedProfile: dto.requiresVerifiedProfile ?? true,
+        requiresVerifiedProfile: dto.requiresVerifiedProfile ?? false,
         status: OpportunityStatus.DRAFT,
       },
       include: {

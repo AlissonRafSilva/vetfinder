@@ -759,10 +759,10 @@ class _ValidationGuidanceCard extends StatelessWidget {
     }
 
     if (roleValue == AppUserRole.intern.apiValue) {
-      return 'Envie a foto de perfil e a declaracao de matricula para liberar oportunidades de estagio que exigem perfil validado.';
+      return 'Envie a foto de perfil e a declaracao de matricula para aumentar confianca e destaque nas oportunidades de estagio.';
     }
 
-    return 'Envie a foto de perfil e o comprovante CRMV para liberar vagas que exigem profissional validado.';
+    return 'Envie a foto de perfil e o comprovante CRMV para aumentar confianca e destaque nas vagas veterinarias.';
   }
 
   String _statusLabel(String? value) {

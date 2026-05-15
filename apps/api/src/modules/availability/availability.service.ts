@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { AvailabilityType, UserRole } from '@prisma/client';
+import { AvailabilityType, UserRole, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
 import { ReplaceAvailabilityDto } from './dto/upsert-availability-slot.dto';
@@ -77,7 +77,7 @@ export class AvailabilityService {
   }
 
   async searchAvailableProfessionals(query: SearchAvailableProfessionalsDto) {
-    return this.prisma.user.findMany({
+    const professionals = await this.prisma.user.findMany({
       where: {
         role: {
           in: [UserRole.VETERINARIAN, UserRole.INTERN],
@@ -123,5 +123,68 @@ export class AvailabilityService {
       },
       take: 50,
     });
+
+    return professionals.sort((left, right) => {
+      return this.professionalSearchScore(right) - this.professionalSearchScore(left);
+    });
+  }
+
+  private professionalSearchScore(professional: {
+    role: UserRole;
+    profile: {
+      fullName?: string | null;
+      photoUrl?: string | null;
+      city?: string | null;
+      state?: string | null;
+      bio?: string | null;
+    } | null;
+    veterinarianProfile: {
+      verificationStatus: VerificationStatus;
+      crmvNumber?: string | null;
+      baseShiftRate?: unknown;
+      yearsExperience?: number | null;
+    } | null;
+    internProfile: {
+      verificationStatus: VerificationStatus;
+      universityName?: string | null;
+      coursePeriod?: string | null;
+    } | null;
+    reviewReceived: Array<{ rating: number }>;
+  }) {
+    const verificationStatus =
+      professional.role === UserRole.INTERN
+        ? professional.internProfile?.verificationStatus
+        : professional.veterinarianProfile?.verificationStatus;
+    const ratings = professional.reviewReceived.map((review) => review.rating);
+    const averageRating =
+      ratings.length > 0
+        ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+        : 0;
+
+    let score = 0;
+    if (verificationStatus === VerificationStatus.APPROVED) {
+      score += 1000;
+    }
+
+    score += averageRating * 100;
+    score += ratings.length * 10;
+
+    if (professional.profile?.fullName) score += 20;
+    if (professional.profile?.photoUrl) score += 20;
+    if (professional.profile?.city || professional.profile?.state) score += 15;
+    if (professional.profile?.bio) score += 10;
+
+    if (professional.role === UserRole.VETERINARIAN) {
+      if (professional.veterinarianProfile?.crmvNumber) score += 30;
+      if (professional.veterinarianProfile?.baseShiftRate) score += 15;
+      if (professional.veterinarianProfile?.yearsExperience) score += 10;
+    }
+
+    if (professional.role === UserRole.INTERN) {
+      if (professional.internProfile?.universityName) score += 30;
+      if (professional.internProfile?.coursePeriod) score += 10;
+    }
+
+    return score;
   }
 }

@@ -9,7 +9,7 @@ class CreateInstitutionOpportunityInput {
     required this.grossAmount,
     this.durationHours,
     this.urgencyLevel = 'MEDIUM',
-    this.requiresVerifiedProfile = true,
+    this.requiresVerifiedProfile = false,
   });
 
   final String title;

@@ -9,7 +9,6 @@ import {
   OpportunityStatus,
   OpportunityType,
   UserRole,
-  VerificationStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
@@ -29,7 +28,6 @@ export class ApplicationsService {
         id: true,
         status: true,
         opportunityType: true,
-        requiresVerifiedProfile: true,
       },
     });
 
@@ -50,10 +48,6 @@ export class ApplicationsService {
       opportunity.opportunityType === OpportunityType.INTERNSHIP
     ) {
       throw new ForbiddenException('Veterinarios volantes nao podem se candidatar a vagas de estagio.');
-    }
-
-    if (opportunity.requiresVerifiedProfile) {
-      await this.ensureProfessionalApproved(user.userId, user.role as UserRole);
     }
 
     const existing = await this.prisma.opportunityApplication.findUnique({
@@ -97,7 +91,6 @@ export class ApplicationsService {
         },
         status: true,
         opportunityType: true,
-        requiresVerifiedProfile: true,
       },
     });
 
@@ -118,16 +111,6 @@ export class ApplicationsService {
       select: {
         id: true,
         role: true,
-        veterinarianProfile: {
-          select: {
-            verificationStatus: true,
-          },
-        },
-        internProfile: {
-          select: {
-            verificationStatus: true,
-          },
-        },
       },
     });
 
@@ -152,10 +135,6 @@ export class ApplicationsService {
       throw new ForbiddenException(
         'Veterinarios volantes nao podem ser convidados para vagas de estagio.',
       );
-    }
-
-    if (opportunity.requiresVerifiedProfile) {
-      this.ensureProfessionalRecordApproved(professional);
     }
 
     const existing = await this.prisma.opportunityInvite.findUnique({
@@ -367,11 +346,6 @@ export class ApplicationsService {
       select: {
         id: true,
         professionalUserId: true,
-        opportunity: {
-          select: {
-            requiresVerifiedProfile: true,
-          },
-        },
       },
     });
 
@@ -381,10 +355,6 @@ export class ApplicationsService {
 
     if (invite.professionalUserId !== user.userId) {
       throw new ForbiddenException('Voce nao pode responder este convite.');
-    }
-
-    if (dto.status === InteractionStatus.ACCEPTED && invite.opportunity.requiresVerifiedProfile) {
-      await this.ensureProfessionalApproved(user.userId, user.role as UserRole);
     }
 
     const updated = await this.prisma.opportunityInvite.update({
@@ -401,46 +371,4 @@ export class ApplicationsService {
     };
   }
 
-  private async ensureProfessionalApproved(userId: string, role: UserRole) {
-    const professional = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        role: true,
-        veterinarianProfile: {
-          select: {
-            verificationStatus: true,
-          },
-        },
-        internProfile: {
-          select: {
-            verificationStatus: true,
-          },
-        },
-      },
-    });
-
-    if (!professional || professional.role !== role) {
-      throw new NotFoundException('Profissional nao encontrado.');
-    }
-
-    this.ensureProfessionalRecordApproved(professional);
-  }
-
-  private ensureProfessionalRecordApproved(professional: {
-    role: UserRole;
-    veterinarianProfile?: { verificationStatus: VerificationStatus } | null;
-    internProfile?: { verificationStatus: VerificationStatus } | null;
-  }) {
-    const status =
-      professional.role === UserRole.INTERN
-        ? professional.internProfile?.verificationStatus
-        : professional.veterinarianProfile?.verificationStatus;
-
-    if (status !== VerificationStatus.APPROVED) {
-      throw new ForbiddenException(
-        'O perfil profissional precisa estar aprovado para esta oportunidade.',
-      );
-    }
-  }
 }

@@ -33,7 +33,6 @@ export class EngagementsService {
         status: true,
         institutionId: true,
         opportunityType: true,
-        requiresVerifiedProfile: true,
         institution: {
           select: {
             userId: true,
@@ -129,16 +128,6 @@ export class EngagementsService {
       select: {
         id: true,
         role: true,
-        veterinarianProfile: {
-          select: {
-            verificationStatus: true,
-          },
-        },
-        internProfile: {
-          select: {
-            verificationStatus: true,
-          },
-        },
       },
     });
 
@@ -161,10 +150,6 @@ export class EngagementsService {
       opportunity.opportunityType === OpportunityType.INTERNSHIP
     ) {
       throw new ForbiddenException('Veterinarios volantes nao podem fechar vagas de estagio.');
-    }
-
-    if (opportunity.requiresVerifiedProfile) {
-      this.ensureProfessionalApproved(professional);
     }
 
     const platformFeeAmount = this.platformConfigService.calculatePlatformFee(
@@ -351,20 +336,4 @@ export class EngagementsService {
     return engagement;
   }
 
-  private ensureProfessionalApproved(professional: {
-    role: UserRole;
-    veterinarianProfile?: { verificationStatus: VerificationStatus } | null;
-    internProfile?: { verificationStatus: VerificationStatus } | null;
-  }) {
-    const status =
-      professional.role === UserRole.INTERN
-        ? professional.internProfile?.verificationStatus
-        : professional.veterinarianProfile?.verificationStatus;
-
-    if (status !== VerificationStatus.APPROVED) {
-      throw new ForbiddenException(
-        'O perfil profissional precisa estar aprovado para fechar esta oportunidade.',
-      );
-    }
-  }
 }

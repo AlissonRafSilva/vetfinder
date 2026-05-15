@@ -445,6 +445,21 @@ class _ProfessionalAvailabilityCard extends StatelessWidget {
           children: [
             Row(
               children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: item.isVerified
+                      ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                      : theme.colorScheme.surfaceContainerHighest,
+                  child: Icon(
+                    item.isVerified
+                        ? Icons.verified_rounded
+                        : Icons.person_outline_rounded,
+                    color: item.isVerified
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     item.name,
@@ -461,11 +476,56 @@ class _ProfessionalAvailabilityCard extends StatelessWidget {
                 color: theme.colorScheme.primary,
               ),
             ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: item.isVerified
+                    ? theme.colorScheme.primary.withValues(alpha: 0.08)
+                    : theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    item.isVerified
+                        ? Icons.workspace_premium_outlined
+                        : Icons.trending_up_rounded,
+                    color: item.isVerified
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.trustLabel,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.trustDescription,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 14),
             Wrap(
               spacing: 10,
               runSpacing: 10,
               children: [
+                InfoBadge(label: item.completenessLabel),
                 InfoBadge(label: item.specialtyLabel),
                 InfoBadge(label: item.cityLabel),
                 InfoBadge(label: item.rateLabel),
@@ -673,7 +733,7 @@ class _OpportunitiesBody extends StatelessWidget {
                     const InfoBadge(
                         label: 'Ate 10 km', icon: Icons.place_outlined),
                     const InfoBadge(label: 'Hoje'),
-                    const InfoBadge(label: 'Perfil validado'),
+                    const InfoBadge(label: 'Perfil completo se destaca'),
                   ],
                 ),
                 if (accountStatus != null && accountStatus != 'ACTIVE') ...[
@@ -683,8 +743,8 @@ class _OpportunitiesBody extends StatelessWidget {
                         ? 'Estagio pode exigir validacao'
                         : 'Plantao pode exigir validacao',
                     message: isIntern
-                        ? 'Envie foto e declaracao de matricula no Perfil. Vagas que exigem validacao podem bloquear candidatura ate aprovacao.'
-                        : 'Envie foto e comprovante CRMV no Perfil. Vagas que exigem validacao podem bloquear candidatura ate aprovacao.',
+                        ? 'Envie foto e declaracao de matricula no Perfil para aumentar confianca e destaque nas selecoes.'
+                        : 'Envie foto e comprovante CRMV no Perfil para aumentar confianca e destaque nas selecoes.',
                   ),
                 ],
               ],

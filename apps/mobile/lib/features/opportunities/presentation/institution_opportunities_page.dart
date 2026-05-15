@@ -1096,7 +1096,7 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
   String _opportunityType = 'SHIFT';
   String _urgencyLevel = 'MEDIUM';
   final _customSpecialtyController = TextEditingController();
-  bool _requiresVerifiedProfile = true;
+  bool _requiresVerifiedProfile = false;
 
   bool get _isEditMode => widget.initialOpportunity != null;
 
@@ -1382,9 +1382,9 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
               const SizedBox(height: 12),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Exigir perfil validado'),
+                title: const Text('Preferir perfil validado'),
                 subtitle: const Text(
-                  'Mostra a vaga apenas para profissionais com cadastro mais confiavel.',
+                  'Nao bloqueia candidaturas. Serve como sinal de confianca para destacar perfis mais completos.',
                 ),
                 value: _requiresVerifiedProfile,
                 onChanged: (value) {

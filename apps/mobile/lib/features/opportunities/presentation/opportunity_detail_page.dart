@@ -180,7 +180,7 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
                     InfoBadge(label: detail.urgencyLabel),
                     InfoBadge(label: detail.statusLabel),
                     if (detail.requiresVerifiedProfile)
-                      const InfoBadge(label: 'Perfil validado'),
+                      const InfoBadge(label: 'Prefere perfil validado'),
                   ],
                 ),
                 const SizedBox(height: 20),

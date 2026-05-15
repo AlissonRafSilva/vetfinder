@@ -11,6 +11,10 @@ class AvailableProfessionalSummary {
     required this.rateLabel,
     required this.reputationLabel,
     required this.verificationLabel,
+    required this.trustLabel,
+    required this.trustDescription,
+    required this.completenessLabel,
+    required this.isVerified,
     required this.specialtyLabel,
     required this.availability,
   });
@@ -24,6 +28,10 @@ class AvailableProfessionalSummary {
   final String rateLabel;
   final String reputationLabel;
   final String verificationLabel;
+  final String trustLabel;
+  final String trustDescription;
+  final String completenessLabel;
+  final bool isVerified;
   final String specialtyLabel;
   final List<AvailabilitySlotModel> availability;
 
@@ -32,6 +40,16 @@ class AvailableProfessionalSummary {
     final veterinarianProfile =
         json['veterinarianProfile'] as Map<String, dynamic>?;
     final internProfile = json['internProfile'] as Map<String, dynamic>?;
+    final verificationStatus =
+        veterinarianProfile?['verificationStatus']?.toString() ??
+            internProfile?['verificationStatus']?.toString() ??
+            '';
+    final completenessScore = _completenessScore(
+      profile: profile,
+      veterinarianProfile: veterinarianProfile,
+      internProfile: internProfile,
+      role: json['role']?.toString() ?? '',
+    );
     final availability =
         (json['availabilitySlots'] as List<dynamic>? ?? const [])
             .whereType<Map<String, dynamic>>()
@@ -49,11 +67,11 @@ class AvailableProfessionalSummary {
       cityLabel: _cityLabel(profile),
       rateLabel: _rateLabel(veterinarianProfile),
       reputationLabel: _reputationLabel(json['reviewReceived']),
-      verificationLabel: _verificationLabel(
-        veterinarianProfile?['verificationStatus']?.toString() ??
-            internProfile?['verificationStatus']?.toString() ??
-            '',
-      ),
+      verificationLabel: _verificationLabel(verificationStatus),
+      trustLabel: _trustLabel(verificationStatus, completenessScore),
+      trustDescription: _trustDescription(verificationStatus, completenessScore),
+      completenessLabel: 'Perfil $completenessScore% completo',
+      isVerified: verificationStatus.toUpperCase() == 'APPROVED',
       specialtyLabel: _specialtyLabel(json),
       availability: availability,
     );
@@ -114,12 +132,69 @@ class AvailableProfessionalSummary {
   static String _verificationLabel(String status) {
     switch (status.toUpperCase()) {
       case 'APPROVED':
-        return 'Validado';
+        return 'Perfil verificado';
       case 'PENDING':
-        return 'Pendente';
+        return 'Documentos pendentes';
       default:
         return status.isEmpty ? 'Perfil sem status' : status;
     }
+  }
+
+  static String _trustLabel(String status, int completenessScore) {
+    if (status.toUpperCase() == 'APPROVED') {
+      return 'Mais confiavel';
+    }
+
+    if (completenessScore >= 70) {
+      return 'Perfil em evolucao';
+    }
+
+    return 'Perfil basico';
+  }
+
+  static String _trustDescription(String status, int completenessScore) {
+    if (status.toUpperCase() == 'APPROVED') {
+      return 'Documentos aprovados e perfil priorizado na busca.';
+    }
+
+    if (completenessScore >= 70) {
+      return 'Tem boa parte do cadastro preenchido, mas ainda sem validacao completa.';
+    }
+
+    return 'Pode ser convidado, mas tende a receber menos destaque ate completar o perfil.';
+  }
+
+  static int _completenessScore({
+    required Map<String, dynamic>? profile,
+    required Map<String, dynamic>? veterinarianProfile,
+    required Map<String, dynamic>? internProfile,
+    required String role,
+  }) {
+    var completed = 0;
+    const total = 5;
+
+    if ((profile?['fullName']?.toString() ?? '').isNotEmpty) completed++;
+    if ((profile?['city']?.toString() ?? '').isNotEmpty ||
+        (profile?['state']?.toString() ?? '').isNotEmpty) {
+      completed++;
+    }
+    if ((profile?['bio']?.toString() ?? '').isNotEmpty) completed++;
+
+    if (role.toUpperCase() == 'INTERN') {
+      if ((internProfile?['universityName']?.toString() ?? '').isNotEmpty) {
+        completed++;
+      }
+      if ((internProfile?['coursePeriod']?.toString() ?? '').isNotEmpty) {
+        completed++;
+      }
+    } else {
+      if ((veterinarianProfile?['crmvNumber']?.toString() ?? '').isNotEmpty) {
+        completed++;
+      }
+      if (veterinarianProfile?['baseShiftRate'] != null) completed++;
+    }
+
+    return ((completed / total) * 100).round().clamp(0, 100);
   }
 
   static String _specialtyLabel(Map<String, dynamic> json) {
