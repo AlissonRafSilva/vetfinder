@@ -133,7 +133,11 @@ export class ProfessionalsService {
         email: true,
         role: true,
         status: true,
-        profile: true,
+        profile: {
+          include: {
+            address: true,
+          },
+        },
         veterinarianProfile: true,
         internProfile: true,
         specialties: {

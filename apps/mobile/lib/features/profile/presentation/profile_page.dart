@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 
+import '../../../core/location/current_location_service.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/session/app_session_controller.dart';
 import '../../../core/session/app_session_scope.dart';
@@ -21,12 +22,15 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final ProfileRepository _profileRepository = ProfileRepository();
   final DocumentsRepository _documentsRepository = DocumentsRepository();
+  final CurrentLocationService _locationService = const CurrentLocationService();
 
   final _vetCrmvController = TextEditingController();
   final _vetCrmvStateController = TextEditingController(text: 'SP');
   final _vetRateController = TextEditingController();
   final _vetExperienceController = TextEditingController();
   final _vetDistanceController = TextEditingController();
+  final _profileLatController = TextEditingController();
+  final _profileLngController = TextEditingController();
   bool _vetEmergencyCare = true;
   bool _vetCanTravel = true;
 
@@ -44,10 +48,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
   bool _isSaving = false;
   bool _isSubmittingDocument = false;
+  bool _isDetectingLocation = false;
   bool _isRefreshingSession = false;
   String? _loadedProfileKey;
   Future<List<DocumentSummary>>? _documentsFuture;
   String? _feedbackMessage;
+  String? _locationFeedback;
   bool _isFeedbackError = false;
 
   @override
@@ -57,6 +63,8 @@ class _ProfilePageState extends State<ProfilePage> {
     _vetRateController.dispose();
     _vetExperienceController.dispose();
     _vetDistanceController.dispose();
+    _profileLatController.dispose();
+    _profileLngController.dispose();
     _internUniversityController.dispose();
     _internPeriodController.dispose();
     _internGraduationController.dispose();
@@ -184,6 +192,9 @@ class _ProfilePageState extends State<ProfilePage> {
               institution['contactName']?.toString() ?? '';
           _contactPhoneController.text =
               institution['contactPhone']?.toString() ?? '';
+          final address = institution['address'] as Map<String, dynamic>?;
+          _profileLatController.text = address?['lat']?.toString() ?? '';
+          _profileLngController.text = address?['lng']?.toString() ?? '';
         });
         return;
       }
@@ -201,6 +212,11 @@ class _ProfilePageState extends State<ProfilePage> {
             professional['veterinarianProfile'] as Map<String, dynamic>?;
         final internProfile =
             professional['internProfile'] as Map<String, dynamic>?;
+        final baseProfile =
+            professional['profile'] as Map<String, dynamic>?;
+        final address = baseProfile?['address'] as Map<String, dynamic>?;
+        _profileLatController.text = address?['lat']?.toString() ?? '';
+        _profileLngController.text = address?['lng']?.toString() ?? '';
 
         if (veterinarianProfile != null) {
           _vetCrmvController.text =
@@ -259,6 +275,8 @@ class _ProfilePageState extends State<ProfilePage> {
         emergencyCare: _vetEmergencyCare,
         canTravel: _vetCanTravel,
         maxDistanceKm: _vetDistanceController.text,
+        latitude: _profileLatController.text,
+        longitude: _profileLngController.text,
       );
     });
   }
@@ -271,6 +289,8 @@ class _ProfilePageState extends State<ProfilePage> {
         universityName: _internUniversityController.text,
         coursePeriod: _internPeriodController.text,
         expectedGraduationDate: _internGraduationController.text,
+        latitude: _profileLatController.text,
+        longitude: _profileLngController.text,
       );
     });
   }
@@ -290,8 +310,53 @@ class _ProfilePageState extends State<ProfilePage> {
         description: _descriptionController.text,
         contactName: _contactNameController.text,
         contactPhone: _contactPhoneController.text,
+        latitude: _profileLatController.text,
+        longitude: _profileLngController.text,
       );
     });
+  }
+
+  Future<void> _detectProfileLocation() async {
+    if (_isDetectingLocation) {
+      return;
+    }
+
+    setState(() {
+      _isDetectingLocation = true;
+      _locationFeedback = null;
+    });
+
+    try {
+      final result = await _locationService.detect();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        if (result.location != null) {
+          _profileLatController.text =
+              result.location!.latitude.toStringAsFixed(6);
+          _profileLngController.text =
+              result.location!.longitude.toStringAsFixed(6);
+        }
+        _locationFeedback = result.message;
+        _isFeedbackError = !result.isSuccess;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _locationFeedback =
+            'Nao foi possivel detectar sua localizacao agora.';
+        _isFeedbackError = true;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isDetectingLocation = false);
+      }
+    }
   }
 
   Future<void> _runSave(Future<String> Function() action) async {
@@ -494,9 +559,14 @@ class _ProfilePageState extends State<ProfilePage> {
               rateController: _vetRateController,
               experienceController: _vetExperienceController,
               distanceController: _vetDistanceController,
+              latitudeController: _profileLatController,
+              longitudeController: _profileLngController,
               emergencyCare: _vetEmergencyCare,
               canTravel: _vetCanTravel,
               isSaving: _isSaving,
+              isDetectingLocation: _isDetectingLocation,
+              locationFeedback: _locationFeedback,
+              onDetectLocation: _detectProfileLocation,
               onEmergencyCareChanged: (value) {
                 setState(() => _vetEmergencyCare = value);
               },
@@ -510,7 +580,12 @@ class _ProfilePageState extends State<ProfilePage> {
               universityController: _internUniversityController,
               periodController: _internPeriodController,
               graduationController: _internGraduationController,
+              latitudeController: _profileLatController,
+              longitudeController: _profileLngController,
               isSaving: _isSaving,
+              isDetectingLocation: _isDetectingLocation,
+              locationFeedback: _locationFeedback,
+              onDetectLocation: _detectProfileLocation,
               onSubmit: _saveInternProfile,
             )
           else if (isInstitution)
@@ -522,7 +597,12 @@ class _ProfilePageState extends State<ProfilePage> {
               descriptionController: _descriptionController,
               contactNameController: _contactNameController,
               contactPhoneController: _contactPhoneController,
+              latitudeController: _profileLatController,
+              longitudeController: _profileLngController,
               isSaving: _isSaving,
+              isDetectingLocation: _isDetectingLocation,
+              locationFeedback: _locationFeedback,
+              onDetectLocation: _detectProfileLocation,
               onSubmit: _saveInstitutionProfile,
             ),
         ],
@@ -990,11 +1070,16 @@ class _VeterinarianForm extends StatelessWidget {
     required this.rateController,
     required this.experienceController,
     required this.distanceController,
+    required this.latitudeController,
+    required this.longitudeController,
     required this.emergencyCare,
     required this.canTravel,
     required this.isSaving,
+    required this.isDetectingLocation,
+    required this.locationFeedback,
     required this.onEmergencyCareChanged,
     required this.onCanTravelChanged,
+    required this.onDetectLocation,
     required this.onSubmit,
   });
 
@@ -1003,11 +1088,16 @@ class _VeterinarianForm extends StatelessWidget {
   final TextEditingController rateController;
   final TextEditingController experienceController;
   final TextEditingController distanceController;
+  final TextEditingController latitudeController;
+  final TextEditingController longitudeController;
   final bool emergencyCare;
   final bool canTravel;
   final bool isSaving;
+  final bool isDetectingLocation;
+  final String? locationFeedback;
   final ValueChanged<bool> onEmergencyCareChanged;
   final ValueChanged<bool> onCanTravelChanged;
+  final VoidCallback onDetectLocation;
   final VoidCallback onSubmit;
 
   @override
@@ -1033,6 +1123,13 @@ class _VeterinarianForm extends StatelessWidget {
           controller: distanceController,
           label: 'Distancia maxima em km',
           keyboardType: TextInputType.number,
+        ),
+        _LocationFields(
+          latitudeController: latitudeController,
+          longitudeController: longitudeController,
+          isDetectingLocation: isDetectingLocation,
+          feedback: locationFeedback,
+          onDetectLocation: onDetectLocation,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
@@ -1061,14 +1158,24 @@ class _InternForm extends StatelessWidget {
     required this.universityController,
     required this.periodController,
     required this.graduationController,
+    required this.latitudeController,
+    required this.longitudeController,
     required this.isSaving,
+    required this.isDetectingLocation,
+    required this.locationFeedback,
+    required this.onDetectLocation,
     required this.onSubmit,
   });
 
   final TextEditingController universityController;
   final TextEditingController periodController;
   final TextEditingController graduationController;
+  final TextEditingController latitudeController;
+  final TextEditingController longitudeController;
   final bool isSaving;
+  final bool isDetectingLocation;
+  final String? locationFeedback;
+  final VoidCallback onDetectLocation;
   final VoidCallback onSubmit;
 
   @override
@@ -1086,6 +1193,13 @@ class _InternForm extends StatelessWidget {
         _TextField(
           controller: graduationController,
           label: 'Previsao de formatura (AAAA-MM-DD)',
+        ),
+        _LocationFields(
+          latitudeController: latitudeController,
+          longitudeController: longitudeController,
+          isDetectingLocation: isDetectingLocation,
+          feedback: locationFeedback,
+          onDetectLocation: onDetectLocation,
         ),
         _SubmitButton(
           label: 'Salvar perfil de estagiario',
@@ -1106,7 +1220,12 @@ class _InstitutionForm extends StatelessWidget {
     required this.descriptionController,
     required this.contactNameController,
     required this.contactPhoneController,
+    required this.latitudeController,
+    required this.longitudeController,
     required this.isSaving,
+    required this.isDetectingLocation,
+    required this.locationFeedback,
+    required this.onDetectLocation,
     required this.onSubmit,
   });
 
@@ -1117,7 +1236,12 @@ class _InstitutionForm extends StatelessWidget {
   final TextEditingController descriptionController;
   final TextEditingController contactNameController;
   final TextEditingController contactPhoneController;
+  final TextEditingController latitudeController;
+  final TextEditingController longitudeController;
   final bool isSaving;
+  final bool isDetectingLocation;
+  final String? locationFeedback;
+  final VoidCallback onDetectLocation;
   final VoidCallback onSubmit;
 
   @override
@@ -1144,12 +1268,93 @@ class _InstitutionForm extends StatelessWidget {
           label: 'Descricao da instituicao',
           maxLines: 3,
         ),
+        _LocationFields(
+          latitudeController: latitudeController,
+          longitudeController: longitudeController,
+          isDetectingLocation: isDetectingLocation,
+          feedback: locationFeedback,
+          onDetectLocation: onDetectLocation,
+        ),
         _SubmitButton(
           label: 'Salvar instituicao',
           isSaving: isSaving,
           onPressed: onSubmit,
         ),
       ],
+    );
+  }
+}
+
+class _LocationFields extends StatelessWidget {
+  const _LocationFields({
+    required this.latitudeController,
+    required this.longitudeController,
+    required this.isDetectingLocation,
+    required this.feedback,
+    required this.onDetectLocation,
+  });
+
+  final TextEditingController latitudeController;
+  final TextEditingController longitudeController;
+  final bool isDetectingLocation;
+  final String? feedback;
+  final VoidCallback onDetectLocation;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Localizacao',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _TextField(
+                  controller: latitudeController,
+                  label: 'Latitude',
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _TextField(
+                  controller: longitudeController,
+                  label: 'Longitude',
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+            ],
+          ),
+          OutlinedButton.icon(
+            onPressed: isDetectingLocation ? null : onDetectLocation,
+            icon: const Icon(Icons.my_location_rounded),
+            label: Text(
+              isDetectingLocation
+                  ? 'Detectando localizacao...'
+                  : 'Usar localizacao atual',
+            ),
+          ),
+          if (feedback != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              feedback!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/location/current_location_service.dart';
 import '../../../core/session/app_session_scope.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/network/api_client.dart';
@@ -27,6 +28,7 @@ enum _AuthMode { login, register }
 class _AuthGatePageState extends State<AuthGatePage> {
   final _formKey = GlobalKey<FormState>();
   final ProfileRepository _profileRepository = ProfileRepository();
+  final CurrentLocationService _locationService = const CurrentLocationService();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -45,13 +47,17 @@ class _AuthGatePageState extends State<AuthGatePage> {
   final _descriptionController = TextEditingController();
   final _contactNameController = TextEditingController();
   final _contactPhoneController = TextEditingController();
+  final _profileLatController = TextEditingController();
+  final _profileLngController = TextEditingController();
 
   _AuthMode _mode = _AuthMode.login;
   AppUserRole _selectedRole = AppUserRole.veterinarian;
   bool _vetEmergencyCare = true;
   bool _vetCanTravel = true;
   bool _isSubmitting = false;
+  bool _isDetectingLocation = false;
   String? _feedbackMessage;
+  String? _locationFeedback;
   bool _isSuccessFeedback = false;
 
   @override
@@ -74,6 +80,8 @@ class _AuthGatePageState extends State<AuthGatePage> {
     _descriptionController.dispose();
     _contactNameController.dispose();
     _contactPhoneController.dispose();
+    _profileLatController.dispose();
+    _profileLngController.dispose();
     super.dispose();
   }
 
@@ -169,6 +177,8 @@ class _AuthGatePageState extends State<AuthGatePage> {
           emergencyCare: _vetEmergencyCare,
           canTravel: _vetCanTravel,
           maxDistanceKm: _vetDistanceController.text,
+          latitude: _profileLatController.text,
+          longitude: _profileLngController.text,
         );
       case AppUserRole.intern:
         return _profileRepository.createInternProfile(
@@ -176,6 +186,8 @@ class _AuthGatePageState extends State<AuthGatePage> {
           universityName: _internUniversityController.text,
           coursePeriod: _internPeriodController.text,
           expectedGraduationDate: _internGraduationController.text,
+          latitude: _profileLatController.text,
+          longitude: _profileLngController.text,
         );
       case AppUserRole.clinic:
       case AppUserRole.hospital:
@@ -193,7 +205,50 @@ class _AuthGatePageState extends State<AuthGatePage> {
           contactPhone: _contactPhoneController.text.isNotEmpty
               ? _contactPhoneController.text
               : _phoneController.text,
+          latitude: _profileLatController.text,
+          longitude: _profileLngController.text,
         );
+    }
+  }
+
+  Future<void> _detectProfileLocation() async {
+    if (_isDetectingLocation) {
+      return;
+    }
+
+    setState(() {
+      _isDetectingLocation = true;
+      _locationFeedback = null;
+    });
+
+    try {
+      final result = await _locationService.detect();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        if (result.location != null) {
+          _profileLatController.text =
+              result.location!.latitude.toStringAsFixed(6);
+          _profileLngController.text =
+              result.location!.longitude.toStringAsFixed(6);
+        }
+        _locationFeedback = result.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _locationFeedback =
+            'Nao foi possivel detectar sua localizacao agora.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isDetectingLocation = false);
+      }
     }
   }
 
@@ -340,8 +395,12 @@ class _AuthGatePageState extends State<AuthGatePage> {
             descriptionController: _descriptionController,
             contactNameController: _contactNameController,
             contactPhoneController: _contactPhoneController,
+            latitudeController: _profileLatController,
+            longitudeController: _profileLngController,
             isSubmitting: _isSubmitting,
+            isDetectingLocation: _isDetectingLocation,
             feedbackMessage: _feedbackMessage,
+            locationFeedback: _locationFeedback,
             isSuccessFeedback: _isSuccessFeedback,
             onModeChanged: (mode) {
               setState(() {
@@ -360,6 +419,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
             onVetCanTravelChanged: (value) {
               setState(() => _vetCanTravel = value);
             },
+            onDetectLocation: _detectProfileLocation,
             onSubmit: _submit,
           ),
           const SizedBox(height: 28),
@@ -562,13 +622,18 @@ class _AuthFormCard extends StatelessWidget {
     required this.descriptionController,
     required this.contactNameController,
     required this.contactPhoneController,
+    required this.latitudeController,
+    required this.longitudeController,
     required this.isSubmitting,
+    required this.isDetectingLocation,
     required this.feedbackMessage,
+    required this.locationFeedback,
     required this.isSuccessFeedback,
     required this.onModeChanged,
     required this.onRoleChanged,
     required this.onVetEmergencyCareChanged,
     required this.onVetCanTravelChanged,
+    required this.onDetectLocation,
     required this.onSubmit,
   });
 
@@ -595,13 +660,18 @@ class _AuthFormCard extends StatelessWidget {
   final TextEditingController descriptionController;
   final TextEditingController contactNameController;
   final TextEditingController contactPhoneController;
+  final TextEditingController latitudeController;
+  final TextEditingController longitudeController;
   final bool isSubmitting;
+  final bool isDetectingLocation;
   final String? feedbackMessage;
+  final String? locationFeedback;
   final bool isSuccessFeedback;
   final ValueChanged<_AuthMode> onModeChanged;
   final ValueChanged<AppUserRole> onRoleChanged;
   final ValueChanged<bool> onVetEmergencyCareChanged;
   final ValueChanged<bool> onVetCanTravelChanged;
+  final VoidCallback onDetectLocation;
   final Future<void> Function() onSubmit;
 
   @override
@@ -724,8 +794,13 @@ class _AuthFormCard extends StatelessWidget {
                   descriptionController: descriptionController,
                   contactNameController: contactNameController,
                   contactPhoneController: contactPhoneController,
+                  latitudeController: latitudeController,
+                  longitudeController: longitudeController,
+                  isDetectingLocation: isDetectingLocation,
+                  locationFeedback: locationFeedback,
                   onVetEmergencyCareChanged: onVetEmergencyCareChanged,
                   onVetCanTravelChanged: onVetCanTravelChanged,
+                  onDetectLocation: onDetectLocation,
                 ),
               ],
               if (feedbackMessage != null) ...[
@@ -795,8 +870,13 @@ class _RegistrationProfileFields extends StatelessWidget {
     required this.descriptionController,
     required this.contactNameController,
     required this.contactPhoneController,
+    required this.latitudeController,
+    required this.longitudeController,
+    required this.isDetectingLocation,
+    required this.locationFeedback,
     required this.onVetEmergencyCareChanged,
     required this.onVetCanTravelChanged,
+    required this.onDetectLocation,
   });
 
   final AppUserRole selectedRole;
@@ -817,8 +897,13 @@ class _RegistrationProfileFields extends StatelessWidget {
   final TextEditingController descriptionController;
   final TextEditingController contactNameController;
   final TextEditingController contactPhoneController;
+  final TextEditingController latitudeController;
+  final TextEditingController longitudeController;
+  final bool isDetectingLocation;
+  final String? locationFeedback;
   final ValueChanged<bool> onVetEmergencyCareChanged;
   final ValueChanged<bool> onVetCanTravelChanged;
+  final VoidCallback onDetectLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -853,6 +938,13 @@ class _RegistrationProfileFields extends StatelessWidget {
               label: 'Distancia maxima em km',
               keyboardType: TextInputType.number,
             ),
+            _RegistrationLocationFields(
+              latitudeController: latitudeController,
+              longitudeController: longitudeController,
+              isDetectingLocation: isDetectingLocation,
+              feedback: locationFeedback,
+              onDetectLocation: onDetectLocation,
+            ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: vetEmergencyCare,
@@ -884,6 +976,13 @@ class _RegistrationProfileFields extends StatelessWidget {
             _OptionalTextField(
               controller: internGraduationController,
               label: 'Previsao de formatura (AAAA-MM-DD)',
+            ),
+            _RegistrationLocationFields(
+              latitudeController: latitudeController,
+              longitudeController: longitudeController,
+              isDetectingLocation: isDetectingLocation,
+              feedback: locationFeedback,
+              onDetectLocation: onDetectLocation,
             ),
           ],
         );
@@ -924,6 +1023,13 @@ class _RegistrationProfileFields extends StatelessWidget {
               controller: descriptionController,
               label: 'Descricao da instituicao',
               maxLines: 3,
+            ),
+            _RegistrationLocationFields(
+              latitudeController: latitudeController,
+              longitudeController: longitudeController,
+              isDetectingLocation: isDetectingLocation,
+              feedback: locationFeedback,
+              onDetectLocation: onDetectLocation,
             ),
           ],
         );
@@ -975,6 +1081,80 @@ class _RegisterSection extends StatelessWidget {
             ...children,
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RegistrationLocationFields extends StatelessWidget {
+  const _RegistrationLocationFields({
+    required this.latitudeController,
+    required this.longitudeController,
+    required this.isDetectingLocation,
+    required this.feedback,
+    required this.onDetectLocation,
+  });
+
+  final TextEditingController latitudeController;
+  final TextEditingController longitudeController;
+  final bool isDetectingLocation;
+  final String? feedback;
+  final VoidCallback onDetectLocation;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Localizacao',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _OptionalTextField(
+                  controller: latitudeController,
+                  label: 'Latitude',
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _OptionalTextField(
+                  controller: longitudeController,
+                  label: 'Longitude',
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+            ],
+          ),
+          OutlinedButton.icon(
+            onPressed: isDetectingLocation ? null : onDetectLocation,
+            icon: const Icon(Icons.my_location_rounded),
+            label: Text(
+              isDetectingLocation
+                  ? 'Detectando localizacao...'
+                  : 'Usar localizacao atual',
+            ),
+          ),
+          if (feedback != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              feedback!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

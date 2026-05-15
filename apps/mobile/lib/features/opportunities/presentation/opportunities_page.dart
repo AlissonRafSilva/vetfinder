@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/location/current_location_service.dart';
 import '../../../core/session/app_session_scope.dart';
 import '../../../core/widgets/info_badge.dart';
 import '../../../core/widgets/section_header.dart';
@@ -27,6 +28,7 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
       AvailabilityRepository();
   final ApplicationsRepository _applicationsRepository =
       ApplicationsRepository();
+  final CurrentLocationService _locationService = const CurrentLocationService();
   Future<List<AvailableProfessionalSummary>>? _professionalsFuture;
   Future<List<InstitutionOpportunityOption>>? _myOpportunitiesFuture;
   String? _lastAudience;
@@ -35,6 +37,8 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
   String _professionalTypeFilter = 'ALL';
   bool _verifiedOnly = false;
   int? _maxDistanceKm;
+  bool _isDetectingLocation = false;
+  String? _locationFeedback;
   final TextEditingController _startTimeController = TextEditingController();
   final TextEditingController _endTimeController = TextEditingController();
   final TextEditingController _originLatController = TextEditingController();
@@ -141,6 +145,42 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
       );
       _loadProfessionalsIfNeeded();
     });
+  }
+
+  Future<void> _detectCurrentLocation() async {
+    if (_isDetectingLocation) {
+      return;
+    }
+
+    setState(() {
+      _isDetectingLocation = true;
+      _locationFeedback = null;
+    });
+
+    try {
+      final result = await _locationService.detect();
+
+      setState(() {
+        if (result.location != null) {
+          _originLatController.text =
+              result.location!.latitude.toStringAsFixed(6);
+          _originLngController.text =
+              result.location!.longitude.toStringAsFixed(6);
+        }
+        _loadedProfessionalsSearchKey = null;
+        _locationFeedback = result.message;
+        _loadProfessionalsIfNeeded();
+      });
+    } catch (_) {
+      setState(() {
+        _locationFeedback =
+            'Nao foi possivel detectar a localizacao agora. Preencha manualmente se necessario.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isDetectingLocation = false);
+      }
+    }
   }
 
   Future<void> _inviteProfessional(
@@ -287,6 +327,9 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
         onLocalFiltersChanged: () {
           setState(() {});
         },
+        onDetectLocation: _detectCurrentLocation,
+        isDetectingLocation: _isDetectingLocation,
+        locationFeedback: _locationFeedback,
         onSearch: () {
           setState(() {
             _loadedProfessionalsSearchKey = null;
@@ -324,6 +367,9 @@ class _AvailableProfessionalsPage extends StatelessWidget {
     required this.onVerifiedOnlyChanged,
     required this.onMaxDistanceChanged,
     required this.onLocalFiltersChanged,
+    required this.onDetectLocation,
+    required this.isDetectingLocation,
+    required this.locationFeedback,
     required this.onSearch,
   });
 
@@ -344,6 +390,9 @@ class _AvailableProfessionalsPage extends StatelessWidget {
   final ValueChanged<bool> onVerifiedOnlyChanged;
   final ValueChanged<int?> onMaxDistanceChanged;
   final VoidCallback onLocalFiltersChanged;
+  final VoidCallback onDetectLocation;
+  final bool isDetectingLocation;
+  final String? locationFeedback;
   final VoidCallback onSearch;
 
   @override
@@ -493,6 +542,28 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: isDetectingLocation ? null : onDetectLocation,
+                      icon: const Icon(Icons.my_location_rounded),
+                      label: Text(
+                        isDetectingLocation
+                            ? 'Detectando localizacao...'
+                            : 'Usar minha localizacao atual',
+                      ),
+                    ),
+                  ),
+                  if (locationFeedback != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      locationFeedback!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int?>(
                     initialValue: maxDistanceKm,

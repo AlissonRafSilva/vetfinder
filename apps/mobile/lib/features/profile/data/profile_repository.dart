@@ -31,6 +31,8 @@ class ProfileRepository {
     required bool emergencyCare,
     required bool canTravel,
     required String maxDistanceKm,
+    required String latitude,
+    required String longitude,
   }) async {
     final response = await _apiClient.postJson(
       '/professionals/veterinarians',
@@ -46,6 +48,8 @@ class ProfileRepository {
         'canTravel': canTravel,
         if (maxDistanceKm.trim().isNotEmpty)
           'maxDistanceKm': int.tryParse(maxDistanceKm.trim()),
+        if (latitude.trim().isNotEmpty) 'lat': num.tryParse(latitude.trim()),
+        if (longitude.trim().isNotEmpty) 'lng': num.tryParse(longitude.trim()),
       },
     );
 
@@ -58,6 +62,8 @@ class ProfileRepository {
     required String universityName,
     required String coursePeriod,
     required String expectedGraduationDate,
+    required String latitude,
+    required String longitude,
   }) async {
     final response = await _apiClient.postJson(
       '/professionals/interns',
@@ -67,6 +73,8 @@ class ProfileRepository {
         if (coursePeriod.trim().isNotEmpty) 'coursePeriod': coursePeriod.trim(),
         if (expectedGraduationDate.trim().isNotEmpty)
           'expectedGraduationDate': expectedGraduationDate.trim(),
+        if (latitude.trim().isNotEmpty) 'lat': num.tryParse(latitude.trim()),
+        if (longitude.trim().isNotEmpty) 'lng': num.tryParse(longitude.trim()),
       },
     );
 
@@ -84,6 +92,8 @@ class ProfileRepository {
     required String description,
     required String contactName,
     required String contactPhone,
+    required String latitude,
+    required String longitude,
   }) async {
     final response = await _apiClient.postJson(
       '/institutions',
@@ -98,6 +108,8 @@ class ProfileRepository {
         if (description.trim().isNotEmpty) 'description': description.trim(),
         if (contactName.trim().isNotEmpty) 'contactName': contactName.trim(),
         if (contactPhone.trim().isNotEmpty) 'contactPhone': contactPhone.trim(),
+        if (latitude.trim().isNotEmpty) 'lat': num.tryParse(latitude.trim()),
+        if (longitude.trim().isNotEmpty) 'lng': num.tryParse(longitude.trim()),
       },
     );
 
