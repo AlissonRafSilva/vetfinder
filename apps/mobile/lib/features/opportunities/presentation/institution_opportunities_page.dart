@@ -28,6 +28,8 @@ class _InstitutionOpportunitiesPageState
   final PlatformConfigRepository _platformConfigRepository =
       PlatformConfigRepository();
   Future<List<InstitutionOpportunityOption>>? _myOpportunitiesFuture;
+  String? _loadedSessionKey;
+  int _refreshVersion = 0;
   double _platformFeeRate = 0.03;
   String _platformFeePercentLabel = '3%';
 
@@ -40,6 +42,25 @@ class _InstitutionOpportunitiesPageState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _refreshIfNeeded();
+  }
+
+  void _refreshIfNeeded() {
+    final session = AppSessionScope.of(context);
+    final sessionKey =
+        '${session.userId ?? 'guest'}:${session.accessToken ?? 'none'}:${session.roleValue ?? 'none'}';
+
+    if (_loadedSessionKey == sessionKey && _myOpportunitiesFuture != null) {
+      return;
+    }
+
+    if (!session.isAuthenticated || !session.isInstitutionUser) {
+      _myOpportunitiesFuture = null;
+      _loadedSessionKey = sessionKey;
+      return;
+    }
+
+    _loadedSessionKey = sessionKey;
     _refresh();
   }
 
@@ -55,6 +76,7 @@ class _InstitutionOpportunitiesPageState
         _opportunitiesRepository.fetchMyInstitutionOpportunities(
       accessToken: session.accessToken!,
     );
+    _refreshVersion++;
   }
 
   Future<void> _loadPlatformConfig() async {
@@ -103,7 +125,7 @@ class _InstitutionOpportunitiesPageState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
-      setState(_refresh);
+      setState(() => _refresh());
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -149,7 +171,7 @@ class _InstitutionOpportunitiesPageState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
-      setState(_refresh);
+      setState(() => _refresh());
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -192,7 +214,7 @@ class _InstitutionOpportunitiesPageState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
-      setState(_refresh);
+      setState(() => _refresh());
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -321,7 +343,7 @@ class _InstitutionOpportunitiesPageState
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: () => setState(_refresh),
+                          onPressed: () => setState(() => _refresh()),
                           child: const Text('Atualizar'),
                         ),
                       ],
@@ -367,7 +389,8 @@ class _InstitutionOpportunitiesPageState
                       accessToken: session.accessToken!,
                       platformFeeRate: _platformFeeRate,
                       platformFeePercentLabel: _platformFeePercentLabel,
-                      onEngagementCreated: () => setState(_refresh),
+                      refreshVersion: _refreshVersion,
+                      onEngagementCreated: () => setState(() => _refresh()),
                       onEdit: () => _openEditOpportunityFlow(items[index]),
                       onStatusChange: (status) => _changeOpportunityStatus(
                         item: items[index],
@@ -428,12 +451,13 @@ class _InstitutionVerificationNotice extends StatelessWidget {
   }
 }
 
-class _InstitutionOpportunityCard extends StatelessWidget {
+class _InstitutionOpportunityCard extends StatefulWidget {
   const _InstitutionOpportunityCard({
     required this.item,
     required this.accessToken,
     required this.platformFeeRate,
     required this.platformFeePercentLabel,
+    required this.refreshVersion,
     required this.onEngagementCreated,
     required this.onEdit,
     required this.onStatusChange,
@@ -443,18 +467,57 @@ class _InstitutionOpportunityCard extends StatelessWidget {
   final String accessToken;
   final double platformFeeRate;
   final String platformFeePercentLabel;
+  final int refreshVersion;
   final VoidCallback onEngagementCreated;
   final VoidCallback onEdit;
   final ValueChanged<String> onStatusChange;
 
   @override
+  State<_InstitutionOpportunityCard> createState() =>
+      _InstitutionOpportunityCardState();
+}
+
+class _InstitutionOpportunityCardState
+    extends State<_InstitutionOpportunityCard> {
+  final ApplicationsRepository _applicationsRepository =
+      ApplicationsRepository();
+  late Future<List<OpportunityApplicationSummary>> _applicationsFuture;
+  late Future<List<OpportunityInviteSummary>> _invitesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCardData();
+  }
+
+  @override
+  void didUpdateWidget(covariant _InstitutionOpportunityCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.id != widget.item.id ||
+        oldWidget.accessToken != widget.accessToken ||
+        oldWidget.refreshVersion != widget.refreshVersion) {
+      _loadCardData();
+    }
+  }
+
+  void _loadCardData() {
+    _applicationsFuture =
+        _applicationsRepository.fetchApplicationsByOpportunity(
+      accessToken: widget.accessToken,
+      opportunityId: widget.item.id,
+    );
+    _invitesFuture = _applicationsRepository.fetchInvitesByOpportunity(
+      accessToken: widget.accessToken,
+      opportunityId: widget.item.id,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final session = AppSessionScope.of(context);
-    final applicationsRepository = ApplicationsRepository();
     final theme = Theme.of(context);
-    final isDraft = item.statusValue == 'DRAFT';
-    final isOpen = item.statusValue == 'OPEN';
-    final canReopen = item.statusValue == 'CANCELLED';
+    final isDraft = widget.item.statusValue == 'DRAFT';
+    final isOpen = widget.item.statusValue == 'OPEN';
+    final canReopen = widget.item.statusValue == 'CANCELLED';
 
     return Card(
       child: Padding(
@@ -466,13 +529,13 @@ class _InstitutionOpportunityCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    item.title,
+                    widget.item.title,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                InfoBadge(label: item.statusLabel),
+                InfoBadge(label: widget.item.statusLabel),
               ],
             ),
             const SizedBox(height: 10),
@@ -480,9 +543,9 @@ class _InstitutionOpportunityCard extends StatelessWidget {
               spacing: 10,
               runSpacing: 10,
               children: [
-                InfoBadge(label: item.specialtyLabel),
-                InfoBadge(label: item.shiftLabel),
-                InfoBadge(label: item.amountLabel),
+                InfoBadge(label: widget.item.specialtyLabel),
+                InfoBadge(label: widget.item.shiftLabel),
+                InfoBadge(label: widget.item.amountLabel),
               ],
             ),
             const SizedBox(height: 14),
@@ -491,25 +554,25 @@ class _InstitutionOpportunityCard extends StatelessWidget {
               runSpacing: 10,
               children: [
                 OutlinedButton.icon(
-                  onPressed: onEdit,
+                  onPressed: widget.onEdit,
                   icon: const Icon(Icons.edit_outlined),
                   label: const Text('Editar'),
                 ),
                 if (isDraft)
                   ElevatedButton.icon(
-                    onPressed: () => onStatusChange('OPEN'),
+                    onPressed: () => widget.onStatusChange('OPEN'),
                     icon: const Icon(Icons.publish_rounded),
                     label: const Text('Publicar'),
                   ),
                 if (isOpen)
                   OutlinedButton.icon(
-                    onPressed: () => onStatusChange('CANCELLED'),
+                    onPressed: () => widget.onStatusChange('CANCELLED'),
                     icon: const Icon(Icons.pause_circle_outline_rounded),
                     label: const Text('Cancelar vaga'),
                   ),
                 if (canReopen)
                   OutlinedButton.icon(
-                    onPressed: () => onStatusChange('OPEN'),
+                    onPressed: () => widget.onStatusChange('OPEN'),
                     icon: const Icon(Icons.restart_alt_rounded),
                     label: const Text('Reabrir vaga'),
                   ),
@@ -517,10 +580,7 @@ class _InstitutionOpportunityCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             FutureBuilder<List<OpportunityApplicationSummary>>(
-              future: applicationsRepository.fetchApplicationsByOpportunity(
-                accessToken: session.accessToken!,
-                opportunityId: item.id,
-              ),
+              future: _applicationsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Padding(
@@ -559,11 +619,11 @@ class _InstitutionOpportunityCard extends StatelessWidget {
                         index++) ...[
                       _OpportunityApplicationStatusRow(
                         item: applications[index],
-                        accessToken: accessToken,
-                        opportunity: item,
-                        platformFeeRate: platformFeeRate,
-                        platformFeePercentLabel: platformFeePercentLabel,
-                        onEngagementCreated: onEngagementCreated,
+                        accessToken: widget.accessToken,
+                        opportunity: widget.item,
+                        platformFeeRate: widget.platformFeeRate,
+                        platformFeePercentLabel: widget.platformFeePercentLabel,
+                        onEngagementCreated: widget.onEngagementCreated,
                       ),
                       if (index < applications.length - 1)
                         const SizedBox(height: 10),
@@ -574,10 +634,7 @@ class _InstitutionOpportunityCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             FutureBuilder<List<OpportunityInviteSummary>>(
-              future: applicationsRepository.fetchInvitesByOpportunity(
-                accessToken: session.accessToken!,
-                opportunityId: item.id,
-              ),
+              future: _invitesFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Padding(
@@ -614,11 +671,11 @@ class _InstitutionOpportunityCard extends StatelessWidget {
                     for (var index = 0; index < invites.length; index++) ...[
                       _OpportunityInviteStatusRow(
                         item: invites[index],
-                        accessToken: accessToken,
-                        opportunity: item,
-                        platformFeeRate: platformFeeRate,
-                        platformFeePercentLabel: platformFeePercentLabel,
-                        onEngagementCreated: onEngagementCreated,
+                        accessToken: widget.accessToken,
+                        opportunity: widget.item,
+                        platformFeeRate: widget.platformFeeRate,
+                        platformFeePercentLabel: widget.platformFeePercentLabel,
+                        onEngagementCreated: widget.onEngagementCreated,
                       ),
                       if (index < invites.length - 1)
                         const SizedBox(height: 10),
