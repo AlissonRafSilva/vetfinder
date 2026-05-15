@@ -23,20 +23,22 @@ class AppShellPage extends StatelessWidget {
       );
     }
 
+    final sessionKey = '${session.roleValue ?? 'user'}:${session.userId ?? ''}';
+
     if (session.roleValue == 'ADMIN') {
-      return const AdminShellPage(
-        key: ValueKey('admin-shell'),
+      return AdminShellPage(
+        key: ValueKey('admin-shell:$sessionKey'),
       );
     }
 
     if (session.isInstitutionUser) {
-      return const InstitutionShellPage(
-        key: ValueKey('institution-shell'),
+      return InstitutionShellPage(
+        key: ValueKey('institution-shell:$sessionKey'),
       );
     }
 
-    return const ProfessionalShellPage(
-      key: ValueKey('professional-shell'),
+    return ProfessionalShellPage(
+      key: ValueKey('professional-shell:$sessionKey'),
     );
   }
 }

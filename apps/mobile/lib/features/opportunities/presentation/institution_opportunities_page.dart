@@ -308,6 +308,12 @@ class _InstitutionOpportunitiesPageState
                 ),
               ),
               const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _refresh()),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Atualizar'),
+              ),
+              const SizedBox(width: 10),
               ElevatedButton.icon(
                 onPressed: _openCreateOpportunityFlow,
                 icon: const Icon(Icons.add_rounded),
@@ -481,8 +487,8 @@ class _InstitutionOpportunityCardState
     extends State<_InstitutionOpportunityCard> {
   final ApplicationsRepository _applicationsRepository =
       ApplicationsRepository();
-  late Future<List<OpportunityApplicationSummary>> _applicationsFuture;
-  late Future<List<OpportunityInviteSummary>> _invitesFuture;
+  late Future<_InstitutionOpportunityActivity> _activityFuture;
+  bool _showDetails = false;
 
   @override
   void initState() {
@@ -501,14 +507,24 @@ class _InstitutionOpportunityCardState
   }
 
   void _loadCardData() {
-    _applicationsFuture =
-        _applicationsRepository.fetchApplicationsByOpportunity(
-      accessToken: widget.accessToken,
-      opportunityId: widget.item.id,
-    );
-    _invitesFuture = _applicationsRepository.fetchInvitesByOpportunity(
-      accessToken: widget.accessToken,
-      opportunityId: widget.item.id,
+    _activityFuture = _loadActivity();
+  }
+
+  Future<_InstitutionOpportunityActivity> _loadActivity() async {
+    final results = await Future.wait([
+      _applicationsRepository.fetchApplicationsByOpportunity(
+        accessToken: widget.accessToken,
+        opportunityId: widget.item.id,
+      ),
+      _applicationsRepository.fetchInvitesByOpportunity(
+        accessToken: widget.accessToken,
+        opportunityId: widget.item.id,
+      ),
+    ]);
+
+    return _InstitutionOpportunityActivity(
+      applications: results[0] as List<OpportunityApplicationSummary>,
+      invites: results[1] as List<OpportunityInviteSummary>,
     );
   }
 
@@ -579,8 +595,8 @@ class _InstitutionOpportunityCardState
               ],
             ),
             const SizedBox(height: 16),
-            FutureBuilder<List<OpportunityApplicationSummary>>(
-              future: _applicationsFuture,
+            FutureBuilder<_InstitutionOpportunityActivity>(
+              future: _activityFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Padding(
@@ -591,94 +607,33 @@ class _InstitutionOpportunityCardState
 
                 if (snapshot.hasError) {
                   return const Text(
-                    'Nao foi possivel carregar as candidaturas desta vaga.',
+                    'Nao foi possivel carregar candidaturas e convites desta vaga.',
                   );
                 }
 
-                final applications =
-                    snapshot.data ?? const <OpportunityApplicationSummary>[];
-                if (applications.isEmpty) {
-                  return Text(
-                    'Nenhuma candidatura recebida para esta vaga ainda.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  );
-                }
+                final activity =
+                    snapshot.data ?? const _InstitutionOpportunityActivity();
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Candidaturas recebidas',
-                      style: theme.textTheme.titleSmall,
+                    _OpportunityActivitySummary(
+                      activity: activity,
+                      isExpanded: _showDetails,
+                      onToggleDetails: () {
+                        setState(() => _showDetails = !_showDetails);
+                      },
                     ),
-                    const SizedBox(height: 10),
-                    for (var index = 0;
-                        index < applications.length;
-                        index++) ...[
-                      _OpportunityApplicationStatusRow(
-                        item: applications[index],
+                    if (_showDetails) ...[
+                      const SizedBox(height: 16),
+                      _OpportunityActivityDetails(
+                        activity: activity,
                         accessToken: widget.accessToken,
                         opportunity: widget.item,
                         platformFeeRate: widget.platformFeeRate,
                         platformFeePercentLabel: widget.platformFeePercentLabel,
                         onEngagementCreated: widget.onEngagementCreated,
                       ),
-                      if (index < applications.length - 1)
-                        const SizedBox(height: 10),
-                    ],
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            FutureBuilder<List<OpportunityInviteSummary>>(
-              future: _invitesFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: LinearProgressIndicator(),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return const Text(
-                    'Nao foi possivel carregar os convites desta vaga.',
-                  );
-                }
-
-                final invites =
-                    snapshot.data ?? const <OpportunityInviteSummary>[];
-                if (invites.isEmpty) {
-                  return Text(
-                    'Nenhum convite enviado para esta vaga ainda.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  );
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Convites enviados',
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 10),
-                    for (var index = 0; index < invites.length; index++) ...[
-                      _OpportunityInviteStatusRow(
-                        item: invites[index],
-                        accessToken: widget.accessToken,
-                        opportunity: widget.item,
-                        platformFeeRate: widget.platformFeeRate,
-                        platformFeePercentLabel: widget.platformFeePercentLabel,
-                        onEngagementCreated: widget.onEngagementCreated,
-                      ),
-                      if (index < invites.length - 1)
-                        const SizedBox(height: 10),
                     ],
                   ],
                 );
@@ -687,6 +642,177 @@ class _InstitutionOpportunityCardState
           ],
         ),
       ),
+    );
+  }
+}
+
+class _InstitutionOpportunityActivity {
+  const _InstitutionOpportunityActivity({
+    this.applications = const <OpportunityApplicationSummary>[],
+    this.invites = const <OpportunityInviteSummary>[],
+  });
+
+  final List<OpportunityApplicationSummary> applications;
+  final List<OpportunityInviteSummary> invites;
+
+  int get pendingApplications =>
+      applications.where((item) => item.statusValue == 'APPLIED').length;
+
+  int get acceptedApplications =>
+      applications.where((item) => item.statusValue == 'ACCEPTED').length;
+
+  int get acceptedInvites =>
+      invites.where((item) => item.statusValue == 'ACCEPTED').length;
+
+  bool get hasActivity => applications.isNotEmpty || invites.isNotEmpty;
+
+  bool get hasAcceptedProfessional =>
+      acceptedApplications > 0 || acceptedInvites > 0;
+}
+
+class _OpportunityActivitySummary extends StatelessWidget {
+  const _OpportunityActivitySummary({
+    required this.activity,
+    required this.isExpanded,
+    required this.onToggleDetails,
+  });
+
+  final _InstitutionOpportunityActivity activity;
+  final bool isExpanded;
+  final VoidCallback onToggleDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final title = activity.hasAcceptedProfessional
+        ? 'Profissional aceito aguardando fechamento'
+        : activity.hasActivity
+            ? 'Retorno da vaga'
+            : 'Sem retorno ainda';
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.42,
+        ),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: activity.hasActivity ? onToggleDetails : null,
+                  icon: Icon(
+                    isExpanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                  ),
+                  label: Text(isExpanded ? 'Ocultar' : 'Ver detalhes'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                InfoBadge(
+                    label: '${activity.applications.length} candidaturas'),
+                InfoBadge(label: '${activity.pendingApplications} pendentes'),
+                InfoBadge(label: '${activity.invites.length} convites'),
+                InfoBadge(label: '${activity.acceptedInvites} aceitos'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OpportunityActivityDetails extends StatelessWidget {
+  const _OpportunityActivityDetails({
+    required this.activity,
+    required this.accessToken,
+    required this.opportunity,
+    required this.platformFeeRate,
+    required this.platformFeePercentLabel,
+    required this.onEngagementCreated,
+  });
+
+  final _InstitutionOpportunityActivity activity;
+  final String accessToken;
+  final InstitutionOpportunityOption opportunity;
+  final double platformFeeRate;
+  final String platformFeePercentLabel;
+  final VoidCallback onEngagementCreated;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Candidaturas recebidas', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 10),
+        if (activity.applications.isEmpty)
+          Text(
+            'Nenhuma candidatura recebida para esta vaga ainda.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          for (var index = 0;
+              index < activity.applications.length;
+              index++) ...[
+            _OpportunityApplicationStatusRow(
+              item: activity.applications[index],
+              accessToken: accessToken,
+              opportunity: opportunity,
+              platformFeeRate: platformFeeRate,
+              platformFeePercentLabel: platformFeePercentLabel,
+              onEngagementCreated: onEngagementCreated,
+            ),
+            if (index < activity.applications.length - 1)
+              const SizedBox(height: 10),
+          ],
+        const SizedBox(height: 16),
+        Text('Convites enviados', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 10),
+        if (activity.invites.isEmpty)
+          Text(
+            'Nenhum convite enviado para esta vaga ainda.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          for (var index = 0; index < activity.invites.length; index++) ...[
+            _OpportunityInviteStatusRow(
+              item: activity.invites[index],
+              accessToken: accessToken,
+              opportunity: opportunity,
+              platformFeeRate: platformFeeRate,
+              platformFeePercentLabel: platformFeePercentLabel,
+              onEngagementCreated: onEngagementCreated,
+            ),
+            if (index < activity.invites.length - 1) const SizedBox(height: 10),
+          ],
+      ],
     );
   }
 }

@@ -51,6 +51,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isDetectingLocation = false;
   bool _isRefreshingSession = false;
   String? _loadedProfileKey;
+  String? _loadedDocumentsKey;
   Future<List<DocumentSummary>>? _documentsFuture;
   String? _feedbackMessage;
   String? _locationFeedback;
@@ -88,12 +89,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _loadDocumentsIfNeeded() {
     final session = AppSessionScope.of(context);
+    final documentsKey = '${session.userId}:${session.accessToken}';
     if (!session.isAuthenticated ||
         session.accessToken == null ||
-        _documentsFuture != null) {
+        _loadedDocumentsKey == documentsKey) {
       return;
     }
 
+    _loadedDocumentsKey = documentsKey;
     _documentsFuture = _documentsRepository.fetchMine(
       accessToken: session.accessToken!,
     );
@@ -166,6 +169,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
+    _clearProfileFormForSessionChange();
     _loadedProfileKey = profileKey;
 
     try {
@@ -245,6 +249,31 @@ class _ProfilePageState extends State<ProfilePage> {
     } on ApiException {
       // Perfil ainda nao existe; o formulario permanece em branco para criacao.
     }
+  }
+
+  void _clearProfileFormForSessionChange() {
+    _vetCrmvController.clear();
+    _vetCrmvStateController.text = 'SP';
+    _vetRateController.clear();
+    _vetExperienceController.clear();
+    _vetDistanceController.clear();
+    _profileLatController.clear();
+    _profileLngController.clear();
+    _vetEmergencyCare = true;
+    _vetCanTravel = true;
+    _internUniversityController.clear();
+    _internPeriodController.clear();
+    _internGraduationController.clear();
+    _legalNameController.clear();
+    _tradeNameController.clear();
+    _cnpjController.clear();
+    _stateRegistrationController.clear();
+    _descriptionController.clear();
+    _contactNameController.clear();
+    _contactPhoneController.clear();
+    _locationFeedback = null;
+    _feedbackMessage = null;
+    _isFeedbackError = false;
   }
 
   String _dateOnly(String? value) {
