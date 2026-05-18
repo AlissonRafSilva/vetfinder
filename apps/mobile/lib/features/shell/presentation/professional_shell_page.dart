@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../auth/presentation/auth_gate_page.dart';
 import '../../engagements/presentation/professional_engagements_page.dart';
+import '../../notifications/presentation/notifications_page.dart';
 import '../../opportunities/presentation/opportunities_page.dart';
 import '../../profile/presentation/profile_page.dart';
 import '../../schedule/presentation/schedule_page.dart';
@@ -22,11 +23,12 @@ class _ProfessionalShellPageState extends State<ProfessionalShellPage> {
       AuthGatePage(
         onOpenMarketplace: () => _selectTab(1),
         onOpenSchedule: () => _selectTab(2),
-        onOpenProfile: () => _selectTab(4),
+        onOpenProfile: () => _selectTab(5),
       ),
       const OpportunitiesPage(),
       const SchedulePage(),
       const ProfessionalEngagementsPage(),
+      const NotificationsPage(),
       const ProfilePage(),
     ];
 
@@ -60,6 +62,10 @@ class _ProfessionalShellPageState extends State<ProfessionalShellPage> {
           NavigationDestination(
             icon: Icon(Icons.handshake_rounded),
             label: 'Contratos',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.notifications_rounded),
+            label: 'Alertas',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_rounded),

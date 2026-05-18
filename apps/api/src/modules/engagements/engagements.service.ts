@@ -15,6 +15,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PlatformConfigService } from '../platform/platform-config.service';
 import { CreateEngagementDto } from './dto/create-engagement.dto';
 
@@ -23,6 +24,7 @@ export class EngagementsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly platformConfigService: PlatformConfigService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(dto: CreateEngagementDto, user: AuthenticatedUser) {
@@ -30,6 +32,7 @@ export class EngagementsService {
       where: { id: dto.opportunityId },
       select: {
         id: true,
+        title: true,
         status: true,
         institutionId: true,
         opportunityType: true,
@@ -205,6 +208,17 @@ export class EngagementsService {
       return created;
     });
 
+    await this.safeNotify({
+      userId: dto.professionalUserId,
+      type: 'ENGAGEMENT_CREATED',
+      title: 'Plantao fechado',
+      body: `A instituicao confirmou o fechamento de "${opportunity.title}".`,
+      dataJson: {
+        opportunityId: dto.opportunityId,
+        engagementId: engagement.id,
+      },
+    });
+
     return {
       message: 'Plantao fechado com sucesso.',
       engagement,
@@ -334,6 +348,14 @@ export class EngagementsService {
     }
 
     return engagement;
+  }
+
+  private async safeNotify(input: Parameters<NotificationsService['create']>[0]) {
+    try {
+      await this.notificationsService.create(input);
+    } catch {
+      // Notificacoes nao devem bloquear fechamento de plantao.
+    }
   }
 
 }

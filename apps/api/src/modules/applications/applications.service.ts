@@ -12,6 +12,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ApplyOpportunityDto } from './dto/apply-opportunity.dto';
 import { InviteProfessionalDto } from './dto/invite-professional.dto';
 import { RespondApplicationDto } from './dto/respond-application.dto';
@@ -19,15 +20,24 @@ import { RespondInviteDto } from './dto/respond-invite.dto';
 
 @Injectable()
 export class ApplicationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async apply(opportunityId: string, dto: ApplyOpportunityDto, user: AuthenticatedUser) {
     const opportunity = await this.prisma.opportunity.findUnique({
       where: { id: opportunityId },
       select: {
         id: true,
+        title: true,
         status: true,
         opportunityType: true,
+        institution: {
+          select: {
+            userId: true,
+          },
+        },
       },
     });
 
@@ -73,6 +83,17 @@ export class ApplicationsService {
       },
     });
 
+    await this.safeNotify({
+      userId: opportunity.institution.userId,
+      type: 'APPLICATION_RECEIVED',
+      title: 'Nova candidatura recebida',
+      body: `Um profissional se candidatou para "${opportunity.title}".`,
+      dataJson: {
+        opportunityId,
+        applicationId: application.id,
+      },
+    });
+
     return {
       message: 'Candidatura realizada com sucesso.',
       application,
@@ -84,6 +105,7 @@ export class ApplicationsService {
       where: { id: opportunityId },
       select: {
         id: true,
+        title: true,
         institution: {
           select: {
             userId: true,
@@ -157,6 +179,17 @@ export class ApplicationsService {
         professionalUserId: dto.professionalUserId,
         message: dto.message,
         status: InteractionStatus.SENT,
+      },
+    });
+
+    await this.safeNotify({
+      userId: dto.professionalUserId,
+      type: 'INVITE_RECEIVED',
+      title: 'Novo convite de vaga',
+      body: `Voce recebeu um convite para "${opportunity.title}".`,
+      dataJson: {
+        opportunityId,
+        inviteId: invite.id,
       },
     });
 
@@ -303,7 +336,9 @@ export class ApplicationsService {
       where: { id: applicationId },
       include: {
         opportunity: {
-          include: {
+          select: {
+            id: true,
+            title: true,
             institution: {
               select: {
                 userId: true,
@@ -330,6 +365,25 @@ export class ApplicationsService {
       },
     });
 
+    await this.safeNotify({
+      userId: application.professionalUserId,
+      type:
+        dto.status === InteractionStatus.ACCEPTED
+          ? 'APPLICATION_ACCEPTED'
+          : 'APPLICATION_REJECTED',
+      title:
+        dto.status === InteractionStatus.ACCEPTED
+          ? 'Candidatura aceita'
+          : 'Candidatura recusada',
+      body: `Sua candidatura para "${application.opportunity.title}" foi ${
+        dto.status === InteractionStatus.ACCEPTED ? 'aceita' : 'recusada'
+      }.`,
+      dataJson: {
+        opportunityId: application.opportunityId,
+        applicationId,
+      },
+    });
+
     return {
       message: 'Resposta da candidatura registrada com sucesso.',
       application: updated,
@@ -346,6 +400,17 @@ export class ApplicationsService {
       select: {
         id: true,
         professionalUserId: true,
+        opportunityId: true,
+        opportunity: {
+          select: {
+            title: true,
+            institution: {
+              select: {
+                userId: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -365,10 +430,37 @@ export class ApplicationsService {
       },
     });
 
+    await this.safeNotify({
+      userId: invite.opportunity.institution.userId,
+      type:
+        dto.status === InteractionStatus.ACCEPTED
+          ? 'INVITE_ACCEPTED'
+          : 'INVITE_DECLINED',
+      title:
+        dto.status === InteractionStatus.ACCEPTED
+          ? 'Convite aceito'
+          : 'Convite recusado',
+      body: `Um profissional ${
+        dto.status === InteractionStatus.ACCEPTED ? 'aceitou' : 'recusou'
+      } o convite para "${invite.opportunity.title}".`,
+      dataJson: {
+        opportunityId: invite.opportunityId,
+        inviteId,
+      },
+    });
+
     return {
       message: 'Resposta do convite registrada com sucesso.',
       invite: updated,
     };
+  }
+
+  private async safeNotify(input: Parameters<NotificationsService['create']>[0]) {
+    try {
+      await this.notificationsService.create(input);
+    } catch {
+      // Notificacoes nao devem bloquear candidatura, convite ou resposta.
+    }
   }
 
 }

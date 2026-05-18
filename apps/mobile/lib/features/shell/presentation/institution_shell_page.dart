@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../auth/presentation/auth_gate_page.dart';
 import '../../engagements/presentation/institution_engagements_page.dart';
+import '../../notifications/presentation/notifications_page.dart';
 import '../../opportunities/presentation/institution_opportunities_page.dart';
 import '../../opportunities/presentation/opportunities_page.dart';
 import '../../profile/presentation/profile_page.dart';
@@ -21,11 +22,12 @@ class _InstitutionShellPageState extends State<InstitutionShellPage> {
     final pages = [
       AuthGatePage(
         onOpenMarketplace: () => _selectTab(1),
-        onOpenProfile: () => _selectTab(4),
+        onOpenProfile: () => _selectTab(5),
       ),
       const OpportunitiesPage(),
       const InstitutionOpportunitiesPage(),
       const InstitutionEngagementsPage(),
+      const NotificationsPage(),
       const ProfilePage(),
     ];
 
@@ -59,6 +61,10 @@ class _InstitutionShellPageState extends State<InstitutionShellPage> {
           NavigationDestination(
             icon: Icon(Icons.handshake_rounded),
             label: 'Contratacoes',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.notifications_rounded),
+            label: 'Alertas',
           ),
           NavigationDestination(
             icon: Icon(Icons.apartment_rounded),
