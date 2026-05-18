@@ -8,10 +8,14 @@ import { EngagementStatus, PaymentStatus, SplitRecipientType, SplitStatus } from
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { PaymentProvider } from './payment-provider';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paymentProvider: PaymentProvider,
+  ) {}
 
   async create(dto: CreatePaymentDto, user: AuthenticatedUser) {
     const engagement = await this.prisma.engagement.findUnique({
@@ -38,19 +42,27 @@ export class PaymentsService {
       throw new ConflictException('Ja existe pagamento registrado para este fechamento.');
     }
 
-    const provider = dto.provider ?? 'manual-mvp';
+    const paymentIntent = this.paymentProvider.createPaymentIntent({
+      engagementId: dto.engagementId,
+      grossAmount: engagement.grossAmount,
+      platformFeeAmount: engagement.platformFeeAmount,
+      netAmount: engagement.netAmount,
+    });
+    const provider = dto.provider ?? paymentIntent.provider;
 
     const payment = await this.prisma.$transaction(async (tx) => {
       const createdPayment = await tx.payment.create({
         data: {
           engagementId: dto.engagementId,
           provider,
-          providerPaymentId: dto.providerPaymentId,
-          status: PaymentStatus.PAID,
+          providerPaymentId: dto.providerPaymentId ?? paymentIntent.providerPaymentId,
+          providerStatus: paymentIntent.providerStatus,
+          checkoutUrl: paymentIntent.checkoutUrl,
+          providerPayload: paymentIntent.providerPayload,
+          status: PaymentStatus.PENDING,
           grossAmount: engagement.grossAmount,
           platformFeeAmount: engagement.platformFeeAmount,
           netAmount: engagement.netAmount,
-          paidAt: new Date(),
         },
       });
 
@@ -60,24 +72,16 @@ export class PaymentsService {
             paymentId: createdPayment.id,
             recipientType: SplitRecipientType.PLATFORM,
             amount: engagement.platformFeeAmount,
-            status: SplitStatus.SCHEDULED,
+            status: SplitStatus.PENDING,
           },
           {
             paymentId: createdPayment.id,
             recipientType: SplitRecipientType.PROFESSIONAL,
             recipientId: engagement.professionalUserId,
             amount: engagement.netAmount,
-            status: SplitStatus.SCHEDULED,
+            status: SplitStatus.PENDING,
           },
         ],
-      });
-
-      await tx.engagement.update({
-        where: { id: dto.engagementId },
-        data: {
-          status: EngagementStatus.CONFIRMED,
-          confirmedAt: new Date(),
-        },
       });
 
       return tx.payment.findUnique({
@@ -89,8 +93,69 @@ export class PaymentsService {
     });
 
     return {
-      message: 'Pagamento registrado com sucesso.',
+      message: 'Checkout sandbox criado com sucesso.',
       payment,
+    };
+  }
+
+  async confirmSandboxPayment(paymentId: string, user: AuthenticatedUser) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: {
+        engagement: {
+          include: {
+            institution: true,
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Pagamento nao encontrado.');
+    }
+
+    if (payment.engagement.institution.userId !== user.userId) {
+      throw new ForbiddenException('Voce nao pode confirmar este pagamento.');
+    }
+
+    if (payment.status === PaymentStatus.PAID) {
+      throw new ConflictException('Este pagamento ja esta confirmado.');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: PaymentStatus.PAID,
+          providerStatus: 'PAID_SANDBOX',
+          paidAt: new Date(),
+        },
+      });
+
+      await tx.paymentSplit.updateMany({
+        where: { paymentId },
+        data: {
+          status: SplitStatus.SCHEDULED,
+        },
+      });
+
+      await tx.engagement.update({
+        where: { id: payment.engagementId },
+        data: {
+          status: EngagementStatus.CONFIRMED,
+          confirmedAt: new Date(),
+        },
+      });
+
+      return tx.payment.findUnique({
+        where: { id: paymentId },
+        include: { splits: true },
+      });
+    });
+
+    return {
+      message: 'Pagamento sandbox confirmado com sucesso.',
+      payment: updated,
     };
   }
 

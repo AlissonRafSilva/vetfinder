@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/session/app_session_scope.dart';
@@ -31,6 +32,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
   PaymentSummary? _createdPayment;
   ReviewSummary? _createdReview;
   bool _isCreatingPayment = false;
+  bool _isConfirmingPayment = false;
   bool _isCreatingReview = false;
   bool _shouldRefreshOnExit = false;
   String? _paymentFeedback;
@@ -92,7 +94,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
           builder: (context) => AlertDialog(
             title: const Text('Registrar pagamento'),
             content: const Text(
-              'Confirmar pagamento manual MVP para este plantao? O contrato sera marcado como confirmado e o split sera agendado.',
+              'Gerar checkout sandbox para este plantao? O contrato continuara aguardando pagamento ate a confirmacao do gateway.',
             ),
             actions: [
               TextButton(
@@ -101,7 +103,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Confirmar pagamento'),
+                child: const Text('Gerar checkout'),
               ),
             ],
           ),
@@ -118,7 +120,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
     });
 
     try {
-      final payment = await _paymentsRepository.createManualPayment(
+      final payment = await _paymentsRepository.createCheckoutPayment(
         accessToken: session.accessToken!,
         engagementId: widget.item.id,
       );
@@ -131,7 +133,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
         _createdPayment = payment;
         _paymentFuture = Future.value(payment);
         _shouldRefreshOnExit = true;
-        _paymentFeedback = 'Pagamento registrado com sucesso.';
+        _paymentFeedback = 'Checkout sandbox criado com sucesso.';
       });
     } on ApiException catch (error) {
       if (!mounted) {
@@ -148,6 +150,63 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
         });
       }
     }
+  }
+
+  Future<void> _confirmSandboxPayment(PaymentSummary payment) async {
+    final session = AppSessionScope.of(context);
+    if (!session.isAuthenticated ||
+        !session.isInstitutionUser ||
+        session.accessToken == null ||
+        _isConfirmingPayment) {
+      return;
+    }
+
+    setState(() {
+      _isConfirmingPayment = true;
+      _paymentFeedback = null;
+    });
+
+    try {
+      final confirmedPayment = await _paymentsRepository.confirmSandboxPayment(
+        accessToken: session.accessToken!,
+        paymentId: payment.id,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _createdPayment = confirmedPayment;
+        _paymentFuture = Future.value(confirmedPayment);
+        _shouldRefreshOnExit = true;
+        _paymentFeedback = 'Pagamento sandbox confirmado com sucesso.';
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _paymentFeedback = error.message;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isConfirmingPayment = false);
+      }
+    }
+  }
+
+  Future<void> _openCheckout(PaymentSummary payment) async {
+    final checkoutUrl = payment.checkoutUrl;
+    if (checkoutUrl == null || checkoutUrl.isEmpty) {
+      return;
+    }
+
+    await launchUrl(
+      Uri.parse(checkoutUrl),
+      mode: LaunchMode.externalApplication,
+    );
   }
 
   Future<void> _openReviewDialog() async {
@@ -336,8 +395,12 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
               createdPayment: _createdPayment,
               feedback: _paymentFeedback,
               canRegisterPayment: _canRegisterPayment,
+              canConfirmSandboxPayment: widget.isInstitutionView,
               isCreatingPayment: _isCreatingPayment,
+              isConfirmingPayment: _isConfirmingPayment,
               onRegisterPayment: _registerPayment,
+              onConfirmSandboxPayment: _confirmSandboxPayment,
+              onOpenCheckout: _openCheckout,
             ),
             const SizedBox(height: 14),
             _ReviewsSection(
@@ -396,16 +459,24 @@ class _PaymentSection extends StatelessWidget {
     required this.createdPayment,
     required this.feedback,
     required this.canRegisterPayment,
+    required this.canConfirmSandboxPayment,
     required this.isCreatingPayment,
+    required this.isConfirmingPayment,
     required this.onRegisterPayment,
+    required this.onConfirmSandboxPayment,
+    required this.onOpenCheckout,
   });
 
   final Future<PaymentSummary?>? paymentFuture;
   final PaymentSummary? createdPayment;
   final String? feedback;
   final bool canRegisterPayment;
+  final bool canConfirmSandboxPayment;
   final bool isCreatingPayment;
+  final bool isConfirmingPayment;
   final VoidCallback onRegisterPayment;
+  final ValueChanged<PaymentSummary> onConfirmSandboxPayment;
+  final ValueChanged<PaymentSummary> onOpenCheckout;
 
   @override
   Widget build(BuildContext context) {
@@ -437,7 +508,13 @@ class _PaymentSection extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             if (createdPayment != null)
-              _PaymentDetails(payment: createdPayment!)
+              _PaymentDetails(
+                payment: createdPayment!,
+                canConfirmSandbox: canConfirmSandboxPayment,
+                isConfirmingPayment: isConfirmingPayment,
+                onConfirmSandboxPayment: onConfirmSandboxPayment,
+                onOpenCheckout: onOpenCheckout,
+              )
             else if (paymentFuture == null)
               const Text('Pagamento ainda nao carregado para esta sessao.')
             else
@@ -456,11 +533,17 @@ class _PaymentSection extends StatelessWidget {
 
                   final payment = snapshot.data;
                   if (payment != null) {
-                    return _PaymentDetails(payment: payment);
+                    return _PaymentDetails(
+                      payment: payment,
+                      canConfirmSandbox: canConfirmSandboxPayment,
+                      isConfirmingPayment: isConfirmingPayment,
+                      onConfirmSandboxPayment: onConfirmSandboxPayment,
+                      onOpenCheckout: onOpenCheckout,
+                    );
                   }
 
                   return const Text(
-                    'Aguardando pagamento. No MVP, a instituicao pode registrar um pagamento manual para confirmar o plantao.',
+                    'Aguardando pagamento. A instituicao pode gerar um checkout sandbox enquanto o gateway real nao foi escolhido.',
                   );
                 },
               ),
@@ -484,7 +567,7 @@ class _PaymentSection extends StatelessWidget {
                   label: Text(
                     isCreatingPayment
                         ? 'Registrando pagamento...'
-                        : 'Registrar pagamento manual',
+                        : 'Gerar checkout sandbox',
                   ),
                 ),
               ),
@@ -499,9 +582,17 @@ class _PaymentSection extends StatelessWidget {
 class _PaymentDetails extends StatelessWidget {
   const _PaymentDetails({
     required this.payment,
+    required this.canConfirmSandbox,
+    required this.isConfirmingPayment,
+    required this.onConfirmSandboxPayment,
+    required this.onOpenCheckout,
   });
 
   final PaymentSummary payment;
+  final bool canConfirmSandbox;
+  final bool isConfirmingPayment;
+  final ValueChanged<PaymentSummary> onConfirmSandboxPayment;
+  final ValueChanged<PaymentSummary> onOpenCheckout;
 
   @override
   Widget build(BuildContext context) {
@@ -510,6 +601,10 @@ class _PaymentDetails extends StatelessWidget {
       children: [
         _DetailRow(label: 'Status', value: payment.statusLabel),
         _DetailRow(label: 'Provedor', value: payment.providerLabel),
+        _DetailRow(
+          label: 'Status do provedor',
+          value: payment.providerStatusLabel,
+        ),
         _DetailRow(label: 'Valor bruto', value: payment.grossAmountLabel),
         _DetailRow(label: 'Split plataforma', value: payment.platformFeeLabel),
         _DetailRow(
@@ -517,6 +612,34 @@ class _PaymentDetails extends StatelessWidget {
           value: payment.netAmountLabel,
         ),
         _DetailRow(label: 'Data', value: payment.paidAtLabel),
+        if (payment.hasCheckout) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => onOpenCheckout(payment),
+              icon: const Icon(Icons.open_in_new_rounded),
+              label: const Text('Abrir checkout sandbox'),
+            ),
+          ),
+        ],
+        if (canConfirmSandbox && !payment.isPaid) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: isConfirmingPayment
+                  ? null
+                  : () => onConfirmSandboxPayment(payment),
+              icon: const Icon(Icons.verified_rounded),
+              label: Text(
+                isConfirmingPayment
+                    ? 'Confirmando pagamento...'
+                    : 'Confirmar pagamento sandbox',
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

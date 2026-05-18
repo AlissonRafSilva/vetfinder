@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -29,5 +29,11 @@ export class PaymentsController {
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.paymentsService.findOne(id, user);
+  }
+
+  @Roles(UserRole.CLINIC, UserRole.HOSPITAL)
+  @Patch(':id/confirm-sandbox')
+  confirmSandbox(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.paymentsService.confirmSandboxPayment(id, user);
   }
 }

@@ -9,6 +9,8 @@ class PaymentSummary {
     required this.platformFeeLabel,
     required this.netAmountLabel,
     required this.paidAtLabel,
+    required this.checkoutUrl,
+    required this.providerStatusLabel,
   });
 
   final String id;
@@ -18,6 +20,11 @@ class PaymentSummary {
   final String platformFeeLabel;
   final String netAmountLabel;
   final String paidAtLabel;
+  final String? checkoutUrl;
+  final String providerStatusLabel;
+
+  bool get isPaid => statusLabel == 'Pago';
+  bool get hasCheckout => checkoutUrl != null && checkoutUrl!.isNotEmpty;
 
   factory PaymentSummary.fromJson(Map<String, dynamic> json) {
     return PaymentSummary(
@@ -29,6 +36,9 @@ class PaymentSummary {
           OpportunityFormatter.amountLabel(json['platformFeeAmount']),
       netAmountLabel: OpportunityFormatter.amountLabel(json['netAmount']),
       paidAtLabel: _paidAtLabel(json['paidAt']?.toString() ?? ''),
+      checkoutUrl: json['checkoutUrl']?.toString(),
+      providerStatusLabel:
+          _providerStatusLabel(json['providerStatus']?.toString() ?? ''),
     );
   }
 
@@ -37,13 +47,26 @@ class PaymentSummary {
       case 'PAID':
         return 'Pago';
       case 'PENDING':
-        return 'Pendente';
+        return 'Aguardando pagamento';
+      case 'AUTHORIZED':
+        return 'Autorizado';
       case 'FAILED':
         return 'Falhou';
       case 'REFUNDED':
         return 'Reembolsado';
       default:
         return status.isEmpty ? 'Sem status' : status;
+    }
+  }
+
+  static String _providerStatusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'CHECKOUT_CREATED':
+        return 'Checkout criado';
+      case 'PAID_SANDBOX':
+        return 'Pago no sandbox';
+      default:
+        return status.isEmpty ? 'Sem retorno do provedor' : status;
     }
   }
 

@@ -404,6 +404,9 @@ model Payment {
   engagementId      String          @unique @map("engagement_id") @db.Uuid
   provider          String
   providerPaymentId String?         @map("provider_payment_id")
+  providerStatus    String?         @map("provider_status")
+  checkoutUrl       String?         @map("checkout_url")
+  providerPayload   Json?           @map("provider_payload")
   status            PaymentStatus   @default(PENDING)
   grossAmount       Decimal         @map("gross_amount") @db.Decimal(10, 2)
   platformFeeAmount Decimal         @map("platform_fee_amount") @db.Decimal(10, 2)
