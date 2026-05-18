@@ -28,7 +28,8 @@ enum _AuthMode { login, register }
 class _AuthGatePageState extends State<AuthGatePage> {
   final _formKey = GlobalKey<FormState>();
   final ProfileRepository _profileRepository = ProfileRepository();
-  final CurrentLocationService _locationService = const CurrentLocationService();
+  final CurrentLocationService _locationService =
+      const CurrentLocationService();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -193,9 +194,8 @@ class _AuthGatePageState extends State<AuthGatePage> {
       case AppUserRole.hospital:
         return _profileRepository.createInstitutionProfile(
           accessToken: accessToken,
-          institutionType: _selectedRole == AppUserRole.hospital
-              ? 'HOSPITAL'
-              : 'CLINIC',
+          institutionType:
+              _selectedRole == AppUserRole.hospital ? 'HOSPITAL' : 'CLINIC',
           legalName: _legalNameController.text,
           tradeName: _tradeNameController.text,
           cnpj: _cnpjController.text,
@@ -242,8 +242,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
       }
 
       setState(() {
-        _locationFeedback =
-            'Nao foi possivel detectar sua localizacao agora.';
+        _locationFeedback = 'Nao foi possivel detectar sua localizacao agora.';
       });
     } finally {
       if (mounted) {
@@ -299,20 +298,54 @@ class _AuthGatePageState extends State<AuthGatePage> {
                     color: Colors.white.withValues(alpha: 0.88),
                   ),
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    Scrollable.ensureVisible(
-                      _formKey.currentContext ?? context,
-                      duration: const Duration(milliseconds: 350),
-                      curve: Curves.easeOut,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: theme.colorScheme.primary,
-                  ),
-                  child: const Text('Entrar'),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: const [
+                    _HeroMetric(label: 'Agenda'),
+                    _HeroMetric(label: 'Geolocalizacao'),
+                    _HeroMetric(label: 'Split sandbox'),
+                    _HeroMetric(label: 'Alertas'),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Scrollable.ensureVisible(
+                          _formKey.currentContext ?? context,
+                          duration: const Duration(milliseconds: 350),
+                          curve: Curves.easeOut,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: theme.colorScheme.primary,
+                      ),
+                      icon: const Icon(Icons.login_rounded),
+                      label: const Text('Entrar'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() => _mode = _AuthMode.register);
+                        Scrollable.ensureVisible(
+                          _formKey.currentContext ?? context,
+                          duration: const Duration(milliseconds: 350),
+                          curve: Curves.easeOut,
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white),
+                      ),
+                      icon: const Icon(Icons.person_add_alt_1_rounded),
+                      label: const Text('Criar conta'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -449,6 +482,35 @@ class _AuthGatePageState extends State<AuthGatePage> {
                 'Publique demandas urgentes e feche plantoes com seguranca.',
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HeroMetric extends StatelessWidget {
+  const _HeroMetric({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
       ),
     );
   }

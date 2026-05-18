@@ -186,8 +186,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
               if (items.isEmpty) {
                 return const Card(
                   child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text('Nenhuma notificacao por enquanto.'),
+                    padding: EdgeInsets.all(22),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.notifications_none_rounded, size: 32),
+                        SizedBox(height: 12),
+                        Text(
+                          'Nenhum alerta por enquanto',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Quando houver convites, candidaturas, respostas ou fechamento de plantao, tudo aparece aqui.',
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }
