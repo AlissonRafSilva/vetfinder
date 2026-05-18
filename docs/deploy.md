@@ -22,6 +22,9 @@ Obrigatorias:
 - `NODE_ENV`
 - `DATABASE_URL`
 - `REDIS_URL`
+- `CORS_ORIGINS`
+- `AUTH_RATE_LIMIT_WINDOW_MS`
+- `AUTH_RATE_LIMIT_MAX`
 - `JWT_ACCESS_SECRET`
 - `JWT_REFRESH_SECRET`
 - `STORAGE_DRIVER`
@@ -98,7 +101,7 @@ Futuro recomendado:
 ## 6. Checklist De Producao
 
 - CORS restrito ao dominio do app/admin.
-- Rate limit em login e rotas sensiveis.
+- Rate limit em login e cadastro.
 - Logs estruturados.
 - Backups do banco.
 - Monitoramento de API.

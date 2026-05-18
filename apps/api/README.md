@@ -13,6 +13,7 @@ Backend NestJS + TypeScript do VetFinder.
 - Pagamento sandbox com preparacao para split.
 - Avaliacoes.
 - Notificacoes internas.
+- CORS configuravel e protecao simples contra abuso em login/cadastro.
 
 ## Setup Local
 
@@ -137,6 +138,8 @@ Notificacoes:
 ## Observacoes
 
 - O pagamento atual usa `sandbox-split`.
+- `CORS_ORIGINS` aceita origens separadas por virgula; vazio libera todas para desenvolvimento.
+- `AUTH_RATE_LIMIT_WINDOW_MS` e `AUTH_RATE_LIMIT_MAX` controlam o limite simples de login/cadastro.
 - Gateway real depende de definicao juridica/financeira.
 - O storage local e suficiente para desenvolvimento; producao deve usar storage privado.
 - O banco usa PostGIS, mas indices espaciais avancados devem ser revisados antes de escala.
