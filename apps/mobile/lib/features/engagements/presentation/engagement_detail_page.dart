@@ -29,6 +29,8 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
   final ReviewsRepository _reviewsRepository = ReviewsRepository();
   Future<PaymentSummary?>? _paymentFuture;
   Future<List<ReviewSummary>>? _reviewsFuture;
+  String? _loadedPaymentKey;
+  String? _loadedReviewsKey;
   PaymentSummary? _createdPayment;
   ReviewSummary? _createdReview;
   bool _isCreatingPayment = false;
@@ -47,10 +49,19 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
 
   void _loadPayment() {
     final session = AppSessionScope.of(context);
+    final paymentKey =
+        '${session.userId}:${session.accessToken}:${widget.item.id}';
     if (!session.isAuthenticated || session.accessToken == null) {
       _paymentFuture = null;
+      _loadedPaymentKey = paymentKey;
       return;
     }
+
+    if (_loadedPaymentKey == paymentKey && _paymentFuture != null) {
+      return;
+    }
+
+    _loadedPaymentKey = paymentKey;
 
     final future = _paymentsRepository.fetchPaymentByEngagement(
       accessToken: session.accessToken!,
@@ -69,13 +80,25 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
 
   void _loadReviews() {
     final session = AppSessionScope.of(context);
+    final reviewsKey =
+        '${session.userId}:${session.accessToken}:${widget.item.id}';
     if (!session.isAuthenticated || session.accessToken == null) {
       _reviewsFuture = null;
+      _loadedReviewsKey = reviewsKey;
       return;
     }
 
+    if (_loadedReviewsKey == reviewsKey && _reviewsFuture != null) {
+      return;
+    }
+
+    _loadedReviewsKey = reviewsKey;
+    _refreshReviews(session.accessToken!);
+  }
+
+  void _refreshReviews(String accessToken) {
     _reviewsFuture = _reviewsRepository.fetchByEngagement(
-      accessToken: session.accessToken!,
+      accessToken: accessToken,
       engagementId: widget.item.id,
     );
   }
@@ -179,6 +202,8 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
       setState(() {
         _createdPayment = confirmedPayment;
         _paymentFuture = Future.value(confirmedPayment);
+        _loadedPaymentKey =
+            '${session.userId}:${session.accessToken}:${widget.item.id}';
         _shouldRefreshOnExit = true;
         _paymentFeedback = 'Pagamento sandbox confirmado com sucesso.';
       });
@@ -245,10 +270,9 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
 
       setState(() {
         _createdReview = review;
-        _reviewsFuture = _reviewsRepository.fetchByEngagement(
-          accessToken: session.accessToken!,
-          engagementId: widget.item.id,
-        );
+        _refreshReviews(session.accessToken!);
+        _loadedReviewsKey =
+            '${session.userId}:${session.accessToken}:${widget.item.id}';
         _shouldRefreshOnExit = true;
         _reviewFeedback = 'Avaliacao registrada com sucesso.';
       });

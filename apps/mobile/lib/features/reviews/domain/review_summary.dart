@@ -72,8 +72,7 @@ class ReviewSummary {
       return 'Sem nota';
     }
 
-    final stars = List.filled(rating.clamp(1, 5), '★').join();
-    return '$stars $rating/5';
+    return 'Nota $rating/5';
   }
 
   static String _createdAtLabel(String createdAt) {
