@@ -1,5 +1,6 @@
 import {
   AccountStatus,
+  AvailabilityType,
   InstitutionType,
   OpportunityStatus,
   OpportunityType,
@@ -66,8 +67,8 @@ async function seedDemoData() {
       city: 'Sao Paulo',
       state: 'SP',
       country: 'BR',
-      lat:  -23.5616840,
-      lng:  -46.6561390,
+      lat: -23.5616840,
+      lng: -46.6561390,
     },
   });
 
@@ -208,6 +209,105 @@ async function seedDemoData() {
     },
   });
 
+  const internAddress = await prisma.address.create({
+    data: {
+      zipCode: '04023-062',
+      street: 'Rua Botucatu',
+      number: '740',
+      district: 'Vila Clementino',
+      city: 'Sao Paulo',
+      state: 'SP',
+      country: 'BR',
+      lat: -23.5987630,
+      lng: -46.6451200,
+    },
+  });
+
+  const internUser = await prisma.user.upsert({
+    where: { email: 'estagiario.demo@vetfinder.app' },
+    update: {
+      phone: '11960000003',
+      passwordHash,
+      role: UserRole.INTERN,
+      status: AccountStatus.ACTIVE,
+    },
+    create: {
+      email: 'estagiario.demo@vetfinder.app',
+      phone: '11960000003',
+      passwordHash,
+      role: UserRole.INTERN,
+      status: AccountStatus.ACTIVE,
+    },
+  });
+
+  await prisma.profile.upsert({
+    where: { userId: internUser.id },
+    update: {
+      fullName: 'Lucas Ferreira',
+      city: 'Sao Paulo',
+      state: 'SP',
+      bio: 'Estagiario de medicina veterinaria com interesse em internacao e clinica medica.',
+      isVisible: true,
+      addressId: internAddress.id,
+    },
+    create: {
+      userId: internUser.id,
+      fullName: 'Lucas Ferreira',
+      city: 'Sao Paulo',
+      state: 'SP',
+      bio: 'Estagiario de medicina veterinaria com interesse em internacao e clinica medica.',
+      isVisible: true,
+      addressId: internAddress.id,
+    },
+  });
+
+  await prisma.internProfile.upsert({
+    where: { userId: internUser.id },
+    update: {
+      universityName: 'Universidade VetFinder Demo',
+      coursePeriod: '8 periodo',
+      expectedGraduationDate: new Date('2026-12-15T00:00:00.000Z'),
+      verificationStatus: VerificationStatus.APPROVED,
+    },
+    create: {
+      userId: internUser.id,
+      universityName: 'Universidade VetFinder Demo',
+      coursePeriod: '8 periodo',
+      expectedGraduationDate: new Date('2026-12-15T00:00:00.000Z'),
+      verificationStatus: VerificationStatus.APPROVED,
+    },
+  });
+
+  await prisma.availabilitySlot.deleteMany({
+    where: { userId: internUser.id },
+  });
+
+  await prisma.availabilitySlot.createMany({
+    data: [
+      {
+        userId: internUser.id,
+        availabilityType: AvailabilityType.RECURRING,
+        weekday: 1,
+        startTime: '08:00',
+        endTime: '14:00',
+      },
+      {
+        userId: internUser.id,
+        availabilityType: AvailabilityType.RECURRING,
+        weekday: 3,
+        startTime: '13:00',
+        endTime: '19:00',
+      },
+      {
+        userId: internUser.id,
+        availabilityType: AvailabilityType.RECURRING,
+        weekday: 5,
+        startTime: '08:00',
+        endTime: '18:00',
+      },
+    ],
+  });
+
   const clinic = await prisma.institution.findUniqueOrThrow({
     where: { userId: clinicUser.id },
     select: { id: true },
@@ -223,6 +323,20 @@ async function seedDemoData() {
 
   const internshipSpecialty = await prisma.specialty.findUniqueOrThrow({
     where: { slug: 'estagio-geral' },
+  });
+
+  await prisma.professionalSpecialty.upsert({
+    where: {
+      userId_specialtyId: {
+        userId: internUser.id,
+        specialtyId: internshipSpecialty.id,
+      },
+    },
+    update: {},
+    create: {
+      userId: internUser.id,
+      specialtyId: internshipSpecialty.id,
+    },
   });
 
   const opportunities = [
@@ -309,6 +423,7 @@ async function main() {
   console.log('Admin demo: admin.demo@vetfinder.app / vetfinder123');
   console.log('Clinica demo: clinica.demo@vetfinder.app / vetfinder123');
   console.log('Veterinario demo: veterinario.demo@vetfinder.app / vetfinder123');
+  console.log('Estagiario demo: estagiario.demo@vetfinder.app / vetfinder123');
 }
 
 main()

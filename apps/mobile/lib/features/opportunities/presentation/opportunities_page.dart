@@ -689,8 +689,7 @@ class _AvailableProfessionalsPage extends StatelessWidget {
         return true;
       }
 
-      return item.specialtyLabel.toLowerCase().contains(specialtyFilter) ||
-          item.roleLabel.toLowerCase().contains(specialtyFilter);
+      return item.specialtyLabel.toLowerCase().contains(specialtyFilter);
     }).toList();
   }
 

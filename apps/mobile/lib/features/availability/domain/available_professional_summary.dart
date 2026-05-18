@@ -198,6 +198,18 @@ class AvailableProfessionalSummary {
   }
 
   static String _specialtyLabel(Map<String, dynamic> json) {
+    final specialties = (json['specialties'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map((item) => item['specialty'])
+        .whereType<Map<String, dynamic>>()
+        .map((specialty) => specialty['name']?.toString() ?? '')
+        .where((name) => name.isNotEmpty)
+        .toList();
+
+    if (specialties.isNotEmpty) {
+      return specialties.join(', ');
+    }
+
     final veterinarianProfile =
         json['veterinarianProfile'] as Map<String, dynamic>?;
     if (veterinarianProfile != null &&

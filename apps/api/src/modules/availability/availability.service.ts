@@ -110,6 +110,15 @@ export class AvailabilityService {
         },
         veterinarianProfile: true,
         internProfile: true,
+        specialties: {
+          select: {
+            specialty: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
         availabilitySlots: {
           where: {
             availabilityType: AvailabilityType.RECURRING,
