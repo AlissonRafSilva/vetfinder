@@ -1,5 +1,15 @@
 import { Transform } from 'class-transformer';
-import { IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class SearchAvailableProfessionalsDto {
   @IsOptional()
@@ -34,4 +44,18 @@ export class SearchAvailableProfessionalsDto {
   @Min(1)
   @Max(200)
   maxDistanceKm?: number;
+
+  @IsOptional()
+  @IsIn(['VETERINARIAN', 'INTERN'])
+  professionalType?: 'VETERINARIAN' | 'INTERN';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  specialty?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  verifiedOnly?: boolean;
 }

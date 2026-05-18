@@ -115,6 +115,9 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
       _originLatController.text,
       _originLngController.text,
       _maxDistanceKm?.toString() ?? 'any',
+      _professionalTypeFilter,
+      _verifiedOnly.toString(),
+      _specialtyFilterController.text.trim(),
     ].join(':');
 
     if (_loadedProfessionalsSearchKey == searchKey &&
@@ -132,6 +135,10 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
       originLat: _originLatController.text.trim(),
       originLng: _originLngController.text.trim(),
       maxDistanceKm: _maxDistanceKm,
+      professionalType:
+          _professionalTypeFilter == 'ALL' ? null : _professionalTypeFilter,
+      specialty: _specialtyFilterController.text,
+      verifiedOnly: _verifiedOnly,
     );
     _myOpportunitiesFuture = _repository.fetchMyInstitutionOpportunities(
       accessToken: session.accessToken!,
@@ -312,10 +319,18 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
           });
         },
         onProfessionalTypeFilterChanged: (value) {
-          setState(() => _professionalTypeFilter = value);
+          setState(() {
+            _professionalTypeFilter = value;
+            _loadedProfessionalsSearchKey = null;
+            _loadProfessionalsIfNeeded();
+          });
         },
         onVerifiedOnlyChanged: (value) {
-          setState(() => _verifiedOnly = value);
+          setState(() {
+            _verifiedOnly = value;
+            _loadedProfessionalsSearchKey = null;
+            _loadProfessionalsIfNeeded();
+          });
         },
         onMaxDistanceChanged: (value) {
           setState(() {

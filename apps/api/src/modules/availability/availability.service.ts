@@ -1,5 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { AvailabilityType, UserRole, VerificationStatus } from '@prisma/client';
+import {
+  AccountStatus,
+  AvailabilityType,
+  UserRole,
+  VerificationStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
 import { ReplaceAvailabilityDto } from './dto/upsert-availability-slot.dto';
@@ -77,10 +82,20 @@ export class AvailabilityService {
   }
 
   async searchAvailableProfessionals(query: SearchAvailableProfessionalsDto) {
+    const roleFilter = query.professionalType
+      ? [query.professionalType]
+      : [UserRole.VETERINARIAN, UserRole.INTERN];
+
     const professionals = await this.prisma.user.findMany({
       where: {
+        status: {
+          notIn: [AccountStatus.SUSPENDED, AccountStatus.REJECTED],
+        },
         role: {
-          in: [UserRole.VETERINARIAN, UserRole.INTERN],
+          in: roleFilter,
+        },
+        profile: {
+          isVisible: true,
         },
         availabilitySlots: {
           some: {
@@ -98,6 +113,48 @@ export class AvailabilityService {
               : undefined,
           },
         },
+        AND: [
+          ...(query.specialty
+            ? [
+                {
+                  specialties: {
+                    some: {
+                      specialty: {
+                        name: {
+                          contains: query.specialty,
+                          mode: 'insensitive' as const,
+                        },
+                      },
+                    },
+                  },
+                },
+              ]
+            : []),
+          ...(query.verifiedOnly
+            ? [
+                {
+                  OR: [
+                    {
+                      role: UserRole.VETERINARIAN,
+                      veterinarianProfile: {
+                        is: {
+                          verificationStatus: VerificationStatus.APPROVED,
+                        },
+                      },
+                    },
+                    {
+                      role: UserRole.INTERN,
+                      internProfile: {
+                        is: {
+                          verificationStatus: VerificationStatus.APPROVED,
+                        },
+                      },
+                    },
+                  ],
+                },
+              ]
+            : []),
+        ],
       },
       select: {
         id: true,

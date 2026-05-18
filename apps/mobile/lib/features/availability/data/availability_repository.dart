@@ -58,6 +58,9 @@ class AvailabilityRepository {
     String? originLat,
     String? originLng,
     int? maxDistanceKm,
+    String? professionalType,
+    String? specialty,
+    bool verifiedOnly = false,
   }) async {
     final queryParameters = <String, String>{
       if (weekday != null) 'weekday': weekday.toString(),
@@ -66,6 +69,11 @@ class AvailabilityRepository {
       if (originLat != null && originLat.isNotEmpty) 'originLat': originLat,
       if (originLng != null && originLng.isNotEmpty) 'originLng': originLng,
       if (maxDistanceKm != null) 'maxDistanceKm': maxDistanceKm.toString(),
+      if (professionalType != null && professionalType.isNotEmpty)
+        'professionalType': professionalType,
+      if (specialty != null && specialty.trim().isNotEmpty)
+        'specialty': specialty.trim(),
+      if (verifiedOnly) 'verifiedOnly': 'true',
     };
 
     final path = Uri(

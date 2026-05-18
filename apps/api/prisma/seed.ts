@@ -328,6 +328,20 @@ async function seedDemoData() {
   await prisma.professionalSpecialty.upsert({
     where: {
       userId_specialtyId: {
+        userId: veterinarianUser.id,
+        specialtyId: emergencySpecialty.id,
+      },
+    },
+    update: {},
+    create: {
+      userId: veterinarianUser.id,
+      specialtyId: emergencySpecialty.id,
+    },
+  });
+
+  await prisma.professionalSpecialty.upsert({
+    where: {
+      userId_specialtyId: {
         userId: internUser.id,
         specialtyId: internshipSpecialty.id,
       },
