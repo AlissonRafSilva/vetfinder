@@ -46,9 +46,8 @@ vetfinder123
 
 Usuarios:
 
-- `admin@vetfinder.app`
+- `admin.demo@vetfinder.app`
 - `clinica.demo@vetfinder.app`
-- `hospital.demo@vetfinder.app`
 - `veterinario.demo@vetfinder.app`
 - `estagiario.demo@vetfinder.app`
 
@@ -215,7 +214,7 @@ O que explicar:
 
 ## Fluxo 10: Admin
 
-1. Entrar como `admin@vetfinder.app`.
+1. Entrar como `admin.demo@vetfinder.app`.
 2. Mostrar documentos enviados.
 3. Aprovar/reprovar documentos.
 

@@ -1,11 +1,11 @@
 {
-    "name": "vetfinder_mobile",
-    "short_name": "vetfinder_mobile",
+    "name": "VetFinder",
+    "short_name": "VetFinder",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Marketplace para plantoes, estagios e oportunidades veterinarias.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

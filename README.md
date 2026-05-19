@@ -124,13 +124,31 @@ Senha padrao:
 vetfinder123
 ```
 
-Usuarios comuns no seed:
+Usuarios criados pelo seed:
 
-- `admin@vetfinder.app`
+- `admin.demo@vetfinder.app`
 - `clinica.demo@vetfinder.app`
-- `hospital.demo@vetfinder.app`
 - `veterinario.demo@vetfinder.app`
 - `estagiario.demo@vetfinder.app`
+
+Contas de hospital podem ser criadas pelo cadastro do app e aprovadas no painel
+admin.
+
+## Mobile Com API Por Ambiente
+
+Por padrao, o app usa:
+
+- Web: `http://localhost:3000/v1`
+- Android emulator: `http://10.0.2.2:3000/v1`
+- iOS simulator/desktop: `http://localhost:3000/v1`
+
+Para apontar para uma API online ou IP da rede local:
+
+```powershell
+flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3000/v1
+flutter run -d android --dart-define=API_BASE_URL=http://SEU_IP:3000/v1
+flutter build apk --dart-define=API_BASE_URL=https://api.seudominio.com/v1
+```
 
 ## Pagamentos
 

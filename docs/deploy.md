@@ -86,17 +86,16 @@ flutter analyze
 Android:
 
 ```powershell
-flutter build apk
+flutter build apk --dart-define=API_BASE_URL=https://api.seudominio.com/v1
 ```
 
 Futuro recomendado:
 
-- configurar `applicationId`;
+- revisar assinatura Android antes de distribuir fora de debug;
 - configurar icones/splash;
-- configurar permissao de localizacao;
-- configurar assinatura Android;
 - criar flavor `dev`, `staging` e `prod`;
-- configurar URL da API por ambiente.
+- manter URL da API por ambiente com `--dart-define=API_BASE_URL=...`;
+- remover `android:usesCleartextTraffic="true"` quando todos os ambientes usarem HTTPS.
 
 ## 6. Checklist De Producao
 
