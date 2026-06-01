@@ -12,14 +12,17 @@ class AppShellPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = AppSessionScope.of(context);
+    final keyboardIsOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     if (!session.isAuthenticated) {
-      return const Scaffold(
-        body: SafeArea(
+      return Scaffold(
+        resizeToAvoidBottomInset: false,
+        body: const SafeArea(
           child: AuthGatePage(
             key: ValueKey('guest-auth-gate'),
           ),
         ),
+        bottomNavigationBar: keyboardIsOpen ? const SizedBox.shrink() : null,
       );
     }
 

@@ -509,6 +509,9 @@ class _EditableAvailabilityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final startTime = _normalizedTime(slot.startTime);
+    final endTime = _normalizedTime(slot.endTime);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -558,39 +561,60 @@ class _EditableAvailabilityCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: TextFormField(
-                  initialValue: slot.startTime,
+                child: DropdownButtonFormField<String>(
+                  initialValue: _timeOptions.contains(startTime)
+                      ? startTime
+                      : _timeOptions.first,
                   decoration: const InputDecoration(
                     labelText: 'Inicio',
-                    hintText: '08:00',
                   ),
+                  items: _timeOptions
+                      .map(
+                        (time) => DropdownMenuItem(
+                          value: time,
+                          child: Text(time),
+                        ),
+                      )
+                      .toList(),
                   onChanged: (value) {
-                    onChanged(
-                      AvailabilitySlotModel(
-                        weekday: slot.weekday,
-                        startTime: value,
-                        endTime: slot.endTime,
-                      ),
-                    );
+                    if (value != null) {
+                      onChanged(
+                        AvailabilitySlotModel(
+                          weekday: slot.weekday,
+                          startTime: value,
+                          endTime: slot.endTime,
+                        ),
+                      );
+                    }
                   },
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: TextFormField(
-                  initialValue: slot.endTime,
+                child: DropdownButtonFormField<String>(
+                  initialValue:
+                      _timeOptions.contains(endTime) ? endTime : _timeOptions.last,
                   decoration: const InputDecoration(
                     labelText: 'Fim',
-                    hintText: '18:00',
                   ),
+                  items: _timeOptions
+                      .map(
+                        (time) => DropdownMenuItem(
+                          value: time,
+                          child: Text(time),
+                        ),
+                      )
+                      .toList(),
                   onChanged: (value) {
-                    onChanged(
-                      AvailabilitySlotModel(
-                        weekday: slot.weekday,
-                        startTime: slot.startTime,
-                        endTime: value,
-                      ),
-                    );
+                    if (value != null) {
+                      onChanged(
+                        AvailabilitySlotModel(
+                          weekday: slot.weekday,
+                          startTime: slot.startTime,
+                          endTime: value,
+                        ),
+                      );
+                    }
                   },
                 ),
               ),
@@ -599,6 +623,46 @@ class _EditableAvailabilityCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static const _timeOptions = [
+    '00:00',
+    '01:00',
+    '02:00',
+    '03:00',
+    '04:00',
+    '05:00',
+    '06:00',
+    '07:00',
+    '08:00',
+    '09:00',
+    '10:00',
+    '11:00',
+    '12:00',
+    '13:00',
+    '14:00',
+    '15:00',
+    '16:00',
+    '17:00',
+    '18:00',
+    '19:00',
+    '20:00',
+    '21:00',
+    '22:00',
+    '23:00',
+  ];
+
+  static String _normalizedTime(String value) {
+    final trimmed = value.trim();
+    if (RegExp(r'^\d{2}:\d{2}$').hasMatch(trimmed)) {
+      return trimmed;
+    }
+
+    if (RegExp(r'^\d{1}:\d{2}$').hasMatch(trimmed)) {
+      return '0$trimmed';
+    }
+
+    return trimmed;
   }
 
   static String _weekdayLabel(int weekday) {

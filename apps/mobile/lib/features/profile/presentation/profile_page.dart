@@ -503,6 +503,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final session = AppSessionScope.of(context);
     final isInstitution = session.isInstitutionUser;
+    final keyboardIsOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final sectionTitle =
         isInstitution ? 'Perfil da instituicao' : 'Perfil profissional';
     final sectionSubtitle = isInstitution
@@ -532,6 +533,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,46 +543,50 @@ class _ProfilePageState extends State<ProfilePage> {
             subtitle: sectionSubtitle,
           ),
           const SizedBox(height: 18),
-          _SessionCard(
-            isInstitution: isInstitution,
-            onLogout: session.logout,
-            onRefreshStatus: _refreshSessionManually,
-            isRefreshingStatus: _isRefreshingSession,
-            email: session.email,
-            roleValue: session.roleValue,
-            status: session.status,
-          ),
-          const SizedBox(height: 18),
-          _ValidationGuidanceCard(
-            isInstitution: isInstitution,
-            roleValue: session.roleValue,
-            status: session.status,
-          ),
-          const SizedBox(height: 18),
+          if (!keyboardIsOpen) ...[
+            _SessionCard(
+              isInstitution: isInstitution,
+              onLogout: session.logout,
+              onRefreshStatus: _refreshSessionManually,
+              isRefreshingStatus: _isRefreshingSession,
+              email: session.email,
+              roleValue: session.roleValue,
+              status: session.status,
+            ),
+            const SizedBox(height: 18),
+            _ValidationGuidanceCard(
+              isInstitution: isInstitution,
+              roleValue: session.roleValue,
+              status: session.status,
+            ),
+            const SizedBox(height: 18),
+          ],
           if (_feedbackMessage != null)
             _FeedbackCard(
               message: _feedbackMessage!,
               isError: _isFeedbackError,
             ),
           if (_feedbackMessage != null) const SizedBox(height: 18),
-          _DocumentsValidationSection(
-            documentsFuture: _documentsFuture,
-            requiredDocuments: _requiredDocumentsForSession(session),
-            isSubmitting: _isSubmittingDocument,
-            onSubmit: _submitDocument,
-            onRefresh: () {
-              if (session.accessToken == null) {
-                return;
-              }
+          if (!keyboardIsOpen) ...[
+            _DocumentsValidationSection(
+              documentsFuture: _documentsFuture,
+              requiredDocuments: _requiredDocumentsForSession(session),
+              isSubmitting: _isSubmittingDocument,
+              onSubmit: _submitDocument,
+              onRefresh: () {
+                if (session.accessToken == null) {
+                  return;
+                }
 
-              setState(() {
-                _documentsFuture = _documentsRepository.fetchMine(
-                  accessToken: session.accessToken!,
-                );
-              });
-            },
-          ),
-          const SizedBox(height: 18),
+                setState(() {
+                  _documentsFuture = _documentsRepository.fetchMine(
+                    accessToken: session.accessToken!,
+                  );
+                });
+              },
+            ),
+            const SizedBox(height: 18),
+          ],
           if (session.roleValue == AppUserRole.veterinarian.apiValue)
             _VeterinarianForm(
               crmvController: _vetCrmvController,

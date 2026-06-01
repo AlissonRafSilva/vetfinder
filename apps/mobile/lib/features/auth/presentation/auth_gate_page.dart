@@ -263,95 +263,99 @@ class _AuthGatePageState extends State<AuthGatePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final session = AppSessionScope.of(context);
+    final keyboardIsOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary,
-                  const Color(0xFF115E59),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          if (!keyboardIsOpen) ...[
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary,
+                    const Color(0xFF115E59),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(32),
               ),
-              borderRadius: BorderRadius.circular(32),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'VetFinder',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Conecte profissionais veterinarios e instituicoes para cobrir plantoes com rapidez.',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.88),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _HeroMetric(label: 'Agenda'),
-                    _HeroMetric(label: 'Geolocalizacao'),
-                    _HeroMetric(label: 'Split sandbox'),
-                    _HeroMetric(label: 'Alertas'),
-                  ],
-                ),
-                const SizedBox(height: 22),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Scrollable.ensureVisible(
-                          _formKey.currentContext ?? context,
-                          duration: const Duration(milliseconds: 350),
-                          curve: Curves.easeOut,
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: theme.colorScheme.primary,
-                      ),
-                      icon: const Icon(Icons.login_rounded),
-                      label: const Text('Entrar'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'VetFinder',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
                     ),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        setState(() => _mode = _AuthMode.register);
-                        Scrollable.ensureVisible(
-                          _formKey.currentContext ?? context,
-                          duration: const Duration(milliseconds: 350),
-                          curve: Curves.easeOut,
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white),
-                      ),
-                      icon: const Icon(Icons.person_add_alt_1_rounded),
-                      label: const Text('Criar conta'),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Conecte profissionais veterinarios e instituicoes para cobrir plantoes com rapidez.',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.88),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 18),
+                  const Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _HeroMetric(label: 'Agenda'),
+                      _HeroMetric(label: 'Geolocalizacao'),
+                      _HeroMetric(label: 'Split sandbox'),
+                      _HeroMetric(label: 'Alertas'),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Scrollable.ensureVisible(
+                            _formKey.currentContext ?? context,
+                            duration: const Duration(milliseconds: 350),
+                            curve: Curves.easeOut,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: theme.colorScheme.primary,
+                        ),
+                        icon: const Icon(Icons.login_rounded),
+                        label: const Text('Entrar'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          setState(() => _mode = _AuthMode.register);
+                          Scrollable.ensureVisible(
+                            _formKey.currentContext ?? context,
+                            duration: const Duration(milliseconds: 350),
+                            curve: Curves.easeOut,
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.white),
+                        ),
+                        icon: const Icon(Icons.person_add_alt_1_rounded),
+                        label: const Text('Criar conta'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 28),
-          if (session.isAuthenticated) ...[
+            const SizedBox(height: 28),
+          ],
+          if (session.isAuthenticated && !keyboardIsOpen) ...[
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -455,32 +459,34 @@ class _AuthGatePageState extends State<AuthGatePage> {
             onDetectLocation: _detectProfileLocation,
             onSubmit: _submit,
           ),
-          const SizedBox(height: 28),
-          const SectionHeader(
-            title: 'Escolha seu perfil',
-            subtitle: 'O onboarding muda conforme o tipo de usuario.',
-          ),
-          const SizedBox(height: 16),
-          const _RoleOptionCard(
-            icon: Icons.local_hospital_rounded,
-            title: 'Veterinario volante',
-            description:
-                'Receba plantoes proximos, convites e pagamentos pelo app.',
-          ),
-          const SizedBox(height: 14),
-          const _RoleOptionCard(
-            icon: Icons.school_rounded,
-            title: 'Estagiario',
-            description:
-                'Encontre oportunidades compativeis com sua formacao e agenda.',
-          ),
-          const SizedBox(height: 14),
-          const _RoleOptionCard(
-            icon: Icons.storefront_rounded,
-            title: 'Clinica ou hospital',
-            description:
-                'Publique demandas urgentes e feche plantoes com seguranca.',
-          ),
+          if (!keyboardIsOpen) ...[
+            const SizedBox(height: 28),
+            const SectionHeader(
+              title: 'Escolha seu perfil',
+              subtitle: 'O onboarding muda conforme o tipo de usuario.',
+            ),
+            const SizedBox(height: 16),
+            const _RoleOptionCard(
+              icon: Icons.local_hospital_rounded,
+              title: 'Veterinario volante',
+              description:
+                  'Receba plantoes proximos, convites e pagamentos pelo app.',
+            ),
+            const SizedBox(height: 14),
+            const _RoleOptionCard(
+              icon: Icons.school_rounded,
+              title: 'Estagiario',
+              description:
+                  'Encontre oportunidades compativeis com sua formacao e agenda.',
+            ),
+            const SizedBox(height: 14),
+            const _RoleOptionCard(
+              icon: Icons.storefront_rounded,
+              title: 'Clinica ou hospital',
+              description:
+                  'Publique demandas urgentes e feche plantoes com seguranca.',
+            ),
+          ],
         ],
       ),
     );

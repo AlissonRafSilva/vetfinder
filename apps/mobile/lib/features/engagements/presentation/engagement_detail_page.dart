@@ -242,9 +242,10 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
       return;
     }
 
-    final result = await showDialog<_ReviewFormResult>(
-      context: context,
-      builder: (context) => const _ReviewDialog(),
+    final result = await Navigator.of(context).push<_ReviewFormResult>(
+      MaterialPageRoute(
+        builder: (_) => const _ReviewFormPage(),
+      ),
     );
 
     if (result == null) {
@@ -893,14 +894,14 @@ class _ReviewTile extends StatelessWidget {
   }
 }
 
-class _ReviewDialog extends StatefulWidget {
-  const _ReviewDialog();
+class _ReviewFormPage extends StatefulWidget {
+  const _ReviewFormPage();
 
   @override
-  State<_ReviewDialog> createState() => _ReviewDialogState();
+  State<_ReviewFormPage> createState() => _ReviewFormPageState();
 }
 
-class _ReviewDialogState extends State<_ReviewDialog> {
+class _ReviewFormPageState extends State<_ReviewFormPage> {
   final TextEditingController _commentController = TextEditingController();
   int _rating = 5;
 
@@ -912,57 +913,94 @@ class _ReviewDialogState extends State<_ReviewDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Avaliar contraparte'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          DropdownButtonFormField<int>(
-            initialValue: _rating,
-            decoration: const InputDecoration(
-              labelText: 'Nota',
-            ),
-            items: const [
-              DropdownMenuItem(value: 5, child: Text('5 - Excelente')),
-              DropdownMenuItem(value: 4, child: Text('4 - Muito bom')),
-              DropdownMenuItem(value: 3, child: Text('3 - Regular')),
-              DropdownMenuItem(value: 2, child: Text('2 - Ruim')),
-              DropdownMenuItem(value: 1, child: Text('1 - Muito ruim')),
-            ],
-            onChanged: (value) {
-              if (value != null) {
-                setState(() => _rating = value);
-              }
-            },
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _commentController,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Comentario opcional',
-              alignLabelWithHint: true,
-            ),
-          ),
-        ],
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        title: const Text('Registrar avaliacao'),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop(
-              _ReviewFormResult(
-                rating: _rating,
-                comment: _commentController.text,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Como foi a experiencia?',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            );
-          },
-          child: const Text('Registrar avaliacao'),
+              const SizedBox(height: 8),
+              Text(
+                'A avaliacao escrita ajuda a plataforma a criar confianca entre profissionais e instituicoes.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 18),
+              DropdownButtonFormField<int>(
+                initialValue: _rating,
+                decoration: const InputDecoration(
+                  labelText: 'Nota',
+                ),
+                items: const [
+                  DropdownMenuItem(value: 5, child: Text('5 - Excelente')),
+                  DropdownMenuItem(value: 4, child: Text('4 - Muito bom')),
+                  DropdownMenuItem(value: 3, child: Text('3 - Regular')),
+                  DropdownMenuItem(value: 2, child: Text('2 - Ruim')),
+                  DropdownMenuItem(value: 1, child: Text('1 - Muito ruim')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _rating = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _commentController,
+                minLines: 5,
+                maxLines: 5,
+                textInputAction: TextInputAction.done,
+                decoration: const InputDecoration(
+                  labelText: 'Comentario',
+                  hintText:
+                      'Ex.: Profissional pontual, boa comunicacao e atendimento conforme combinado.',
+                  alignLabelWithHint: true,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancelar'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(
+                          _ReviewFormResult(
+                            rating: _rating,
+                            comment: _commentController.text,
+                          ),
+                        );
+                      },
+                      child: const Text('Registrar'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -988,28 +1026,26 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 128,
+            width: 130,
             child: Text(
               label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
           ),
         ],

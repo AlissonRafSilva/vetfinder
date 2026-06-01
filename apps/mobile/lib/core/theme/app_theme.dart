@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static ThemeData light() {
@@ -17,7 +16,7 @@ class AppTheme {
       brightness: Brightness.light,
     );
 
-    final textTheme = GoogleFonts.dmSansTextTheme().apply(
+    final textTheme = Typography.material2021().black.apply(
       bodyColor: text,
       displayColor: text,
     );
