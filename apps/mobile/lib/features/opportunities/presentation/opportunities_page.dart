@@ -181,7 +181,7 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
     } catch (_) {
       setState(() {
         _locationFeedback =
-            'Nao foi possivel detectar a localizacao agora. Preencha manualmente se necessario.';
+            'Não foi possível detectar a localização agora. Preencha manualmente se necessário.';
       });
     } finally {
       if (mounted) {
@@ -246,7 +246,7 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
         SnackBar(
           content: Text(
             isIntern
-                ? 'Crie uma vaga do tipo estagio para convidar este estagiario.'
+                ? 'Crie uma vaga do tipo estágio para convidar este estagiário.'
                 : 'Crie uma vaga veterinaria para convidar este profissional.',
           ),
         ),
@@ -420,16 +420,16 @@ class _AvailableProfessionalsPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionHeader(
-            title: 'Profissionais disponiveis',
+            title: 'Profissionais disponíveis',
             subtitle:
-                'Clinicas e hospitais veem apenas profissionais com agenda livre. As vagas de outras instituicoes nao aparecem aqui.',
+                'Clínicas e hospitais veem apenas profissionais com agenda livre. As vagas de outras instituições não aparecem aqui.',
           ),
           const SizedBox(height: 18),
           if (accountStatus != 'ACTIVE') ...[
             const _VerificationNoticeCard(
-              title: 'Instituicao aguardando validacao',
+              title: 'Instituição aguardando validação',
               message:
-                  'A busca continua visivel, mas convites e fechamento de plantoes podem ser bloqueados ate o CNPJ ser aprovado no admin.',
+                  'A busca continua visível, mas convites e fechamento de plantões podem ser bloqueados até o CNPJ ser aprovado no admin.',
             ),
             const SizedBox(height: 18),
           ],
@@ -473,7 +473,7 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                         child: TextField(
                           controller: startTimeController,
                           decoration: const InputDecoration(
-                            labelText: 'Inicio opcional',
+                            labelText: 'Início opcional',
                             hintText: '08:00',
                           ),
                         ),
@@ -503,11 +503,11 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                       ),
                       DropdownMenuItem(
                         value: 'VETERINARIAN',
-                        child: Text('Veterinarios'),
+                        child: Text('Veterinários'),
                       ),
                       DropdownMenuItem(
                         value: 'INTERN',
-                        child: Text('Estagiarios'),
+                        child: Text('Estagiários'),
                       ),
                     ],
                     onChanged: (value) {
@@ -521,7 +521,7 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                     controller: specialtyFilterController,
                     decoration: const InputDecoration(
                       labelText: 'Especialidade',
-                      hintText: 'Ex.: emergencia, estagio, clinica geral',
+                      hintText: 'Ex.: emergência, estágio, clínica geral',
                     ),
                     onChanged: (_) => onLocalFiltersChanged(),
                   ),
@@ -565,8 +565,8 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                       icon: const Icon(Icons.my_location_rounded),
                       label: Text(
                         isDetectingLocation
-                            ? 'Detectando localizacao...'
-                            : 'Usar minha localizacao atual',
+                            ? 'Detectando localização...'
+                            : 'Usar minha localização atual',
                       ),
                     ),
                   ),
@@ -583,17 +583,17 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                   DropdownButtonFormField<int?>(
                     initialValue: maxDistanceKm,
                     decoration: const InputDecoration(
-                      labelText: 'Distancia maxima',
+                      labelText: 'Distância máxima',
                     ),
                     items: const [
                       DropdownMenuItem<int?>(
                         value: null,
                         child: Text('Sem limite'),
                       ),
-                      DropdownMenuItem(value: 5, child: Text('Ate 5 km')),
-                      DropdownMenuItem(value: 10, child: Text('Ate 10 km')),
-                      DropdownMenuItem(value: 25, child: Text('Ate 25 km')),
-                      DropdownMenuItem(value: 50, child: Text('Ate 50 km')),
+                      DropdownMenuItem(value: 5, child: Text('Até 5 km')),
+                      DropdownMenuItem(value: 10, child: Text('Até 10 km')),
+                      DropdownMenuItem(value: 25, child: Text('Até 25 km')),
+                      DropdownMenuItem(value: 50, child: Text('Até 50 km')),
                     ],
                     onChanged: onMaxDistanceChanged,
                   ),
@@ -637,7 +637,7 @@ class _AvailableProfessionalsPage extends StatelessWidget {
                   child: Padding(
                     padding: EdgeInsets.all(20),
                     child: Text(
-                      'Nao foi possivel carregar os profissionais disponiveis agora.',
+                      'Não foi possível carregar os profissionais disponíveis agora.',
                     ),
                   ),
                 );
@@ -838,7 +838,7 @@ class _ProfessionalAvailabilityCard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Horarios disponiveis',
+              'Horários disponíveis',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -949,7 +949,7 @@ class _InviteProfessionalSheetState extends State<_InviteProfessionalSheet> {
           DropdownButtonFormField<String>(
             initialValue: _selectedOpportunityId,
             decoration: const InputDecoration(
-              labelText: 'Vaga da instituicao',
+              labelText: 'Vaga da instituição',
             ),
             items: widget.opportunities
                 .map(
@@ -975,7 +975,7 @@ class _InviteProfessionalSheetState extends State<_InviteProfessionalSheet> {
             decoration: const InputDecoration(
               labelText: 'Mensagem opcional',
               hintText:
-                  'Ex.: Gostaria de te convidar para um plantao noturno na nossa unidade.',
+                  'Ex.: Gostaria de te convidar para um plantão noturno na nossa unidade.',
             ),
           ),
           const SizedBox(height: 18),
@@ -1028,10 +1028,10 @@ class _OpportunitiesBody extends StatelessWidget {
               children: [
                 SectionHeader(
                   title:
-                      isIntern ? 'Estagios disponiveis' : 'Plantoes proximos',
+                      isIntern ? 'Estágios disponíveis' : 'Plantões próximos',
                   subtitle: isIntern
                       ? 'Veja apenas oportunidades marcadas para estagiarios.'
-                      : 'Veja vagas abertas para veterinarios volantes, sem oportunidades de estagio.',
+                      : 'Veja vagas abertas para veterinários volantes, sem oportunidades de estágio.',
                 ),
                 const SizedBox(height: 16),
                 Wrap(
@@ -1039,7 +1039,7 @@ class _OpportunitiesBody extends StatelessWidget {
                   runSpacing: 10,
                   children: [
                     InfoBadge(
-                      label: isIntern ? 'Somente estagios' : 'Sem estagios',
+                      label: isIntern ? 'Somente estágios' : 'Sem estágios',
                       icon: Icons.filter_alt_outlined,
                     ),
                     const InfoBadge(
@@ -1052,11 +1052,11 @@ class _OpportunitiesBody extends StatelessWidget {
                   const SizedBox(height: 16),
                   _VerificationNoticeCard(
                     title: isIntern
-                        ? 'Estagio pode exigir validacao'
-                        : 'Plantao pode exigir validacao',
+                        ? 'Estágio pode exigir validação'
+                        : 'Plantão pode exigir validação',
                     message: isIntern
-                        ? 'Envie foto e declaracao de matricula no Perfil para aumentar confianca e destaque nas selecoes.'
-                        : 'Envie foto e comprovante CRMV no Perfil para aumentar confianca e destaque nas selecoes.',
+                        ? 'Envie foto e declaração de matrícula no Perfil para aumentar confiança e destaque nas seleções.'
+                        : 'Envie foto e comprovante CRMV no Perfil para aumentar confiança e destaque nas seleções.',
                   ),
                 ],
               ],
@@ -1080,7 +1080,7 @@ class _OpportunitiesBody extends StatelessWidget {
                   return _OpportunitiesErrorState(
                     onRetry: onRetry,
                     message:
-                        'Nao foi possivel carregar as oportunidades agora.',
+                        'Não foi possível carregar as oportunidades agora.',
                   );
                 }
 
@@ -1325,7 +1325,7 @@ class _OpportunitiesErrorState extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Conexao indisponivel',
+              'Conexão indisponível',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
@@ -1359,7 +1359,7 @@ class _EmptyOpportunitiesState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Assim que clinicas e hospitais publicarem novas vagas, elas aparecerao aqui.',
+              'Assim que clínicas e hospitais publicarem novas vagas, elas aparecerão aqui.',
             ),
           ],
         ),

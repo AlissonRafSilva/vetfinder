@@ -117,7 +117,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
           builder: (context) => AlertDialog(
             title: const Text('Registrar pagamento'),
             content: const Text(
-              'Gerar checkout sandbox para este plantao? O contrato continuara aguardando pagamento ate a confirmacao do gateway.',
+              'Gerar checkout sandbox para este plantão? O contrato continuará aguardando pagamento até a confirmação do gateway.',
             ),
             actions: [
               TextButton(
@@ -275,7 +275,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
         _loadedReviewsKey =
             '${session.userId}:${session.accessToken}:${widget.item.id}';
         _shouldRefreshOnExit = true;
-        _reviewFeedback = 'Avaliacao registrada com sucesso.';
+        _reviewFeedback = 'Avaliação registrada com sucesso.';
       });
     } on ApiException catch (error) {
       if (!mounted) {
@@ -311,7 +311,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primaryPersonLabel =
-        widget.isInstitutionView ? 'Profissional confirmado' : 'Instituicao';
+        widget.isInstitutionView ? 'Profissional confirmado' : 'Instituição';
     final primaryPersonValue = widget.isInstitutionView
         ? widget.item.professionalName
         : widget.item.institutionName;
@@ -325,7 +325,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pop(_shouldRefreshOnExit),
         ),
-        title: const Text('Detalhes do plantao'),
+        title: const Text('Detalhes do plantão'),
       ),
       body: SafeArea(
         child: ListView(
@@ -383,11 +383,11 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
             ),
             const SizedBox(height: 14),
             _DetailSection(
-              title: 'Plantao',
+              title: 'Plantão',
               children: [
                 _DetailRow(
                     label: 'Especialidade', value: widget.item.specialtyLabel),
-                _DetailRow(label: 'Horario', value: widget.item.shiftLabel),
+                _DetailRow(label: 'Horário', value: widget.item.shiftLabel),
                 _DetailRow(
                     label: 'Fechamento', value: widget.item.createdAtLabel),
                 _DetailRow(
@@ -409,7 +409,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
                   value: widget.item.platformFeeLabel,
                 ),
                 _DetailRow(
-                  label: 'Valor liquido profissional',
+                  label: 'Valor líquido profissional',
                   value: widget.item.netAmountLabel,
                 ),
               ],
@@ -551,7 +551,7 @@ class _PaymentSection extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Ambiente sandbox: este fluxo simula checkout e split. O gateway real sera conectado apos escolha juridica/financeira.',
+                      'Ambiente sandbox: este fluxo simula checkout e split. O gateway real será conectado após escolha jurídica/financeira.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onTertiaryContainer,
                         fontWeight: FontWeight.w700,
@@ -571,7 +571,7 @@ class _PaymentSection extends StatelessWidget {
                 onOpenCheckout: onOpenCheckout,
               )
             else if (paymentFuture == null)
-              const Text('Pagamento ainda nao carregado para esta sessao.')
+              const Text('Pagamento ainda não carregado para esta sessão.')
             else
               FutureBuilder<PaymentSummary?>(
                 future: paymentFuture,
@@ -582,7 +582,7 @@ class _PaymentSection extends StatelessWidget {
 
                   if (snapshot.hasError) {
                     return const Text(
-                      'Nao foi possivel verificar o pagamento agora.',
+                      'Não foi possível verificar o pagamento agora.',
                     );
                   }
 
@@ -598,7 +598,7 @@ class _PaymentSection extends StatelessWidget {
                   }
 
                   return const Text(
-                    'Aguardando pagamento. A instituicao pode gerar um checkout sandbox enquanto o gateway real nao foi escolhido.',
+                    'Aguardando pagamento. A instituição pode gerar um checkout sandbox enquanto o gateway real não foi escolhido.',
                   );
                 },
               ),
@@ -738,7 +738,7 @@ class _ReviewsSection extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Avaliacoes',
+                    'Avaliações',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -748,7 +748,7 @@ class _ReviewsSection extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             if (reviewsFuture == null)
-              const Text('Avaliacoes ainda nao carregadas para esta sessao.')
+              const Text('Avaliações ainda não carregadas para esta sessão.')
             else
               FutureBuilder<List<ReviewSummary>>(
                 future: reviewsFuture,
@@ -759,7 +759,7 @@ class _ReviewsSection extends StatelessWidget {
 
                   if (snapshot.hasError) {
                     return const Text(
-                      'Nao foi possivel carregar as avaliacoes agora.',
+                      'Não foi possível carregar as avaliações agora.',
                     );
                   }
 
@@ -782,7 +782,7 @@ class _ReviewsSection extends StatelessWidget {
                     children: [
                       if (reviews.isEmpty)
                         const Text(
-                          'Ainda nao ha avaliacoes para este plantao.',
+                          'Ainda não há avaliações para este plantão.',
                         )
                       else
                         ...reviews.map(_ReviewTile.new),
@@ -805,7 +805,7 @@ class _ReviewsSection extends StatelessWidget {
                             icon: const Icon(Icons.rate_review_rounded),
                             label: Text(
                               isCreatingReview
-                                  ? 'Registrando avaliacao...'
+                                  ? 'Registrando avaliação...'
                                   : 'Avaliar contraparte',
                             ),
                           ),
@@ -813,7 +813,7 @@ class _ReviewsSection extends StatelessWidget {
                       ] else if (!canReview) ...[
                         const SizedBox(height: 12),
                         Text(
-                          'A avaliacao sera liberada apos a confirmacao do pagamento.',
+                          'A avaliação será liberada após a confirmação do pagamento.',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -821,7 +821,7 @@ class _ReviewsSection extends StatelessWidget {
                       ] else ...[
                         const SizedBox(height: 12),
                         Text(
-                          'Sua avaliacao deste plantao ja foi registrada.',
+                          'Sua avaliação deste plantão já foi registrada.',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -918,7 +918,7 @@ class _ReviewFormPageState extends State<_ReviewFormPage> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('Registrar avaliacao'),
+        title: const Text('Registrar avaliação'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -928,14 +928,14 @@ class _ReviewFormPageState extends State<_ReviewFormPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Como foi a experiencia?',
+                'Como foi a experiência?',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'A avaliacao escrita ajuda a plataforma a criar confianca entre profissionais e instituicoes.',
+                'A avaliação escrita ajuda a plataforma a criar confiança entre profissionais e instituições.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -966,9 +966,9 @@ class _ReviewFormPageState extends State<_ReviewFormPage> {
                 maxLines: 5,
                 textInputAction: TextInputAction.done,
                 decoration: const InputDecoration(
-                  labelText: 'Comentario',
+                  labelText: 'Comentário',
                   hintText:
-                      'Ex.: Profissional pontual, boa comunicacao e atendimento conforme combinado.',
+                      'Ex.: Profissional pontual, boa comunicação e atendimento conforme combinado.',
                   alignLabelWithHint: true,
                 ),
               ),

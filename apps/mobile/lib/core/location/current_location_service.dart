@@ -30,7 +30,7 @@ class CurrentLocationService {
     if (!serviceEnabled) {
       return const CurrentLocationResult(
         message:
-            'Ative a localizacao do dispositivo para preencher automaticamente.',
+            'Ative a localização do dispositivo para preencher automaticamente.',
         isSuccess: false,
       );
     }
@@ -43,7 +43,7 @@ class CurrentLocationService {
     if (permission == LocationPermission.deniedForever) {
       return const CurrentLocationResult(
         message:
-            'Permissao de localizacao bloqueada. Libere nas configuracoes do aparelho.',
+            'Permissão de localização bloqueada. Libere nas configurações do aparelho.',
         isSuccess: false,
       );
     }
@@ -51,7 +51,7 @@ class CurrentLocationService {
     if (permission == LocationPermission.denied) {
       return const CurrentLocationResult(
         message:
-            'Permissao de localizacao negada. Voce pode preencher manualmente.',
+            'Permissão de localização negada. Você pode preencher manualmente.',
         isSuccess: false,
       );
     }
@@ -67,7 +67,7 @@ class CurrentLocationService {
         latitude: position.latitude,
         longitude: position.longitude,
       ),
-      message: 'Localizacao detectada com sucesso.',
+      message: 'Localização detectada com sucesso.',
       isSuccess: true,
     );
   }

@@ -120,7 +120,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
                 if (snapshot.hasError) {
                   return _AdminStateCard(
-                    title: 'Nao foi possivel carregar documentos',
+                    title: 'Não foi possível carregar documentos',
                     message: 'Verifique a API e tente novamente.',
                     actionLabel: 'Atualizar',
                     onAction: () => setState(_load),
@@ -133,7 +133,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   return _AdminStateCard(
                     title: 'Nada pendente agora',
                     message:
-                        'Quando houver CRMV, declaracao de matricula ou CNPJ para revisar, eles aparecem aqui.',
+                        'Quando houver CRMV, declaração de matrícula ou CNPJ para revisar, eles aparecem aqui.',
                     actionLabel: 'Atualizar',
                     onAction: () => setState(_load),
                   );
@@ -282,7 +282,7 @@ class _DocumentReviewCard extends StatelessWidget {
 
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nao foi possivel abrir o documento.')),
+        const SnackBar(content: Text('Não foi possível abrir o documento.')),
       );
     }
   }

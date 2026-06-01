@@ -1,7 +1,7 @@
 enum AppUserRole {
   veterinarian(
     apiValue: 'VETERINARIAN',
-    label: 'Veterinario volante',
+    label: 'Veterinário volante',
   ),
   intern(
     apiValue: 'INTERN',
@@ -9,11 +9,11 @@ enum AppUserRole {
   ),
   clinic(
     apiValue: 'CLINIC',
-    label: 'Clinica veterinaria',
+    label: 'Clínica veterinária',
   ),
   hospital(
     apiValue: 'HOSPITAL',
-    label: 'Hospital veterinario',
+    label: 'Hospital veterinário',
   );
 
   const AppUserRole({

@@ -218,14 +218,14 @@ class _AvailabilityCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Horarios encontrados conforme o filtro aplicado pela instituicao.',
+              'Horários encontrados conforme o filtro aplicado pela instituição.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 14),
             if (professional.availability.isEmpty)
-              const Text('Nenhum horario exibido para este filtro.')
+              const Text('Nenhum horário exibido para este filtro.')
             else
               Wrap(
                 spacing: 10,

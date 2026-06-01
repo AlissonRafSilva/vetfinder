@@ -35,7 +35,7 @@ class ApplicationSummary {
       institutionName:
           institution?['tradeName']?.toString() ??
           institution?['legalName']?.toString() ??
-          'Instituicao',
+          'Instituição',
       specialtyLabel:
           specialty?['name']?.toString() ?? 'Especialidade a definir',
       shiftLabel: OpportunityFormatter.shiftSummary(
@@ -53,9 +53,9 @@ class ApplicationSummary {
       case 'APPLIED':
         return 'Candidatura enviada';
       case 'ACCEPTED':
-        return 'Aceita pela instituicao';
+        return 'Aceita pela instituição';
       case 'REJECTED':
-        return 'Nao selecionada';
+        return 'Não selecionada';
       case 'WITHDRAWN':
         return 'Retirada';
       default:
@@ -69,6 +69,6 @@ class ApplicationSummary {
       return 'Data de candidatura indisponivel';
     }
 
-    return 'Enviada em ${OpportunityFormatter.shortDate(parsed)} as ${OpportunityFormatter.hourLabel(parsed)}';
+    return 'Enviada em ${OpportunityFormatter.shortDate(parsed)} às ${OpportunityFormatter.hourLabel(parsed)}';
   }
 }

@@ -54,7 +54,7 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
     if (!session.isAuthenticated || session.accessToken == null) {
       setState(() {
         _isApplySuccess = false;
-        _applyFeedback = 'Faca login antes de se candidatar.';
+        _applyFeedback = 'Faça login antes de se candidatar.';
       });
       return;
     }
@@ -71,7 +71,7 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
     if (session.userId != null && detail.applicantUserIds.contains(session.userId)) {
       setState(() {
         _isApplySuccess = false;
-        _applyFeedback = 'Voce ja se candidatou a esta oportunidade.';
+        _applyFeedback = 'Você já se candidatou a esta oportunidade.';
       });
       return;
     }
@@ -113,7 +113,7 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
 
       setState(() {
         _isApplySuccess = false;
-        _applyFeedback = 'Nao foi possivel enviar sua candidatura agora.';
+        _applyFeedback = 'Não foi possível enviar sua candidatura agora.';
       });
     } finally {
       if (mounted) {
@@ -147,7 +147,7 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Nao foi possivel carregar esta oportunidade.'),
+                    const Text('Não foi possível carregar esta oportunidade.'),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _reload,
@@ -285,8 +285,8 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
                         const SizedBox(height: 8),
                         Text(
                           session.isAuthenticated
-                              ? 'Voce esta autenticado como ${session.email ?? 'usuario'}.'
-                              : 'Faca login na aba Entrada para se candidatar.',
+                              ? 'Você está autenticado como ${session.email ?? 'usuário'}.'
+                              : 'Faça login na aba Entrada para se candidatar.',
                         ),
                         const SizedBox(height: 14),
                         TextField(
@@ -295,7 +295,7 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
                           maxLines: 4,
                           decoration: const InputDecoration(
                             labelText: 'Mensagem opcional',
-                            hintText: 'Apresente sua disponibilidade ou experiencia.',
+                            hintText: 'Apresente sua disponibilidade ou experiência.',
                           ),
                         ),
                         if (_applyFeedback != null) ...[

@@ -44,7 +44,7 @@ class OpportunitiesRepository {
     );
 
     if (response is! List) {
-      throw const ApiException('Lista de vagas da instituicao invalida.');
+      throw const ApiException('Lista de vagas da instituição inválida.');
     }
 
     return response

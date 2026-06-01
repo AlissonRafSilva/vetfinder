@@ -27,7 +27,7 @@ class ReviewsRepository {
 
     final review = response['review'];
     if (review is! Map<String, dynamic>) {
-      throw const ApiException('Avaliacao retornada pela API e invalida.');
+      throw const ApiException('Avaliação retornada pela API é inválida.');
     }
 
     return ReviewSummary.fromJson(review);

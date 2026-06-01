@@ -54,7 +54,7 @@ class ProfileRepository {
     );
 
     return response['message']?.toString() ??
-        'Perfil veterinario criado com sucesso.';
+        'Perfil veterinário criado com sucesso.';
   }
 
   Future<String> createInternProfile({
@@ -113,6 +113,6 @@ class ProfileRepository {
       },
     );
 
-    return response['message']?.toString() ?? 'Instituicao criada com sucesso.';
+    return response['message']?.toString() ?? 'Instituição criada com sucesso.';
   }
 }

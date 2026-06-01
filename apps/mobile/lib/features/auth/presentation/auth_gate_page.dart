@@ -122,7 +122,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
         } on ApiException catch (error) {
           isSuccessFeedback = false;
           feedbackMessage =
-              'Conta criada e login realizado, mas o perfil inicial nao foi salvo: ${error.message}';
+              'Conta criada e login realizado, mas o perfil inicial não foi salvo: ${error.message}';
         }
       }
 
@@ -150,7 +150,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
 
       setState(() {
         _isSuccessFeedback = false;
-        _feedbackMessage = 'Nao foi possivel concluir a solicitacao agora.';
+        _feedbackMessage = 'Não foi possível concluir a solicitação agora.';
       });
     } finally {
       if (mounted) {
@@ -164,7 +164,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
   Future<String> _saveInitialProfile(AuthResult result) {
     final accessToken = result.accessToken;
     if (accessToken == null || accessToken.isEmpty) {
-      throw const ApiException('Token de acesso nao retornado apos cadastro.');
+      throw const ApiException('Token de acesso não retornado após cadastro.');
     }
 
     switch (_selectedRole) {
@@ -242,7 +242,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
       }
 
       setState(() {
-        _locationFeedback = 'Nao foi possivel detectar sua localizacao agora.';
+        _locationFeedback = 'Não foi possível detectar sua localização agora.';
       });
     } finally {
       if (mounted) {
@@ -253,7 +253,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
 
   String _buildSuccessMessage(AuthResult result) {
     if (_mode == _AuthMode.login) {
-      return 'Login concluido para ${result.email ?? 'o usuario selecionado'}.';
+      return 'Login concluído para ${result.email ?? 'o usuário selecionado'}.';
     }
 
     return result.message;
@@ -296,7 +296,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Conecte profissionais veterinarios e instituicoes para cobrir plantoes com rapidez.',
+                    'Conecte profissionais veterinários e instituições para cobrir plantões com rapidez.',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: Colors.white.withValues(alpha: 0.88),
                     ),
@@ -307,7 +307,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
                     runSpacing: 10,
                     children: [
                       _HeroMetric(label: 'Agenda'),
-                      _HeroMetric(label: 'Geolocalizacao'),
+                      _HeroMetric(label: 'Geolocalização'),
                       _HeroMetric(label: 'Split sandbox'),
                       _HeroMetric(label: 'Alertas'),
                     ],
@@ -366,12 +366,12 @@ class _AuthGatePageState extends State<AuthGatePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Sessao ativa',
+                            'Sessão ativa',
                             style: theme.textTheme.titleMedium,
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            session.email ?? 'Usuario autenticado',
+                            session.email ?? 'Usuário autenticado',
                             style: theme.textTheme.bodyLarge,
                           ),
                           const SizedBox(height: 4),
@@ -405,7 +405,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
                 : 'Crie sua conta',
             subtitle: _mode == _AuthMode.login
                 ? 'Use o mesmo backend do VetFinder para autenticar.'
-                : 'O cadastro ja respeita os perfis aceitos pela API.',
+                : 'O cadastro já prepara seu perfil para usar a plataforma.',
           ),
           const SizedBox(height: 16),
           _AuthFormCard(
@@ -463,28 +463,28 @@ class _AuthGatePageState extends State<AuthGatePage> {
             const SizedBox(height: 28),
             const SectionHeader(
               title: 'Escolha seu perfil',
-              subtitle: 'O onboarding muda conforme o tipo de usuario.',
+              subtitle: 'A experiência muda conforme o tipo de usuário.',
             ),
             const SizedBox(height: 16),
             const _RoleOptionCard(
               icon: Icons.local_hospital_rounded,
-              title: 'Veterinario volante',
+              title: 'Veterinário volante',
               description:
-                  'Receba plantoes proximos, convites e pagamentos pelo app.',
+                  'Receba plantões próximos, convites e pagamentos pelo app.',
             ),
             const SizedBox(height: 14),
             const _RoleOptionCard(
               icon: Icons.school_rounded,
-              title: 'Estagiario',
+              title: 'Estagiário',
               description:
-                  'Encontre oportunidades compativeis com sua formacao e agenda.',
+                  'Encontre oportunidades compatíveis com sua formação e agenda.',
             ),
             const SizedBox(height: 14),
             const _RoleOptionCard(
               icon: Icons.storefront_rounded,
-              title: 'Clinica ou hospital',
+              title: 'Clínica ou hospital',
               description:
-                  'Publique demandas urgentes e feche plantoes com seguranca.',
+                  'Publique demandas urgentes e feche plantões com segurança.',
             ),
           ],
         ],
@@ -544,23 +544,23 @@ class _OnboardingChecklistCard extends StatelessWidget {
         roleValue == AppUserRole.hospital.apiValue;
 
     final title = isInstitution
-        ? 'Proximos passos da instituicao'
-        : 'Proximos passos do profissional';
+        ? 'Próximos passos da instituição'
+        : 'Próximos passos do profissional';
     final subtitle = isInstitution
-        ? 'Complete o cadastro institucional para publicar vagas e convidar profissionais com mais confianca.'
-        : 'Complete seu perfil e agenda para aparecer melhor nas buscas e receber oportunidades compativeis.';
+        ? 'Complete o cadastro institucional para publicar vagas e convidar profissionais com mais confiança.'
+        : 'Complete seu perfil e agenda para aparecer melhor nas buscas e receber oportunidades compatíveis.';
     final profileStep = isInstitution
         ? 'Validar dados de CNPJ e contato'
         : isIntern
-            ? 'Informar instituicao de ensino'
+            ? 'Informar instituição de ensino'
             : isVeterinarian
                 ? 'Informar CRMV e valor base'
                 : 'Completar dados principais';
     final marketStep = isInstitution
-        ? 'Buscar profissionais disponiveis'
+        ? 'Buscar profissionais disponíveis'
         : isIntern
-            ? 'Ver estagios disponiveis'
-            : 'Ver plantoes disponiveis';
+            ? 'Ver estágios disponíveis'
+            : 'Ver plantões disponíveis';
 
     return Card(
       child: Padding(
@@ -589,7 +589,7 @@ class _OnboardingChecklistCard extends StatelessWidget {
             if (!isInstitution)
               const _ChecklistItem(
                 icon: Icons.calendar_month_outlined,
-                label: 'Configurar dias e horarios disponiveis',
+                label: 'Configurar dias e horários disponíveis',
               ),
             _ChecklistItem(
               icon: isInstitution
@@ -980,11 +980,11 @@ class _RegistrationProfileFields extends StatelessWidget {
         return _RegisterSection(
           title: 'Dados profissionais',
           subtitle:
-              'Essas informacoes criam seu perfil veterinario imediatamente apos a conta.',
+              'Essas informações criam seu perfil veterinário imediatamente após a conta.',
           children: [
             _RequiredTextField(
               controller: vetCrmvController,
-              label: 'Numero do CRMV',
+              label: 'Número do CRMV',
             ),
             _RequiredTextField(
               controller: vetCrmvStateController,
@@ -993,17 +993,17 @@ class _RegistrationProfileFields extends StatelessWidget {
             ),
             _RequiredTextField(
               controller: vetRateController,
-              label: 'Valor base do plantao',
+              label: 'Valor base do plantão',
               keyboardType: TextInputType.number,
             ),
             _OptionalTextField(
               controller: vetExperienceController,
-              label: 'Anos de experiencia',
+              label: 'Anos de experiência',
               keyboardType: TextInputType.number,
             ),
             _OptionalTextField(
               controller: vetDistanceController,
-              label: 'Distancia maxima em km',
+              label: 'Distância máxima em km',
               keyboardType: TextInputType.number,
             ),
             _RegistrationLocationFields(
@@ -1017,7 +1017,7 @@ class _RegistrationProfileFields extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               value: vetEmergencyCare,
               onChanged: onVetEmergencyCareChanged,
-              title: const Text('Atende emergencia'),
+              title: const Text('Atende emergência'),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -1029,21 +1029,21 @@ class _RegistrationProfileFields extends StatelessWidget {
         );
       case AppUserRole.intern:
         return _RegisterSection(
-          title: 'Dados academicos',
+          title: 'Dados acadêmicos',
           subtitle:
-              'Essas informacoes ajudam clinicas e hospitais a validar sua candidatura.',
+              'Essas informações ajudam clínicas e hospitais a validar sua candidatura.',
           children: [
             _RequiredTextField(
               controller: internUniversityController,
-              label: 'Instituicao de ensino',
+              label: 'Instituição de ensino',
             ),
             _OptionalTextField(
               controller: internPeriodController,
-              label: 'Periodo do curso',
+              label: 'Período do curso',
             ),
             _OptionalTextField(
               controller: internGraduationController,
-              label: 'Previsao de formatura (AAAA-MM-DD)',
+              label: 'Previsão de formatura (AAAA-MM-DD)',
             ),
             _RegistrationLocationFields(
               latitudeController: latitudeController,
@@ -1057,13 +1057,13 @@ class _RegistrationProfileFields extends StatelessWidget {
       case AppUserRole.clinic:
       case AppUserRole.hospital:
         return _RegisterSection(
-          title: 'Dados da instituicao',
+          title: 'Dados da instituição',
           subtitle:
-              'Essas informacoes criam o perfil institucional para publicar vagas.',
+              'Essas informações criam o perfil institucional para publicar vagas.',
           children: [
             _RequiredTextField(
               controller: legalNameController,
-              label: 'Razao social',
+              label: 'Razão social',
             ),
             _RequiredTextField(
               controller: tradeNameController,
@@ -1076,11 +1076,11 @@ class _RegistrationProfileFields extends StatelessWidget {
             ),
             _OptionalTextField(
               controller: stateRegistrationController,
-              label: 'Inscricao estadual',
+              label: 'Inscrição estadual',
             ),
             _RequiredTextField(
               controller: contactNameController,
-              label: 'Responsavel pelo contato',
+              label: 'Responsável pelo contato',
             ),
             _OptionalTextField(
               controller: contactPhoneController,
@@ -1089,7 +1089,7 @@ class _RegistrationProfileFields extends StatelessWidget {
             ),
             _OptionalTextField(
               controller: descriptionController,
-              label: 'Descricao da instituicao',
+              label: 'Descrição da instituição',
               maxLines: 3,
             ),
             _RegistrationLocationFields(
@@ -1179,7 +1179,7 @@ class _RegistrationLocationFields extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Localizacao',
+            'Localização',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w800,
             ),
@@ -1209,8 +1209,8 @@ class _RegistrationLocationFields extends StatelessWidget {
             icon: const Icon(Icons.my_location_rounded),
             label: Text(
               isDetectingLocation
-                  ? 'Detectando localizacao...'
-                  : 'Usar localizacao atual',
+                  ? 'Detectando localização...'
+                  : 'Usar localização atual',
             ),
           ),
           if (feedback != null) ...[

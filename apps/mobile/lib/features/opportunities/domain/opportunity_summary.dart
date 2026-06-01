@@ -42,7 +42,7 @@ class OpportunitySummary {
       title: json['title']?.toString() ?? 'Oportunidade sem titulo',
       institution: institution?['tradeName']?.toString() ??
           institution?['institutionType']?.toString() ??
-          'Instituicao',
+          'Instituição',
       institutionReputationLabel: _reputationLabel(
         (institution?['user'] as Map<String, dynamic>?)?['reviewReceived'],
       ),
@@ -63,13 +63,13 @@ class OpportunitySummary {
   static String _opportunityTypeLabel(String type) {
     switch (type.toUpperCase()) {
       case 'INTERNSHIP':
-        return 'Estagio';
+        return 'Estágio';
       case 'COVERAGE':
         return 'Cobertura';
       case 'TEMPORARY':
         return 'Temporario';
       case 'SHIFT':
-        return 'Plantao';
+        return 'Plantão';
       default:
         return 'Vaga';
     }
@@ -77,7 +77,7 @@ class OpportunitySummary {
 
   static String _reputationLabel(dynamic reviews) {
     if (reviews is! List || reviews.isEmpty) {
-      return 'Instituicao sem avaliacoes';
+      return 'Instituição sem avaliações';
     }
 
     final ratings = reviews
@@ -87,13 +87,13 @@ class OpportunitySummary {
         .toList();
 
     if (ratings.isEmpty) {
-      return 'Instituicao sem avaliacoes';
+      return 'Instituição sem avaliações';
     }
 
     final average =
         ratings.reduce((sum, rating) => sum + rating) / ratings.length;
     final countLabel =
-        ratings.length == 1 ? '1 avaliacao' : '${ratings.length} avaliacoes';
+        ratings.length == 1 ? '1 avaliação' : '${ratings.length} avaliações';
 
     return '★ ${average.toStringAsFixed(1)} ($countLabel)';
   }

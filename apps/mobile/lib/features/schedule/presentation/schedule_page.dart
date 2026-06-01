@@ -209,13 +209,13 @@ class _SchedulePageState extends State<SchedulePage> {
           children: [
             SectionHeader(
               title: 'Minhas candidaturas',
-              subtitle: 'Faca login para acompanhar o andamento das vagas que voce aplicou.',
+              subtitle: 'Faça login para acompanhar o andamento das vagas às quais você se candidatou.',
             ),
             SizedBox(height: 18),
             Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
-                child: Text('Nenhuma sessao ativa. Entre com um perfil profissional.'),
+                child: Text('Nenhuma sessão ativa. Entre com um perfil profissional.'),
               ),
             ),
           ],
@@ -231,14 +231,14 @@ class _SchedulePageState extends State<SchedulePage> {
           children: [
             SectionHeader(
               title: 'Minhas candidaturas',
-              subtitle: 'Esta area e destinada a veterinarios e estagiarios.',
+              subtitle: 'Esta área é destinada a veterinários e estagiários.',
             ),
             SizedBox(height: 18),
             Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
                 child: Text(
-                  'Perfis de clinica e hospital usam outros fluxos, como publicacao de vagas e resposta a candidaturas.',
+                  'Perfis de clínica e hospital usam outros fluxos, como publicação de vagas e resposta a candidaturas.',
                 ),
               ),
             ),
@@ -254,7 +254,7 @@ class _SchedulePageState extends State<SchedulePage> {
         children: [
           const SectionHeader(
             title: 'Minha agenda',
-            subtitle: 'Informe seus horarios livres para que clinicas e hospitais encontrem voce mais rapido.',
+            subtitle: 'Informe seus horários livres para que clínicas e hospitais encontrem você mais rápido.',
           ),
           const SizedBox(height: 18),
           const Wrap(
@@ -290,11 +290,11 @@ class _SchedulePageState extends State<SchedulePage> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Esses horarios poderao ser usados pelas clinicas para encontrar profissionais disponiveis.',
+                        'Esses horários poderão ser usados pelas clínicas para encontrar profissionais disponíveis.',
                       ),
                       const SizedBox(height: 16),
                       if (_editableSlots.isEmpty)
-                        const Text('Nenhum horario cadastrado ainda.')
+                        const Text('Nenhum horário cadastrado ainda.')
                       else
                         Column(
                           children: [
@@ -315,7 +315,7 @@ class _SchedulePageState extends State<SchedulePage> {
                           OutlinedButton.icon(
                             onPressed: _addSlot,
                             icon: const Icon(Icons.add_rounded),
-                            label: const Text('Adicionar horario'),
+                            label: const Text('Adicionar horário'),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -347,7 +347,7 @@ class _SchedulePageState extends State<SchedulePage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Aqui aparecem os convites que clinicas e hospitais enviaram diretamente para voce.',
+            'Aqui aparecem os convites que clínicas e hospitais enviaram diretamente para você.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -368,7 +368,7 @@ class _SchedulePageState extends State<SchedulePage> {
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Text(
-                      'Nao foi possivel carregar seus convites agora.',
+                      'Não foi possível carregar seus convites agora.',
                       style: theme.textTheme.bodyLarge,
                     ),
                   ),
@@ -416,7 +416,7 @@ class _SchedulePageState extends State<SchedulePage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Acompanhe o status das oportunidades para as quais voce ja aplicou.',
+            'Acompanhe o status das oportunidades para as quais você já se candidatou.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -440,7 +440,7 @@ class _SchedulePageState extends State<SchedulePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Nao foi possivel carregar suas candidaturas.',
+                          'Não foi possível carregar suas candidaturas.',
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
@@ -467,12 +467,12 @@ class _SchedulePageState extends State<SchedulePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Voce ainda nao enviou candidaturas.',
+                          'Você ainda não enviou candidaturas.',
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Acesse a aba Plantoes, escolha uma oportunidade e envie sua candidatura por la.',
+                          'Acesse a aba Plantões, escolha uma oportunidade e envie sua candidatura por lá.',
                         ),
                       ],
                     ),
@@ -804,7 +804,7 @@ class _InviteCard extends StatelessWidget {
             if (item.message != null && item.message!.isNotEmpty) ...[
               const SizedBox(height: 10),
               Text(
-                'Mensagem da instituicao',
+                'Mensagem da instituição',
                 style: theme.textTheme.titleSmall,
               ),
               const SizedBox(height: 4),

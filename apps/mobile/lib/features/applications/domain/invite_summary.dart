@@ -39,7 +39,7 @@ class InviteSummary {
       institutionName:
           institution?['tradeName']?.toString() ??
           institution?['legalName']?.toString() ??
-          'Instituicao',
+          'Instituição',
       specialtyLabel:
           specialty?['name']?.toString() ?? 'Especialidade a definir',
       shiftLabel: OpportunityFormatter.shiftSummary(
@@ -72,6 +72,6 @@ class InviteSummary {
       return 'Data do convite indisponivel';
     }
 
-    return 'Recebido em ${OpportunityFormatter.shortDate(parsed)} as ${OpportunityFormatter.hourLabel(parsed)}';
+    return 'Recebido em ${OpportunityFormatter.shortDate(parsed)} às ${OpportunityFormatter.hourLabel(parsed)}';
   }
 }

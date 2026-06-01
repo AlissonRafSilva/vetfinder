@@ -81,15 +81,15 @@ class _ProfessionalEngagementsPageState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SectionHeader(
-              title: 'Meus plantoes',
+              title: 'Meus plantões',
               subtitle:
-                  'Faca login como profissional para acompanhar os plantoes fechados.',
+                  'Faça login como profissional para acompanhar os plantões fechados.',
             ),
             SizedBox(height: 18),
             Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
-                child: Text('Nenhuma sessao profissional ativa no momento.'),
+                child: Text('Nenhuma sessão profissional ativa no momento.'),
               ),
             ),
           ],
@@ -104,15 +104,15 @@ class _ProfessionalEngagementsPageState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SectionHeader(
-              title: 'Meus plantoes',
-              subtitle: 'Esta area e destinada a veterinarios e estagiarios.',
+              title: 'Meus plantões',
+              subtitle: 'Esta área é destinada a veterinários e estagiários.',
             ),
             SizedBox(height: 18),
             Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
                 child: Text(
-                  'Entre com um perfil profissional para visualizar os plantoes fechados.',
+                  'Entre com um perfil profissional para visualizar os plantões fechados.',
                 ),
               ),
             ),
@@ -127,9 +127,9 @@ class _ProfessionalEngagementsPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionHeader(
-            title: 'Meus plantoes',
+            title: 'Meus plantões',
             subtitle:
-                'Acompanhe os plantoes confirmados, valores a receber e status operacional.',
+                'Acompanhe os plantões confirmados, valores a receber e status operacional.',
           ),
           const SizedBox(height: 18),
           const Wrap(
@@ -169,12 +169,12 @@ class _ProfessionalEngagementsPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Nao foi possivel carregar seus plantoes.',
+                          'Não foi possível carregar seus plantões.',
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Tente novamente para atualizar os plantoes confirmados.',
+                          'Tente novamente para atualizar os plantões confirmados.',
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
@@ -196,12 +196,12 @@ class _ProfessionalEngagementsPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Nenhum plantao fechado foi encontrado para voce ainda.',
+                          'Nenhum plantão fechado foi encontrado para você ainda.',
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Se a clinica acabou de confirmar, toque em atualizar para buscar o fechamento mais recente.',
+                          'Se a clínica acabou de confirmar, toque em atualizar para buscar o fechamento mais recente.',
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(

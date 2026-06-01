@@ -56,7 +56,7 @@ class AdminDocumentSummary {
       case 'CRMV_PROOF':
         return 'Comprovante CRMV';
       case 'ENROLLMENT_STATEMENT':
-        return 'Declaracao de matricula';
+        return 'Declaração de matrícula';
       case 'CNPJ_PROOF':
         return 'Comprovante CNPJ';
       case 'IDENTITY_DOCUMENT':
@@ -95,6 +95,6 @@ class AdminDocumentSummary {
     final hour = parsed.hour.toString().padLeft(2, '0');
     final minute = parsed.minute.toString().padLeft(2, '0');
 
-    return '$day/$month/$year as $hour:$minute';
+    return '$day/$month/$year às $hour:$minute';
   }
 }

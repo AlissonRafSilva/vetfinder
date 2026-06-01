@@ -11,7 +11,7 @@ class AppSessionScope extends InheritedNotifier<AppSessionController> {
 
   static AppSessionController of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppSessionScope>();
-    assert(scope != null, 'AppSessionScope nao encontrado no contexto.');
+    assert(scope != null, 'AppSessionScope não encontrado no contexto.');
     return scope!.notifier!;
   }
 }

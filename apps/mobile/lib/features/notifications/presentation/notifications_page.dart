@@ -119,13 +119,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
           children: [
             SectionHeader(
               title: 'Notificacoes',
-              subtitle: 'Faca login para acompanhar alertas do marketplace.',
+              subtitle: 'Faça login para acompanhar alertas do marketplace.',
             ),
             SizedBox(height: 18),
             Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
-                child: Text('Nenhuma sessao ativa no momento.'),
+                child: Text('Nenhuma sessão ativa no momento.'),
               ),
             ),
           ],
@@ -141,7 +141,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           SectionHeader(
             title: 'Notificacoes',
             subtitle:
-                'Acompanhe convites, candidaturas, respostas e plantoes fechados.',
+                'Acompanhe convites, candidaturas, respostas e plantões fechados.',
             trailing: Wrap(
               spacing: 8,
               children: [
@@ -174,7 +174,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   child: Padding(
                     padding: EdgeInsets.all(20),
                     child: Text(
-                      'Nao foi possivel carregar suas notificacoes agora.',
+                      'Não foi possível carregar suas notificações agora.',
                     ),
                   ),
                 );
@@ -198,7 +198,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         ),
                         SizedBox(height: 6),
                         Text(
-                          'Quando houver convites, candidaturas, respostas ou fechamento de plantao, tudo aparece aqui.',
+                          'Quando houver convites, candidaturas, respostas ou fechamento de plantão, tudo aparece aqui.',
                         ),
                       ],
                     ),
@@ -209,7 +209,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  InfoBadge(label: '$unreadCount nao lidas'),
+                  InfoBadge(label: '$unreadCount não lidas'),
                   const SizedBox(height: 14),
                   for (var index = 0; index < items.length; index++) ...[
                     _NotificationCard(

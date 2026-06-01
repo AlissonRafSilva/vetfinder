@@ -80,6 +80,6 @@ class OpportunityApplicationSummary {
     final year = parsed.year.toString();
     final hour = parsed.hour.toString().padLeft(2, '0');
     final minute = parsed.minute.toString().padLeft(2, '0');
-    return 'Enviada em $day/$month/$year as $hour:$minute';
+    return 'Enviada em $day/$month/$year às $hour:$minute';
   }
 }

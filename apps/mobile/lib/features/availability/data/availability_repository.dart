@@ -87,7 +87,7 @@ class AvailabilityRepository {
     );
 
     if (response is! List) {
-      throw const ApiException('Lista de profissionais disponiveis invalida.');
+      throw const ApiException('Lista de profissionais disponíveis inválida.');
     }
 
     return response

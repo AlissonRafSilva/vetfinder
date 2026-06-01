@@ -43,11 +43,11 @@ class OpportunityDetail {
     return OpportunityDetail(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Oportunidade sem titulo',
-      description: json['description']?.toString() ?? 'Sem descricao informada.',
+      description: json['description']?.toString() ?? 'Sem descrição informada.',
       institution:
           institution?['tradeName']?.toString() ??
           institution?['legalName']?.toString() ??
-          'Instituicao',
+          'Instituição',
       specialty: customSpecialtyLabel != null && customSpecialtyLabel.trim().isNotEmpty
           ? customSpecialtyLabel
           : specialty?['name']?.toString() ?? 'Especialidade a definir',
@@ -85,7 +85,7 @@ class OpportunityDetail {
     ].where((part) => part.isNotEmpty).toList();
 
     if (parts.isEmpty) {
-      return 'Localizacao a confirmar';
+      return 'Localização a confirmar';
     }
 
     return parts.join(' - ');

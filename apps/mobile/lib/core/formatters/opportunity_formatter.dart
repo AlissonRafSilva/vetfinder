@@ -45,7 +45,7 @@ class OpportunityFormatter {
     final end = _tryParse(endAt);
 
     if (start == null || end == null) {
-      return 'Horario a combinar';
+      return 'Horário a combinar';
     }
 
     return '${shortDate(start)} • ${timeRange(start, end)}';
@@ -66,7 +66,7 @@ class OpportunityFormatter {
       return '${fullDate(start)} • ${timeRange(start, end)}';
     }
 
-    return '${fullDate(start)} • ${hourLabel(start)} ate ${fullDate(end)} • ${hourLabel(end)}';
+    return '${fullDate(start)} • ${hourLabel(start)} até ${fullDate(end)} • ${hourLabel(end)}';
   }
 
   static String durationLabel({
@@ -89,10 +89,10 @@ class OpportunityFormatter {
     final remainingMinutes = minutes % 60;
 
     if (remainingMinutes == 0) {
-      return '${hours}h de plantao';
+      return '${hours}h de plantão';
     }
 
-    return '${hours}h${remainingMinutes.toString().padLeft(2, '0')} de plantao';
+    return '${hours}h${remainingMinutes.toString().padLeft(2, '0')} de plantão';
   }
 
   static String hourLabel(DateTime dateTime) {
@@ -100,7 +100,7 @@ class OpportunityFormatter {
   }
 
   static String timeRange(DateTime start, DateTime end) {
-    return '${hourLabel(start)} as ${hourLabel(end)}';
+    return '${hourLabel(start)} às ${hourLabel(end)}';
   }
 
   static String shortDate(DateTime dateTime) {

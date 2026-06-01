@@ -80,7 +80,7 @@ class AvailableProfessionalSummary {
   static String _roleLabel(String role) {
     switch (role.toUpperCase()) {
       case 'VETERINARIAN':
-        return 'Veterinario';
+        return 'Veterinário';
       case 'INTERN':
         return 'Estagiario';
       default:
@@ -93,7 +93,7 @@ class AvailableProfessionalSummary {
     final state = profile?['state']?.toString() ?? '';
 
     if (city.isEmpty && state.isEmpty) {
-      return 'Regiao nao informada';
+      return 'Região não informada';
     }
 
     return [city, state].where((part) => part.isNotEmpty).join(' - ');
@@ -124,7 +124,7 @@ class AvailableProfessionalSummary {
     }
 
     final average = ratings.reduce((sum, rating) => sum + rating) / ratings.length;
-    final countLabel = ratings.length == 1 ? '1 avaliacao' : '${ratings.length} avaliacoes';
+    final countLabel = ratings.length == 1 ? '1 avaliação' : '${ratings.length} avaliações';
 
     return '★ ${average.toStringAsFixed(1)} ($countLabel)';
   }
@@ -158,10 +158,10 @@ class AvailableProfessionalSummary {
     }
 
     if (completenessScore >= 70) {
-      return 'Tem boa parte do cadastro preenchido, mas ainda sem validacao completa.';
+      return 'Tem boa parte do cadastro preenchido, mas ainda sem validação completa.';
     }
 
-    return 'Pode ser convidado, mas tende a receber menos destaque ate completar o perfil.';
+    return 'Pode ser convidado, mas tende a receber menos destaque até completar o perfil.';
   }
 
   static int _completenessScore({
@@ -219,9 +219,9 @@ class AvailableProfessionalSummary {
 
     final role = json['role']?.toString() ?? '';
     if (role.toUpperCase() == 'INTERN') {
-      return 'Interesse em estagio';
+      return 'Interesse em estágio';
     }
 
-    return 'Clinica geral';
+    return 'Clínica geral';
   }
 }

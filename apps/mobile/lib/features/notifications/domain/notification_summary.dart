@@ -37,6 +37,6 @@ class NotificationSummary {
     final hour = parsed.hour.toString().padLeft(2, '0');
     final minute = parsed.minute.toString().padLeft(2, '0');
 
-    return '$day/$month as $hour:$minute';
+    return '$day/$month às $hour:$minute';
   }
 }

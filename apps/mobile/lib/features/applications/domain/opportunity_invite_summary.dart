@@ -58,6 +58,6 @@ class OpportunityInviteSummary {
       return 'Data indisponivel';
     }
 
-    return 'Enviado em ${OpportunityFormatter.shortDate(parsed)} as ${OpportunityFormatter.hourLabel(parsed)}';
+    return 'Enviado em ${OpportunityFormatter.shortDate(parsed)} às ${OpportunityFormatter.hourLabel(parsed)}';
   }
 }

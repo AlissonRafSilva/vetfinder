@@ -28,7 +28,7 @@ class EngagementsRepository {
       },
     );
 
-    return response['message']?.toString() ?? 'Plantao fechado com sucesso.';
+    return response['message']?.toString() ?? 'Plantão fechado com sucesso.';
   }
 
   Future<List<EngagementSummary>> fetchMyInstitutionEngagements({
@@ -58,7 +58,7 @@ class EngagementsRepository {
     );
 
     if (response is! List) {
-      throw const ApiException('Lista de plantoes fechados invalida.');
+      throw const ApiException('Lista de plantões fechados inválida.');
     }
 
     return response

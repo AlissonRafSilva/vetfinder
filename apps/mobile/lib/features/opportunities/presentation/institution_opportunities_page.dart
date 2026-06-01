@@ -240,13 +240,13 @@ class _InstitutionOpportunitiesPageState
             SectionHeader(
               title: 'Minhas vagas',
               subtitle:
-                  'Faca login como clinica ou hospital para acompanhar suas vagas abertas.',
+                  'Faça login como clínica ou hospital para acompanhar suas vagas abertas.',
             ),
             SizedBox(height: 18),
             Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
-                child: Text('Nenhuma sessao institucional ativa no momento.'),
+                child: Text('Nenhuma sessão institucional ativa no momento.'),
               ),
             ),
           ],
@@ -263,7 +263,7 @@ class _InstitutionOpportunitiesPageState
             SectionHeader(
               title: 'Minhas vagas',
               subtitle:
-                  'Esta area e exclusiva para clinicas e hospitais gerenciarem suas vagas.',
+                  'Esta área é exclusiva para clínicas e hospitais gerenciarem suas vagas.',
             ),
             SizedBox(height: 18),
             Card(
@@ -287,7 +287,7 @@ class _InstitutionOpportunitiesPageState
           const SectionHeader(
             title: 'Minhas vagas',
             subtitle:
-                'Publique novas vagas, acompanhe as abertas da sua instituicao e veja o retorno dos convites enviados.',
+                'Publique novas vagas, acompanhe as abertas da sua instituição e veja o retorno dos convites enviados.',
           ),
           const SizedBox(height: 18),
           if (session.status != 'ACTIVE') ...[
@@ -301,7 +301,7 @@ class _InstitutionOpportunitiesPageState
                   spacing: 10,
                   runSpacing: 10,
                   children: [
-                    InfoBadge(label: 'Somente da sua instituicao'),
+                    InfoBadge(label: 'Somente da sua instituição'),
                     InfoBadge(label: 'Convites monitorados'),
                     InfoBadge(label: 'Fluxo institucional'),
                   ],
@@ -340,7 +340,7 @@ class _InstitutionOpportunitiesPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Nao foi possivel carregar as vagas da instituicao.',
+                          'Não foi possível carregar as vagas da instituição.',
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
@@ -368,7 +368,7 @@ class _InstitutionOpportunitiesPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Nenhuma vaga aberta da sua instituicao foi encontrada ainda.',
+                          'Nenhuma vaga aberta da sua instituição foi encontrada ainda.',
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
@@ -445,7 +445,7 @@ class _InstitutionVerificationNotice extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Complete o perfil institucional e envie o comprovante de CNPJ. Publicar vagas e fechar plantoes pode ser bloqueado ate a aprovacao no admin.',
+                    'Complete o perfil institucional e envie o comprovante de CNPJ. Publicar vagas e fechar plantões pode ser bloqueado até a aprovação no admin.',
                   ),
                 ],
               ),
@@ -607,7 +607,7 @@ class _InstitutionOpportunityCardState
 
                 if (snapshot.hasError) {
                   return const Text(
-                    'Nao foi possivel carregar candidaturas e convites desta vaga.',
+                    'Não foi possível carregar candidaturas e convites desta vaga.',
                   );
                 }
 
@@ -910,7 +910,7 @@ class _OpportunityApplicationStatusRowState
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Fechar plantao'),
+            title: const Text('Fechar plantão'),
             content: Text(
               'Deseja confirmar ${_currentItem.professionalName} para esta vaga?\n\nValor bruto: ${widget.opportunity.amountLabel}\nTaxa da plataforma (${widget.platformFeePercentLabel}): R\$ ${platformFeeAmount.toStringAsFixed(2)}',
             ),
@@ -1059,7 +1059,7 @@ class _OpportunityApplicationStatusRowState
               child: ElevatedButton.icon(
                 onPressed: _isResponding ? null : _finalizeShift,
                 icon: const Icon(Icons.handshake_rounded),
-                label: const Text('Fechar plantao'),
+                label: const Text('Fechar plantão'),
               ),
             ),
           ],
@@ -1142,7 +1142,7 @@ class _OpportunityInviteStatusRow extends StatelessWidget {
                   final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('Fechar plantao'),
+                          title: const Text('Fechar plantão'),
                           content: Text(
                             'Deseja confirmar ${item.professionalName} para esta vaga?\n\nValor bruto: ${opportunity.amountLabel}\nTaxa da plataforma ($platformFeePercentLabel): R\$ ${platformFeeAmount.toStringAsFixed(2)}',
                           ),
@@ -1194,7 +1194,7 @@ class _OpportunityInviteStatusRow extends StatelessWidget {
                   }
                 },
                 icon: const Icon(Icons.handshake_rounded),
-                label: const Text('Fechar plantao'),
+                label: const Text('Fechar plantão'),
               ),
             ),
           ],
@@ -1357,7 +1357,7 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
               const SizedBox(height: 8),
               Text(
                 _isEditMode
-                    ? 'Atualize os dados principais da vaga para refletir a necessidade real da instituicao.'
+                    ? 'Atualize os dados principais da vaga para refletir a necessidade real da instituição.'
                     : 'Crie uma vaga institucional com os dados principais para ja poder publicar e convidar profissionais.',
               ),
               const SizedBox(height: 16),
@@ -1365,7 +1365,7 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                 controller: _titleController,
                 decoration: const InputDecoration(
                   labelText: 'Titulo da vaga',
-                  hintText: 'Ex.: Plantao noturno em clinica 24h',
+                  hintText: 'Ex.: Plantão noturno em clínica 24h',
                 ),
                 validator: (value) => (value == null || value.trim().isEmpty)
                     ? 'Informe o titulo.'
@@ -1377,9 +1377,9 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                 minLines: 3,
                 maxLines: 5,
                 decoration: const InputDecoration(
-                  labelText: 'Descricao',
+                  labelText: 'Descrição',
                   hintText:
-                      'Descreva o tipo de atendimento, publico, especialidade e contexto do plantao.',
+                      'Descreva o tipo de atendimento, público, especialidade e contexto do plantão.',
                 ),
                 validator: (value) =>
                     (value == null || value.trim().length < 10)
@@ -1392,13 +1392,13 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                 decoration: const InputDecoration(labelText: 'Tipo de vaga'),
                 items: const [
                   DropdownMenuItem(
-                      value: 'SHIFT', child: Text('Plantao veterinario')),
+                      value: 'SHIFT', child: Text('Plantão veterinário')),
                   DropdownMenuItem(value: 'COVERAGE', child: Text('Cobertura')),
                   DropdownMenuItem(
                       value: 'TEMPORARY', child: Text('Temporario')),
                   DropdownMenuItem(
                     value: 'INTERNSHIP',
-                    child: Text('Estagio - somente estagiarios'),
+                    child: Text('Estágio - somente estagiários'),
                   ),
                 ],
                 onChanged: (value) {
@@ -1419,7 +1419,7 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                 const SizedBox(height: 10),
                 const _OpportunityAudienceNotice(
                   message:
-                      'Esta vaga sera exibida para veterinarios volantes, nao para estagiarios.',
+                      'Esta vaga será exibida para veterinários volantes, não para estagiários.',
                 ),
               ],
               const SizedBox(height: 12),
@@ -1567,7 +1567,7 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Preferir perfil validado'),
                 subtitle: const Text(
-                  'Nao bloqueia candidaturas. Serve como sinal de confianca para destacar perfis mais completos.',
+                  'Não bloqueia candidaturas. Serve como sinal de confiança para destacar perfis mais completos.',
                 ),
                 value: _requiresVerifiedProfile,
                 onChanged: (value) {

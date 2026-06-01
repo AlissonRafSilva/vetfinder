@@ -79,7 +79,7 @@ class DocumentsRepository {
         ),
       );
     } else {
-      throw const ApiException('Nao foi possivel ler o arquivo selecionado.');
+      throw const ApiException('Não foi possível ler o arquivo selecionado.');
     }
 
     final streamedResponse = await request.send();

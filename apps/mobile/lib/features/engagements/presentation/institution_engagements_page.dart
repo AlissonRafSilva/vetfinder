@@ -81,15 +81,15 @@ class _InstitutionEngagementsPageState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SectionHeader(
-              title: 'Contratacoes',
+              title: 'Contratações',
               subtitle:
-                  'Faca login como clinica ou hospital para acompanhar os plantoes fechados.',
+                  'Faça login como clínica ou hospital para acompanhar os plantões fechados.',
             ),
             SizedBox(height: 18),
             Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
-                child: Text('Nenhuma sessao institucional ativa no momento.'),
+                child: Text('Nenhuma sessão institucional ativa no momento.'),
               ),
             ),
           ],
@@ -104,9 +104,9 @@ class _InstitutionEngagementsPageState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SectionHeader(
-              title: 'Contratacoes',
+              title: 'Contratações',
               subtitle:
-                  'Esta area e exclusiva para clinicas e hospitais acompanharem plantoes fechados.',
+                  'Esta área é exclusiva para clínicas e hospitais acompanharem plantões fechados.',
             ),
             SizedBox(height: 18),
             Card(
@@ -128,16 +128,16 @@ class _InstitutionEngagementsPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionHeader(
-            title: 'Contratacoes',
+            title: 'Contratações',
             subtitle:
-                'Acompanhe os plantoes ja fechados, o profissional confirmado e os valores da operacao.',
+                'Acompanhe os plantões já fechados, o profissional confirmado e os valores da operação.',
           ),
           const SizedBox(height: 18),
           const Wrap(
             spacing: 10,
             runSpacing: 10,
             children: [
-              InfoBadge(label: 'Plantoes fechados'),
+              InfoBadge(label: 'Plantões fechados'),
               InfoBadge(label: 'Valores detalhados'),
               InfoBadge(label: 'Fluxo institucional'),
             ],
@@ -148,7 +148,7 @@ class _InstitutionEngagementsPageState
             child: OutlinedButton.icon(
               onPressed: _forceRefresh,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Atualizar contratacoes'),
+              label: const Text('Atualizar contratações'),
             ),
           ),
           const SizedBox(height: 18),
@@ -170,12 +170,12 @@ class _InstitutionEngagementsPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Nao foi possivel carregar as contratacoes.',
+                          'Não foi possível carregar as contratações.',
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Tente novamente para atualizar os plantoes ja fechados.',
+                          'Tente novamente para atualizar os plantões já fechados.',
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
@@ -197,12 +197,12 @@ class _InstitutionEngagementsPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Nenhum plantao fechado foi encontrado ainda.',
+                          'Nenhum plantão fechado foi encontrado ainda.',
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Depois de confirmar um plantao, toque em atualizar para recarregar a lista.',
+                          'Depois de confirmar um plantão, toque em atualizar para recarregar a lista.',
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(

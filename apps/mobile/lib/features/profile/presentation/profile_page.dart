@@ -378,7 +378,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       setState(() {
         _locationFeedback =
-            'Nao foi possivel detectar sua localizacao agora.';
+            'Não foi possível detectar sua localização agora.';
         _isFeedbackError = true;
       });
     } finally {
@@ -421,7 +421,7 @@ class _ProfilePageState extends State<ProfilePage> {
         return;
       }
       setState(() {
-        _feedbackMessage = 'Nao foi possivel salvar o perfil agora.';
+        _feedbackMessage = 'Não foi possível salvar o perfil agora.';
         _isFeedbackError = true;
       });
     } finally {
@@ -452,7 +452,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final file = pickedFile.files.single;
     if (file.size > 8 * 1024 * 1024) {
       setState(() {
-        _feedbackMessage = 'Envie um arquivo de ate 8 MB.';
+        _feedbackMessage = 'Envie um arquivo de até 8 MB.';
         _isFeedbackError = true;
       });
       return;
@@ -505,10 +505,10 @@ class _ProfilePageState extends State<ProfilePage> {
     final isInstitution = session.isInstitutionUser;
     final keyboardIsOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final sectionTitle =
-        isInstitution ? 'Perfil da instituicao' : 'Perfil profissional';
+        isInstitution ? 'Perfil da instituição' : 'Perfil profissional';
     final sectionSubtitle = isInstitution
-        ? 'Complete os dados da clinica ou hospital para publicar vagas com mais confianca.'
-        : 'Complete os dados profissionais para candidaturas, validacao e agenda.';
+        ? 'Complete os dados da clínica ou hospital para publicar vagas com mais confiança.'
+        : 'Complete os dados profissionais para candidaturas, validação e agenda.';
 
     if (!session.isAuthenticated) {
       return SingleChildScrollView(
@@ -518,13 +518,13 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             SectionHeader(
               title: sectionTitle,
-              subtitle: 'Faca login para visualizar e completar seu perfil.',
+              subtitle: 'Faça login para visualizar e completar seu perfil.',
             ),
             const SizedBox(height: 18),
             const Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
-                child: Text('Nenhuma sessao ativa no momento.'),
+                child: Text('Nenhuma sessão ativa no momento.'),
               ),
             ),
           ],
@@ -655,7 +655,7 @@ class _ProfilePageState extends State<ProfilePage> {
           documentType: 'PROFILE_PHOTO',
           title: 'Foto de perfil',
           description:
-              'Ajuda clinicas e hospitais a reconhecerem o profissional.',
+              'Ajuda clínicas e hospitais a reconhecerem o profissional.',
         ),
         _RequiredDocument(
           ownerType: 'USER',
@@ -673,14 +673,14 @@ class _ProfilePageState extends State<ProfilePage> {
           documentType: 'PROFILE_PHOTO',
           title: 'Foto de perfil',
           description:
-              'Ajuda instituicoes a identificarem o candidato com seguranca.',
+              'Ajuda instituições a identificarem o candidato com segurança.',
         ),
         _RequiredDocument(
           ownerType: 'USER',
           documentType: 'ENROLLMENT_STATEMENT',
           title: 'Declaracao de matricula',
           description:
-              'Comprovante academico necessario para oportunidades de estagio.',
+              'Comprovante acadêmico necessário para oportunidades de estágio.',
         ),
       ];
     }
@@ -691,7 +691,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ownerType: 'INSTITUTION',
           documentType: 'CNPJ_PROOF',
           title: 'Comprovante CNPJ',
-          description: 'Documento usado pelo admin para validar a instituicao.',
+          description: 'Documento usado pelo admin para validar a instituição.',
         ),
       ];
     }
@@ -749,12 +749,12 @@ class _SessionCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        email ?? 'Usuario autenticado',
+                        email ?? 'Usuário autenticado',
                         style: theme.textTheme.titleLarge,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        roleValue ?? 'Perfil nao identificado',
+                        roleValue ?? 'Perfil não identificado',
                         style: theme.textTheme.bodyMedium,
                       ),
                     ],
@@ -783,7 +783,7 @@ class _SessionCard extends StatelessWidget {
             const SizedBox(height: 18),
             OutlinedButton(
               onPressed: onLogout,
-              child: const Text('Encerrar sessao'),
+              child: const Text('Encerrar sessão'),
             ),
           ],
         ),
@@ -810,7 +810,7 @@ class _ValidationGuidanceCard extends StatelessWidget {
     final color =
         isApproved ? theme.colorScheme.primary : theme.colorScheme.tertiary;
     final title =
-        isApproved ? 'Cadastro validado' : 'Cadastro aguardando validacao';
+        isApproved ? 'Cadastro validado' : 'Cadastro aguardando validação';
     final message = isApproved
         ? 'Seu perfil esta liberado para usar os fluxos principais do marketplace.'
         : _pendingMessage();
@@ -870,14 +870,14 @@ class _ValidationGuidanceCard extends StatelessWidget {
 
   String _pendingMessage() {
     if (isInstitution) {
-      return 'Envie o comprovante de CNPJ. Enquanto a instituicao nao for aprovada, publicar vagas e fechar plantoes pode ser bloqueado.';
+      return 'Envie o comprovante de CNPJ. Enquanto a instituição não for aprovada, publicar vagas e fechar plantões pode ser bloqueado.';
     }
 
     if (roleValue == AppUserRole.intern.apiValue) {
-      return 'Envie a foto de perfil e a declaracao de matricula para aumentar confianca e destaque nas oportunidades de estagio.';
+      return 'Envie a foto de perfil e a declaração de matrícula para aumentar confiança e destaque nas oportunidades de estágio.';
     }
 
-    return 'Envie a foto de perfil e o comprovante CRMV para aumentar confianca e destaque nas vagas veterinarias.';
+    return 'Envie a foto de perfil e o comprovante CRMV para aumentar confiança e destaque nas vagas veterinárias.';
   }
 
   String _statusLabel(String? value) {
@@ -922,7 +922,7 @@ class _DocumentsValidationSection extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Documentos de validacao',
+                    'Documentos de validação',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -937,14 +937,14 @@ class _DocumentsValidationSection extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Envie arquivos em PDF, JPG ou PNG com ate 8 MB para revisao do admin.',
+              'Envie arquivos em PDF, JPG ou PNG com até 8 MB para revisão do admin.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 16),
             if (documentsFuture == null)
-              const Text('Documentos ainda nao carregados.')
+              const Text('Documentos ainda não carregados.')
             else
               FutureBuilder<List<DocumentSummary>>(
                 future: documentsFuture,
@@ -955,7 +955,7 @@ class _DocumentsValidationSection extends StatelessWidget {
 
                   if (snapshot.hasError) {
                     return const Text(
-                      'Nao foi possivel carregar os documentos agora.',
+                      'Não foi possível carregar os documentos agora.',
                     );
                   }
 
@@ -977,7 +977,7 @@ class _DocumentsValidationSection extends StatelessWidget {
                       ],
                       if (requiredDocuments.isEmpty)
                         const Text(
-                          'Este tipo de usuario nao possui documentos obrigatorios no MVP.',
+                          'Este tipo de usuário não possui documentos obrigatórios no MVP.',
                         ),
                     ],
                   );
@@ -1019,7 +1019,7 @@ class _RequiredDocumentTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final statusLabel = document?.statusLabel ?? 'Nao enviado';
+    final statusLabel = document?.statusLabel ?? 'Não enviado';
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1138,20 +1138,20 @@ class _VeterinarianForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _ProfileFormCard(
-      title: 'Cadastro veterinario',
+      title: 'Cadastro veterinário',
       subtitle:
-          'Informe CRMV, valor base e preferencias para validacao inicial.',
+          'Informe CRMV, valor base e preferências para validação inicial.',
       children: [
         _TextField(controller: crmvController, label: 'Numero do CRMV'),
         _TextField(controller: crmvStateController, label: 'UF do CRMV'),
         _TextField(
           controller: rateController,
-          label: 'Valor base do plantao',
+          label: 'Valor base do plantão',
           keyboardType: TextInputType.number,
         ),
         _TextField(
           controller: experienceController,
-          label: 'Anos de experiencia',
+          label: 'Anos de experiência',
           keyboardType: TextInputType.number,
         ),
         _TextField(
@@ -1170,7 +1170,7 @@ class _VeterinarianForm extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           value: emergencyCare,
           onChanged: onEmergencyCareChanged,
-          title: const Text('Atende emergencia'),
+          title: const Text('Atende emergência'),
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
@@ -1179,7 +1179,7 @@ class _VeterinarianForm extends StatelessWidget {
           title: const Text('Pode se deslocar'),
         ),
         _SubmitButton(
-          label: 'Salvar perfil veterinario',
+          label: 'Salvar perfil veterinário',
           isSaving: isSaving,
           onPressed: onSubmit,
         ),
@@ -1218,11 +1218,11 @@ class _InternForm extends StatelessWidget {
     return _ProfileFormCard(
       title: 'Cadastro de estagiario',
       subtitle:
-          'Informe sua instituicao de ensino e previsao de formatura para validacao.',
+          'Informe sua instituição de ensino e previsão de formatura para validação.',
       children: [
         _TextField(
           controller: universityController,
-          label: 'Instituicao de ensino',
+          label: 'Instituição de ensino',
         ),
         _TextField(controller: periodController, label: 'Periodo do curso'),
         _TextField(
@@ -1284,7 +1284,7 @@ class _InstitutionForm extends StatelessWidget {
     return _ProfileFormCard(
       title: 'Cadastro institucional',
       subtitle:
-          'Complete os dados da clinica ou hospital para validacao por CNPJ.',
+          'Complete os dados da clínica ou hospital para validação por CNPJ.',
       children: [
         _TextField(controller: legalNameController, label: 'Razao social'),
         _TextField(controller: tradeNameController, label: 'Nome fantasia'),
@@ -1300,7 +1300,7 @@ class _InstitutionForm extends StatelessWidget {
         _TextField(controller: contactPhoneController, label: 'Telefone'),
         _TextField(
           controller: descriptionController,
-          label: 'Descricao da instituicao',
+          label: 'Descrição da instituição',
           maxLines: 3,
         ),
         _LocationFields(
@@ -1311,7 +1311,7 @@ class _InstitutionForm extends StatelessWidget {
           onDetectLocation: onDetectLocation,
         ),
         _SubmitButton(
-          label: 'Salvar instituicao',
+          label: 'Salvar instituição',
           isSaving: isSaving,
           onPressed: onSubmit,
         ),
@@ -1345,7 +1345,7 @@ class _LocationFields extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Localizacao',
+            'Localização',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w800,
             ),
@@ -1375,8 +1375,8 @@ class _LocationFields extends StatelessWidget {
             icon: const Icon(Icons.my_location_rounded),
             label: Text(
               isDetectingLocation
-                  ? 'Detectando localizacao...'
-                  : 'Usar localizacao atual',
+                  ? 'Detectando localização...'
+                  : 'Usar localização atual',
             ),
           ),
           if (feedback != null) ...[

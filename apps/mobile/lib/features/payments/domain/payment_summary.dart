@@ -76,6 +76,6 @@ class PaymentSummary {
       return 'Pagamento ainda sem data registrada';
     }
 
-    return 'Pago em ${OpportunityFormatter.shortDate(parsed)} as ${OpportunityFormatter.hourLabel(parsed)}';
+    return 'Pago em ${OpportunityFormatter.shortDate(parsed)} às ${OpportunityFormatter.hourLabel(parsed)}';
   }
 }

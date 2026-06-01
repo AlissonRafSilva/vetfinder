@@ -48,7 +48,7 @@ class _InstitutionShellPageState extends State<InstitutionShellPage> {
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.search_rounded),
-                  label: 'Disponiveis',
+                  label: 'Disponíveis',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.work_history_rounded),
@@ -56,7 +56,7 @@ class _InstitutionShellPageState extends State<InstitutionShellPage> {
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.handshake_rounded),
-                  label: 'Contratacoes',
+                  label: 'Contratações',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.notifications_rounded),

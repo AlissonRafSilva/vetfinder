@@ -40,5 +40,5 @@ class AvailabilitySlotModel {
     return values[(weekday - 1).clamp(0, values.length - 1)];
   }
 
-  String get displayLabel => '$weekdayLabel • $startTime as $endTime';
+  String get displayLabel => '$weekdayLabel • $startTime às $endTime';
 }

@@ -48,7 +48,7 @@ class _ProfessionalShellPageState extends State<ProfessionalShellPage> {
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.search_rounded),
-                  label: 'Plantoes',
+                  label: 'Plantões',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.calendar_month_rounded),

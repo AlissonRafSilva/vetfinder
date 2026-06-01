@@ -59,7 +59,8 @@ class PaymentsRepository {
 
       return PaymentSummary.fromJson(response);
     } on ApiException catch (error) {
-      if (error.message.contains('Pagamento nao encontrado')) {
+      if (error.message.contains('Pagamento nao encontrado') ||
+          error.message.contains('Pagamento não encontrado')) {
         return null;
       }
 

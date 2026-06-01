@@ -40,7 +40,7 @@ class ReviewSummary {
 
   static String _userName(dynamic value) {
     if (value is! Map<String, dynamic>) {
-      return 'Usuario';
+      return 'Usuário';
     }
 
     final profile = value['profile'];
@@ -64,7 +64,7 @@ class ReviewSummary {
       }
     }
 
-    return value['email']?.toString() ?? 'Usuario';
+    return value['email']?.toString() ?? 'Usuário';
   }
 
   static String _ratingLabel(int rating) {
@@ -78,9 +78,9 @@ class ReviewSummary {
   static String _createdAtLabel(String createdAt) {
     final parsed = DateTime.tryParse(createdAt)?.toLocal();
     if (parsed == null) {
-      return 'Avaliacao sem data';
+      return 'Avaliação sem data';
     }
 
-    return '${OpportunityFormatter.shortDate(parsed)} as ${OpportunityFormatter.hourLabel(parsed)}';
+    return '${OpportunityFormatter.shortDate(parsed)} às ${OpportunityFormatter.hourLabel(parsed)}';
   }
 }

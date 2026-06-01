@@ -44,7 +44,7 @@ class EngagementSummary {
 
     return EngagementSummary(
       id: json['id']?.toString() ?? '',
-      opportunityTitle: opportunity?['title']?.toString() ?? 'Plantao fechado',
+      opportunityTitle: opportunity?['title']?.toString() ?? 'Plantão fechado',
       professionalName: profile?['fullName']?.toString() ??
           professional?['email']?.toString() ??
           'Profissional',
@@ -53,7 +53,7 @@ class EngagementSummary {
           _roleLabel(professional?['role']?.toString() ?? ''),
       institutionName: institution?['tradeName']?.toString() ??
           institution?['legalName']?.toString() ??
-          'Instituicao',
+          'Instituição',
       specialtyLabel:
           customSpecialtyLabel != null && customSpecialtyLabel.trim().isNotEmpty
               ? customSpecialtyLabel
@@ -109,7 +109,7 @@ class EngagementSummary {
       case 'INVITE':
         return 'Origem: convite';
       default:
-        return 'Origem nao identificada';
+        return 'Origem não identificada';
     }
   }
 
@@ -119,6 +119,6 @@ class EngagementSummary {
       return 'Data de fechamento indisponivel';
     }
 
-    return 'Fechado em ${OpportunityFormatter.shortDate(parsed)} as ${OpportunityFormatter.hourLabel(parsed)}';
+    return 'Fechado em ${OpportunityFormatter.shortDate(parsed)} às ${OpportunityFormatter.hourLabel(parsed)}';
   }
 }

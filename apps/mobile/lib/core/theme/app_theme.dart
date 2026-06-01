@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   static ThemeData light() {
-    const primary = Color(0xFF0F766E);
-    const secondary = Color(0xFFD97706);
-    const surface = Color(0xFFFFFCF7);
-    const background = Color(0xFFF4EFE6);
-    const text = Color(0xFF1C1917);
+    const primary = Color(0xFF006B5F);
+    const secondary = Color(0xFFB45F06);
+    const tertiary = Color(0xFF315A7D);
+    const surface = Color(0xFFFFFCF5);
+    const background = Color(0xFFF6EFE3);
+    const text = Color(0xFF211A14);
 
     final colorScheme = ColorScheme.fromSeed(
       seedColor: primary,
       primary: primary,
       secondary: secondary,
+      tertiary: tertiary,
       surface: surface,
       brightness: Brightness.light,
     );
@@ -35,7 +37,7 @@ class AppTheme {
           letterSpacing: -0.8,
         ),
         titleLarge: textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
         ),
         bodyLarge: textTheme.bodyLarge?.copyWith(
           height: 1.45,
@@ -50,10 +52,11 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(26),
           side: BorderSide(
-            color: primary.withValues(alpha: 0.08),
+            color: primary.withValues(alpha: 0.10),
           ),
         ),
       ),
@@ -92,8 +95,49 @@ class AppTheme {
             borderRadius: BorderRadius.circular(18),
           ),
           textStyle: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: primary,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+          side: BorderSide(color: primary.withValues(alpha: 0.35)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          textStyle: textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        indicatorColor: primary.withValues(alpha: 0.12),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => textTheme.labelMedium?.copyWith(
+            color: states.contains(WidgetState.selected)
+                ? primary
+                : const Color(0xFF6B6258),
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w800
+                : FontWeight.w600,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? primary
+                : const Color(0xFF6B6258),
+          ),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF23302D),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
         ),
       ),
       chipTheme: ChipThemeData(
