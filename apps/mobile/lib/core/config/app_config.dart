@@ -4,8 +4,14 @@ class AppConfig {
   const AppConfig._();
 
   static const _definedApiBaseUrl = String.fromEnvironment('API_BASE_URL');
+  static const _definedVetFinderApiBaseUrl =
+      String.fromEnvironment('VETFINDER_API_BASE_URL');
 
   static String get apiBaseUrl {
+    if (_definedVetFinderApiBaseUrl.isNotEmpty) {
+      return _definedVetFinderApiBaseUrl;
+    }
+
     if (_definedApiBaseUrl.isNotEmpty) {
       return _definedApiBaseUrl;
     }

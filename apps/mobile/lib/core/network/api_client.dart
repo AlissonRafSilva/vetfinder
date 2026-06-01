@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -7,6 +8,8 @@ class ApiClient {
     required this.baseUrl,
     http.Client? httpClient,
   }) : _httpClient = httpClient ?? http.Client();
+
+  static const _requestTimeout = Duration(seconds: 12);
 
   final String baseUrl;
   final http.Client _httpClient;
@@ -37,10 +40,23 @@ class ApiClient {
     String? accessToken,
   }) async {
     final uri = Uri.parse('$baseUrl$path');
-    final response = await _httpClient.get(
-      uri,
-      headers: _buildHeaders(accessToken: accessToken),
-    );
+    final http.Response response;
+    try {
+      response = await _httpClient
+          .get(
+            uri,
+            headers: _buildHeaders(accessToken: accessToken),
+          )
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw const ApiException(
+        'Tempo esgotado ao conectar com a API. Verifique se o celular está na mesma rede do PC.',
+      );
+    } catch (_) {
+      throw const ApiException(
+        'Não foi possível conectar com a API. Verifique o IP do PC, o Wi-Fi e se o backend está ligado.',
+      );
+    }
 
     _throwIfRequestFailed(response);
 
@@ -53,11 +69,24 @@ class ApiClient {
     String? accessToken,
   }) async {
     final uri = Uri.parse('$baseUrl$path');
-    final response = await _httpClient.post(
-      uri,
-      headers: _buildHeaders(accessToken: accessToken),
-      body: jsonEncode(body),
-    );
+    final http.Response response;
+    try {
+      response = await _httpClient
+          .post(
+            uri,
+            headers: _buildHeaders(accessToken: accessToken),
+            body: jsonEncode(body),
+          )
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw const ApiException(
+        'Tempo esgotado ao conectar com a API. Verifique se o celular está na mesma rede do PC.',
+      );
+    } catch (_) {
+      throw const ApiException(
+        'Não foi possível conectar com a API. Verifique o IP do PC, o Wi-Fi e se o backend está ligado.',
+      );
+    }
 
     _throwIfRequestFailed(response);
 
@@ -75,11 +104,24 @@ class ApiClient {
     String? accessToken,
   }) async {
     final uri = Uri.parse('$baseUrl$path');
-    final response = await _httpClient.put(
-      uri,
-      headers: _buildHeaders(accessToken: accessToken),
-      body: jsonEncode(body),
-    );
+    final http.Response response;
+    try {
+      response = await _httpClient
+          .put(
+            uri,
+            headers: _buildHeaders(accessToken: accessToken),
+            body: jsonEncode(body),
+          )
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw const ApiException(
+        'Tempo esgotado ao conectar com a API. Verifique se o celular está na mesma rede do PC.',
+      );
+    } catch (_) {
+      throw const ApiException(
+        'Não foi possível conectar com a API. Verifique o IP do PC, o Wi-Fi e se o backend está ligado.',
+      );
+    }
 
     _throwIfRequestFailed(response);
 
@@ -97,11 +139,24 @@ class ApiClient {
     String? accessToken,
   }) async {
     final uri = Uri.parse('$baseUrl$path');
-    final response = await _httpClient.patch(
-      uri,
-      headers: _buildHeaders(accessToken: accessToken),
-      body: jsonEncode(body),
-    );
+    final http.Response response;
+    try {
+      response = await _httpClient
+          .patch(
+            uri,
+            headers: _buildHeaders(accessToken: accessToken),
+            body: jsonEncode(body),
+          )
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw const ApiException(
+        'Tempo esgotado ao conectar com a API. Verifique se o celular está na mesma rede do PC.',
+      );
+    } catch (_) {
+      throw const ApiException(
+        'Não foi possível conectar com a API. Verifique o IP do PC, o Wi-Fi e se o backend está ligado.',
+      );
+    }
 
     _throwIfRequestFailed(response);
 
