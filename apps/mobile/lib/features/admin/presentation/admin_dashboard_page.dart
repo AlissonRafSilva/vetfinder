@@ -97,7 +97,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           padding: EdgeInsets.fromLTRB(20, 18, 20, 16),
           sliver: SliverToBoxAdapter(
             child: SectionHeader(
-              title: 'Validacao administrativa',
+              title: 'Validação administrativa',
               subtitle:
                   'Aprove ou reprove documentos enviados para liberar perfis na plataforma.',
             ),

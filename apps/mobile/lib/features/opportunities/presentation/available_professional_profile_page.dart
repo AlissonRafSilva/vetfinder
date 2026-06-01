@@ -184,8 +184,8 @@ class _ProfileDetailsCard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             _DetailRow(label: 'Contato', value: professional.email),
-            _DetailRow(label: 'Regiao', value: professional.cityLabel),
-            _DetailRow(label: 'Area', value: professional.specialtyLabel),
+            _DetailRow(label: 'Região', value: professional.cityLabel),
+            _DetailRow(label: 'Área', value: professional.specialtyLabel),
             _DetailRow(label: 'Valor', value: professional.rateLabel),
             _DetailRow(label: 'Reputacao', value: professional.reputationLabel),
           ],
@@ -213,7 +213,7 @@ class _AvailabilityCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Agenda disponivel',
+              'Agenda disponível',
               style: theme.textTheme.titleLarge,
             ),
             const SizedBox(height: 8),

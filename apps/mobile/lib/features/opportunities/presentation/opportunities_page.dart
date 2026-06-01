@@ -1030,7 +1030,7 @@ class _OpportunitiesBody extends StatelessWidget {
                   title:
                       isIntern ? 'Estágios disponíveis' : 'Plantões próximos',
                   subtitle: isIntern
-                      ? 'Veja apenas oportunidades marcadas para estagiarios.'
+                      ? 'Veja apenas oportunidades marcadas para estagiários.'
                       : 'Veja vagas abertas para veterinários volantes, sem oportunidades de estágio.',
                 ),
                 const SizedBox(height: 16),
@@ -1043,7 +1043,7 @@ class _OpportunitiesBody extends StatelessWidget {
                       icon: Icons.filter_alt_outlined,
                     ),
                     const InfoBadge(
-                        label: 'Ate 10 km', icon: Icons.place_outlined),
+                        label: 'Até 10 km', icon: Icons.place_outlined),
                     const InfoBadge(label: 'Hoje'),
                     const InfoBadge(label: 'Perfil completo se destaca'),
                   ],

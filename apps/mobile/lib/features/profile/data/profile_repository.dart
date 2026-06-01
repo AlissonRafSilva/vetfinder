@@ -79,7 +79,7 @@ class ProfileRepository {
     );
 
     return response['message']?.toString() ??
-        'Perfil de estagiario criado com sucesso.';
+        'Perfil de estagiário criado com sucesso.';
   }
 
   Future<String> createInstitutionProfile({

@@ -63,7 +63,7 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
       setState(() {
         _isApplySuccess = false;
         _applyFeedback =
-            'Apenas veterinarios e estagiarios podem se candidatar a oportunidades.';
+            'Apenas veterinários e estagiários podem se candidatar a oportunidades.';
       });
       return;
     }
@@ -334,7 +334,7 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
                                   )
                                 : Text(
                                     hasApplied
-                                        ? 'Candidatura ja enviada'
+                                        ? 'Candidatura já enviada'
                                         : 'Quero me candidatar',
                                   ),
                           ),

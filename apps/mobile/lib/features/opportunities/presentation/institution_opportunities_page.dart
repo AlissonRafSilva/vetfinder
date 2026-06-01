@@ -438,7 +438,7 @@ class _InstitutionVerificationNotice extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'CNPJ aguardando aprovacao',
+                    'CNPJ aguardando aprovação',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -1358,7 +1358,7 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
               Text(
                 _isEditMode
                     ? 'Atualize os dados principais da vaga para refletir a necessidade real da instituição.'
-                    : 'Crie uma vaga institucional com os dados principais para ja poder publicar e convidar profissionais.',
+                    : 'Crie uma vaga institucional com os dados principais para já poder publicar e convidar profissionais.',
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -1413,7 +1413,7 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                 const SizedBox(height: 10),
                 const _OpportunityAudienceNotice(
                   message:
-                      'Esta vaga sera exibida apenas para perfis de estagiario.',
+                      'Esta vaga será exibida apenas para perfis de estagiário.',
                 ),
               ] else ...[
                 const SizedBox(height: 10),

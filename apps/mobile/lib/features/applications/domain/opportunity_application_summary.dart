@@ -48,7 +48,7 @@ class OpportunityApplicationSummary {
   static String _roleLabel(String role) {
     switch (role.toUpperCase()) {
       case 'VETERINARIAN':
-        return 'Veterinario volante';
+        return 'Veterinário volante';
       case 'INTERN':
         return 'Estagiario';
       default:
@@ -72,7 +72,7 @@ class OpportunityApplicationSummary {
   static String _appliedAtLabel(String appliedAt) {
     final parsed = DateTime.tryParse(appliedAt)?.toLocal();
     if (parsed == null) {
-      return 'Data de candidatura indisponivel';
+      return 'Data de candidatura indisponível';
     }
 
     final day = parsed.day.toString().padLeft(2, '0');

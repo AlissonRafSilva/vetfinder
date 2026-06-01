@@ -40,7 +40,7 @@ class EngagementsRepository {
     );
 
     if (response is! List) {
-      throw const ApiException('Lista de contratacoes invalida.');
+      throw const ApiException('Lista de contratações inválida.');
     }
 
     return response

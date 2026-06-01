@@ -304,7 +304,7 @@ class _ProfessionalEngagementCard extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text('Valor bruto: ${item.grossAmountLabel}'),
                   Text('Taxa da plataforma: ${item.platformFeeLabel}'),
-                  Text('Valor liquido previsto: ${item.netAmountLabel}'),
+                  Text('Valor líquido previsto: ${item.netAmountLabel}'),
                 ],
               ),
             ),

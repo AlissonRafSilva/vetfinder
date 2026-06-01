@@ -69,7 +69,7 @@ class InviteSummary {
   static String _invitedAtLabel(String invitedAt) {
     final parsed = DateTime.tryParse(invitedAt)?.toLocal();
     if (parsed == null) {
-      return 'Data do convite indisponivel';
+      return 'Data do convite indisponível';
     }
 
     return 'Recebido em ${OpportunityFormatter.shortDate(parsed)} às ${OpportunityFormatter.hourLabel(parsed)}';

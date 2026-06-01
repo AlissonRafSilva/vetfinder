@@ -66,7 +66,7 @@ class ApplicationSummary {
   static String _appliedAtLabel(String appliedAt) {
     final parsed = DateTime.tryParse(appliedAt)?.toLocal();
     if (parsed == null) {
-      return 'Data de candidatura indisponivel';
+      return 'Data de candidatura indisponível';
     }
 
     return 'Enviada em ${OpportunityFormatter.shortDate(parsed)} às ${OpportunityFormatter.hourLabel(parsed)}';

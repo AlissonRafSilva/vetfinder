@@ -112,7 +112,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await session.refreshCurrentUser();
     } on ApiException {
-      // Mantem a sessao atual se a API estiver indisponivel.
+      // Mantém a sessão atual se a API estiver indisponível.
     } finally {
       _isRefreshingSession = false;
     }
@@ -247,7 +247,7 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       });
     } on ApiException {
-      // Perfil ainda nao existe; o formulario permanece em branco para criacao.
+      // Perfil ainda não existe; o formulário permanece em branco para criação.
     }
   }
 
@@ -678,7 +678,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _RequiredDocument(
           ownerType: 'USER',
           documentType: 'ENROLLMENT_STATEMENT',
-          title: 'Declaracao de matricula',
+          title: 'Declaração de matrícula',
           description:
               'Comprovante acadêmico necessário para oportunidades de estágio.',
         ),
@@ -853,7 +853,7 @@ class _ValidationGuidanceCard extends StatelessWidget {
                   if (!isApproved) ...[
                     const SizedBox(height: 10),
                     Text(
-                      'Depois que o admin aprovar os documentos, faca login novamente para atualizar a liberacao da conta.',
+                      'Depois que o admin aprovar os documentos, faça login novamente para atualizar a liberação da conta.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -1216,7 +1216,7 @@ class _InternForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _ProfileFormCard(
-      title: 'Cadastro de estagiario',
+      title: 'Cadastro de estagiário',
       subtitle:
           'Informe sua instituição de ensino e previsão de formatura para validação.',
       children: [
@@ -1237,7 +1237,7 @@ class _InternForm extends StatelessWidget {
           onDetectLocation: onDetectLocation,
         ),
         _SubmitButton(
-          label: 'Salvar perfil de estagiario',
+          label: 'Salvar perfil de estagiário',
           isSaving: isSaving,
           onPressed: onSubmit,
         ),

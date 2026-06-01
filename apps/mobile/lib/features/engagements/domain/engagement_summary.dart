@@ -75,7 +75,7 @@ class EngagementSummary {
   static String _roleLabel(String role) {
     switch (role.toUpperCase()) {
       case 'VETERINARIAN':
-        return 'Veterinario volante';
+        return 'Veterinário volante';
       case 'INTERN':
         return 'Estagiario';
       default:
@@ -116,7 +116,7 @@ class EngagementSummary {
   static String _createdAtLabel(String createdAt) {
     final parsed = DateTime.tryParse(createdAt)?.toLocal();
     if (parsed == null) {
-      return 'Data de fechamento indisponivel';
+      return 'Data de fechamento indisponível';
     }
 
     return 'Fechado em ${OpportunityFormatter.shortDate(parsed)} às ${OpportunityFormatter.hourLabel(parsed)}';
