@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/location/current_location_service.dart';
 import '../../../core/session/app_session_scope.dart';
+import '../../../core/widgets/app_state_card.dart';
 import '../../../core/widgets/info_badge.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../availability/data/availability_repository.dart';
@@ -1077,7 +1078,7 @@ class _OpportunitiesBody extends StatelessWidget {
                 }
 
                 if (snapshot.hasError) {
-                  return _OpportunitiesErrorState(
+                  return _BetterOpportunitiesErrorState(
                     onRetry: onRetry,
                     message:
                         'Não foi possível carregar as oportunidades agora.',
@@ -1086,7 +1087,7 @@ class _OpportunitiesBody extends StatelessWidget {
 
                 final items = snapshot.data ?? const <OpportunitySummary>[];
                 if (items.isEmpty) {
-                  return const _EmptyOpportunitiesState();
+                  return const _BetterEmptyOpportunitiesState();
                 }
 
                 return Column(
@@ -1164,103 +1165,142 @@ class _OpportunityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    item.title,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-                InfoBadge(label: item.urgencyLabel),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              item.institution,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            InfoBadge(
-              label: item.institutionReputationLabel,
-              icon: Icons.star_rounded,
-            ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _QuickInfoChip(
-                  icon: Icons.badge_outlined,
-                  label: item.opportunityTypeLabel,
-                ),
-                _QuickInfoChip(
-                  icon: Icons.local_hospital_outlined,
-                  label: item.specialty,
-                ),
-                _QuickInfoChip(
-                  icon: Icons.schedule_outlined,
-                  label: item.shiftLabel,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.payments_outlined,
-                    size: 18,
-                    color: theme.colorScheme.secondary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      item.amountLabel,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    item.distanceLabel,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Container(
+            height: 5,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.secondary,
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => OpportunityDetailPage(summary: item),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.medical_services_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          item.title,
+                          style: theme.textTheme.titleLarge,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InfoBadge(label: item.urgencyLabel),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  item.institution,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InfoBadge(
+                  label: item.institutionReputationLabel,
+                  icon: Icons.star_rounded,
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _QuickInfoChip(
+                      icon: Icons.badge_outlined,
+                      label: item.opportunityTypeLabel,
                     ),
-                  );
-                },
-                child: const Text('Ver detalhes'),
-              ),
+                    _QuickInfoChip(
+                      icon: Icons.local_hospital_outlined,
+                      label: item.specialty,
+                    ),
+                    _QuickInfoChip(
+                      icon: Icons.schedule_outlined,
+                      label: item.shiftLabel,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.payments_outlined,
+                        size: 18,
+                        color: theme.colorScheme.secondary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          item.amountLabel,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        item.distanceLabel,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OpportunityDetailPage(summary: item),
+                        ),
+                      );
+                    },
+                    child: const Text('Ver detalhes'),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1307,6 +1347,7 @@ class _QuickInfoChip extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _OpportunitiesErrorState extends StatelessWidget {
   const _OpportunitiesErrorState({
     required this.onRetry,
@@ -1342,6 +1383,28 @@ class _OpportunitiesErrorState extends StatelessWidget {
   }
 }
 
+class _BetterOpportunitiesErrorState extends StatelessWidget {
+  const _BetterOpportunitiesErrorState({
+    required this.onRetry,
+    required this.message,
+  });
+
+  final VoidCallback onRetry;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppStateCard(
+      icon: Icons.wifi_off_rounded,
+      title: 'Conexão indisponível',
+      message: message,
+      actionLabel: 'Tentar novamente',
+      onAction: onRetry,
+    );
+  }
+}
+
+// ignore: unused_element
 class _EmptyOpportunitiesState extends StatelessWidget {
   const _EmptyOpportunitiesState();
 
@@ -1364,6 +1427,20 @@ class _EmptyOpportunitiesState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BetterEmptyOpportunitiesState extends StatelessWidget {
+  const _BetterEmptyOpportunitiesState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const AppStateCard(
+      icon: Icons.search_rounded,
+      title: 'Nenhuma oportunidade aberta',
+      message:
+          'Assim que clínicas e hospitais publicarem novas vagas, elas aparecerão aqui.',
     );
   }
 }

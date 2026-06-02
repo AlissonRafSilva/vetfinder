@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/session/app_session_scope.dart';
+import '../../../core/widgets/app_state_card.dart';
 import '../../../core/widgets/info_badge.dart';
 import '../../../core/widgets/section_header.dart';
 import '../data/engagements_repository.dart';
@@ -162,6 +163,17 @@ class _ProfessionalEngagementsPageState
               }
 
               if (snapshot.hasError) {
+                return AppStateCard(
+                  icon: Icons.sync_problem_rounded,
+                  title: 'Não foi possível carregar seus plantões.',
+                  message:
+                      'Tente novamente para atualizar os plantões confirmados.',
+                  actionLabel: 'Atualizar',
+                  onAction: _forceRefresh,
+                );
+              }
+
+              if (snapshot.hasError) {
                 return Card(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -188,6 +200,18 @@ class _ProfessionalEngagementsPageState
               }
 
               final items = snapshot.data ?? const <EngagementSummary>[];
+              if (items.isEmpty) {
+                return AppStateCard(
+                  icon: Icons.event_available_rounded,
+                  title:
+                      'Nenhum plantão fechado foi encontrado para você ainda.',
+                  message:
+                      'Se a clínica acabou de confirmar, toque em atualizar para buscar o fechamento mais recente.',
+                  actionLabel: 'Atualizar',
+                  onAction: _forceRefresh,
+                );
+              }
+
               if (items.isEmpty) {
                 return Card(
                   child: Padding(
