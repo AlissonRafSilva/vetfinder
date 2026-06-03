@@ -29,7 +29,8 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
       AvailabilityRepository();
   final ApplicationsRepository _applicationsRepository =
       ApplicationsRepository();
-  final CurrentLocationService _locationService = const CurrentLocationService();
+  final CurrentLocationService _locationService =
+      const CurrentLocationService();
   Future<List<AvailableProfessionalSummary>>? _professionalsFuture;
   Future<List<InstitutionOpportunityOption>>? _myOpportunitiesFuture;
   String? _lastAudience;
@@ -712,11 +713,11 @@ class _AvailableProfessionalsPage extends StatelessWidget {
   static String _weekdayLabel(int weekday) {
     const values = [
       'Segunda',
-      'Terca',
+      'Terça',
       'Quarta',
       'Quinta',
       'Sexta',
-      'Sabado',
+      'Sábado',
       'Domingo',
     ];
 

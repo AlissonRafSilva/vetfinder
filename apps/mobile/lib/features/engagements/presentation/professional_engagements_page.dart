@@ -275,81 +275,81 @@ class _ProfessionalEngagementCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    item.opportunityTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.opportunityTitle,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                ),
-                InfoBadge(label: item.statusLabel),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              item.institutionName,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                InfoBadge(label: item.specialtyLabel),
-                InfoBadge(label: item.shiftLabel),
-                InfoBadge(label: item.sourceLabel),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: theme.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.35),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Resumo financeiro',
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 10),
-                  Text('Valor bruto: ${item.grossAmountLabel}'),
-                  Text('Taxa da plataforma: ${item.platformFeeLabel}'),
-                  Text('Valor líquido previsto: ${item.netAmountLabel}'),
+                  InfoBadge(label: item.statusLabel),
                 ],
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              item.createdAtLabel,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              const SizedBox(height: 8),
+              Text(
+                item.institutionName,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Toque para ver detalhes',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w800,
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  InfoBadge(label: item.specialtyLabel),
+                  InfoBadge(label: item.shiftLabel),
+                  InfoBadge(label: item.sourceLabel),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.35),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Resumo financeiro',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 10),
+                    Text('Valor bruto: ${item.grossAmountLabel}'),
+                    Text('Taxa da plataforma: ${item.platformFeeLabel}'),
+                    Text('Valor líquido previsto: ${item.netAmountLabel}'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                item.createdAtLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Toque para ver detalhes',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

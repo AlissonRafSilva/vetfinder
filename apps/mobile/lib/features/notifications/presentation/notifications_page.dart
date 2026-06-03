@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/session/app_session_scope.dart';
+import '../../../core/widgets/app_state_card.dart';
 import '../../../core/widgets/info_badge.dart';
 import '../../../core/widgets/section_header.dart';
 import '../data/notifications_repository.dart';
@@ -118,15 +119,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SectionHeader(
-              title: 'Notificacoes',
+              title: 'Notificações',
               subtitle: 'Faça login para acompanhar alertas do marketplace.',
             ),
             SizedBox(height: 18),
-            Card(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Text('Nenhuma sessão ativa no momento.'),
-              ),
+            AppStateCard(
+              icon: Icons.lock_outline_rounded,
+              title: 'Acesso necessário',
+              message:
+                  'Entre com sua conta para acompanhar convites, candidaturas e atualizações importantes.',
             ),
           ],
         ),
@@ -139,7 +140,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeader(
-            title: 'Notificacoes',
+            title: 'Notificações',
             subtitle:
                 'Acompanhe convites, candidaturas, respostas e plantões fechados.',
             trailing: Wrap(
@@ -170,13 +171,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
               }
 
               if (snapshot.hasError) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text(
-                      'Não foi possível carregar suas notificações agora.',
-                    ),
-                  ),
+                return AppStateCard(
+                  icon: Icons.cloud_off_rounded,
+                  title: 'Não foi possível carregar',
+                  message:
+                      'Verifique a conexão com a API e tente atualizar suas notificações novamente.',
+                  actionLabel: 'Atualizar',
+                  onAction: () => setState(_refresh),
                 );
               }
 
@@ -184,25 +185,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
               final unreadCount = items.where((item) => !item.isRead).length;
 
               if (items.isEmpty) {
-                return const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(22),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.notifications_none_rounded, size: 32),
-                        SizedBox(height: 12),
-                        Text(
-                          'Nenhum alerta por enquanto',
-                          style: TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          'Quando houver convites, candidaturas, respostas ou fechamento de plantão, tudo aparece aqui.',
-                        ),
-                      ],
-                    ),
-                  ),
+                return const AppStateCard(
+                  icon: Icons.notifications_none_rounded,
+                  title: 'Nenhum alerta por enquanto',
+                  message:
+                      'Quando houver convites, candidaturas, respostas ou fechamento de plantão, tudo aparece aqui.',
                 );
               }
 

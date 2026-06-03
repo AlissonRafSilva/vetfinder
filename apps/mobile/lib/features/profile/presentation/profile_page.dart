@@ -22,7 +22,8 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final ProfileRepository _profileRepository = ProfileRepository();
   final DocumentsRepository _documentsRepository = DocumentsRepository();
-  final CurrentLocationService _locationService = const CurrentLocationService();
+  final CurrentLocationService _locationService =
+      const CurrentLocationService();
 
   final _vetCrmvController = TextEditingController();
   final _vetCrmvStateController = TextEditingController(text: 'SP');
@@ -216,8 +217,7 @@ class _ProfilePageState extends State<ProfilePage> {
             professional['veterinarianProfile'] as Map<String, dynamic>?;
         final internProfile =
             professional['internProfile'] as Map<String, dynamic>?;
-        final baseProfile =
-            professional['profile'] as Map<String, dynamic>?;
+        final baseProfile = professional['profile'] as Map<String, dynamic>?;
         final address = baseProfile?['address'] as Map<String, dynamic>?;
         _profileLatController.text = address?['lat']?.toString() ?? '';
         _profileLngController.text = address?['lng']?.toString() ?? '';
@@ -377,8 +377,7 @@ class _ProfilePageState extends State<ProfilePage> {
       }
 
       setState(() {
-        _locationFeedback =
-            'Não foi possível detectar sua localização agora.';
+        _locationFeedback = 'Não foi possível detectar sua localização agora.';
         _isFeedbackError = true;
       });
     } finally {
@@ -1142,7 +1141,7 @@ class _VeterinarianForm extends StatelessWidget {
       subtitle:
           'Informe CRMV, valor base e preferências para validação inicial.',
       children: [
-        _TextField(controller: crmvController, label: 'Numero do CRMV'),
+        _TextField(controller: crmvController, label: 'Número do CRMV'),
         _TextField(controller: crmvStateController, label: 'UF do CRMV'),
         _TextField(
           controller: rateController,
@@ -1156,7 +1155,7 @@ class _VeterinarianForm extends StatelessWidget {
         ),
         _TextField(
           controller: distanceController,
-          label: 'Distancia maxima em km',
+          label: 'Distância máxima em km',
           keyboardType: TextInputType.number,
         ),
         _LocationFields(
@@ -1224,10 +1223,10 @@ class _InternForm extends StatelessWidget {
           controller: universityController,
           label: 'Instituição de ensino',
         ),
-        _TextField(controller: periodController, label: 'Periodo do curso'),
+        _TextField(controller: periodController, label: 'Período do curso'),
         _TextField(
           controller: graduationController,
-          label: 'Previsao de formatura (AAAA-MM-DD)',
+          label: 'Previsão de formatura (AAAA-MM-DD)',
         ),
         _LocationFields(
           latitudeController: latitudeController,
@@ -1286,16 +1285,16 @@ class _InstitutionForm extends StatelessWidget {
       subtitle:
           'Complete os dados da clínica ou hospital para validação por CNPJ.',
       children: [
-        _TextField(controller: legalNameController, label: 'Razao social'),
+        _TextField(controller: legalNameController, label: 'Razão social'),
         _TextField(controller: tradeNameController, label: 'Nome fantasia'),
         _TextField(controller: cnpjController, label: 'CNPJ'),
         _TextField(
           controller: stateRegistrationController,
-          label: 'Inscricao estadual',
+          label: 'Inscrição estadual',
         ),
         _TextField(
           controller: contactNameController,
-          label: 'Responsavel pelo contato',
+          label: 'Responsável pelo contato',
         ),
         _TextField(controller: contactPhoneController, label: 'Telefone'),
         _TextField(

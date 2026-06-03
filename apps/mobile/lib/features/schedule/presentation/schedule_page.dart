@@ -17,8 +17,10 @@ class SchedulePage extends StatefulWidget {
 }
 
 class _SchedulePageState extends State<SchedulePage> {
-  final ApplicationsRepository _applicationsRepository = ApplicationsRepository();
-  final AvailabilityRepository _availabilityRepository = AvailabilityRepository();
+  final ApplicationsRepository _applicationsRepository =
+      ApplicationsRepository();
+  final AvailabilityRepository _availabilityRepository =
+      AvailabilityRepository();
   final List<AvailabilitySlotModel> _editableSlots = [];
   Future<List<ApplicationSummary>>? _applicationsFuture;
   Future<List<InviteSummary>>? _invitesFuture;
@@ -209,13 +211,15 @@ class _SchedulePageState extends State<SchedulePage> {
           children: [
             SectionHeader(
               title: 'Minhas candidaturas',
-              subtitle: 'Faça login para acompanhar o andamento das vagas às quais você se candidatou.',
+              subtitle:
+                  'Faça login para acompanhar o andamento das vagas às quais você se candidatou.',
             ),
             SizedBox(height: 18),
             Card(
               child: Padding(
                 padding: EdgeInsets.all(20),
-                child: Text('Nenhuma sessão ativa. Entre com um perfil profissional.'),
+                child: Text(
+                    'Nenhuma sessão ativa. Entre com um perfil profissional.'),
               ),
             ),
           ],
@@ -254,14 +258,15 @@ class _SchedulePageState extends State<SchedulePage> {
         children: [
           const SectionHeader(
             title: 'Minha agenda',
-            subtitle: 'Informe seus horários livres para que clínicas e hospitais encontrem você mais rápido.',
+            subtitle:
+                'Informe seus horários livres para que clínicas e hospitais encontrem você mais rápido.',
           ),
           const SizedBox(height: 18),
           const Wrap(
             spacing: 10,
             runSpacing: 10,
             children: [
-              InfoBadge(label: 'Historico real'),
+              InfoBadge(label: 'Histórico real'),
               InfoBadge(label: 'Status atualizado'),
               InfoBadge(label: 'Fluxo profissional'),
             ],
@@ -298,7 +303,9 @@ class _SchedulePageState extends State<SchedulePage> {
                       else
                         Column(
                           children: [
-                            for (var index = 0; index < _editableSlots.length; index++) ...[
+                            for (var index = 0;
+                                index < _editableSlots.length;
+                                index++) ...[
                               _EditableAvailabilityCard(
                                 slot: _editableSlots[index],
                                 onChanged: (slot) => _updateSlot(index, slot),
@@ -327,7 +334,8 @@ class _SchedulePageState extends State<SchedulePage> {
                                   ? const SizedBox(
                                       width: 18,
                                       height: 18,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
                                     )
                                   : const Text('Salvar agenda'),
                             ),
@@ -393,7 +401,8 @@ class _SchedulePageState extends State<SchedulePage> {
                   for (var index = 0; index < invites.length; index++) ...[
                     _InviteCard(
                       item: invites[index],
-                      isResponding: _respondingInviteIds.contains(invites[index].id),
+                      isResponding:
+                          _respondingInviteIds.contains(invites[index].id),
                       onAccept: () => _respondInvite(
                         inviteId: invites[index].id,
                         accept: true,
@@ -445,7 +454,7 @@ class _SchedulePageState extends State<SchedulePage> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Tente novamente para atualizar o historico vindo da API.',
+                          'Tente novamente para atualizar o histórico vindo da API.',
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
@@ -592,8 +601,9 @@ class _EditableAvailabilityCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  initialValue:
-                      _timeOptions.contains(endTime) ? endTime : _timeOptions.last,
+                  initialValue: _timeOptions.contains(endTime)
+                      ? endTime
+                      : _timeOptions.last,
                   decoration: const InputDecoration(
                     labelText: 'Fim',
                   ),
@@ -668,11 +678,11 @@ class _EditableAvailabilityCard extends StatelessWidget {
   static String _weekdayLabel(int weekday) {
     const values = [
       'Segunda',
-      'Terca',
+      'Terça',
       'Quarta',
       'Quinta',
       'Sexta',
-      'Sabado',
+      'Sábado',
       'Domingo',
     ];
 

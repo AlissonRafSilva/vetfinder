@@ -39,7 +39,7 @@ class _AdminShellPageState extends State<AdminShellPage> {
           ),
           NavigationDestination(
             icon: Icon(Icons.verified_rounded),
-            label: 'Validacoes',
+            label: 'Validações',
           ),
         ],
       ),

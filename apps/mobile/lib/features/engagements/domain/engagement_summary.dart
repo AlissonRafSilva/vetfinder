@@ -77,7 +77,7 @@ class EngagementSummary {
       case 'VETERINARIAN':
         return 'Veterinário volante';
       case 'INTERN':
-        return 'Estagiario';
+        return 'Estagiário';
       default:
         return 'Profissional';
     }

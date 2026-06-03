@@ -133,11 +133,11 @@ class OpportunityFormatter {
   static String _weekdayFull(int weekday) {
     const values = [
       'Segunda',
-      'Terca',
+      'Terça',
       'Quarta',
       'Quinta',
       'Sexta',
-      'Sabado',
+      'Sábado',
       'Domingo',
     ];
 

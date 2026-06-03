@@ -68,7 +68,8 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
       return;
     }
 
-    if (session.userId != null && detail.applicantUserIds.contains(session.userId)) {
+    if (session.userId != null &&
+        detail.applicantUserIds.contains(session.userId)) {
       setState(() {
         _isApplySuccess = false;
         _applyFeedback = 'Você já se candidatou a esta oportunidade.';
@@ -160,8 +161,8 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
           }
 
           final detail = snapshot.data!;
-          final hasApplied =
-              session.userId != null && detail.applicantUserIds.contains(session.userId);
+          final hasApplied = session.userId != null &&
+              detail.applicantUserIds.contains(session.userId);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
@@ -203,7 +204,8 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest.withValues(
+                            color: theme.colorScheme.surfaceContainerHighest
+                                .withValues(
                               alpha: 0.4,
                             ),
                             borderRadius: BorderRadius.circular(20),
@@ -295,7 +297,8 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
                           maxLines: 4,
                           decoration: const InputDecoration(
                             labelText: 'Mensagem opcional',
-                            hintText: 'Apresente sua disponibilidade ou experiência.',
+                            hintText:
+                                'Apresente sua disponibilidade ou experiência.',
                           ),
                         ),
                         if (_applyFeedback != null) ...[
@@ -330,7 +333,8 @@ class _OpportunityDetailPageState extends State<OpportunityDetailPage> {
                                 ? const SizedBox(
                                     width: 18,
                                     height: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
                                   )
                                 : Text(
                                     hasApplied

@@ -38,7 +38,8 @@ class AvailableProfessionalProfilePage extends StatelessWidget {
                         CircleAvatar(
                           radius: 34,
                           backgroundColor: professional.isVerified
-                              ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                              ? theme.colorScheme.primary
+                                  .withValues(alpha: 0.12)
                               : theme.colorScheme.surfaceContainerHighest,
                           child: Icon(
                             professional.isVerified
@@ -72,8 +73,10 @@ class AvailableProfessionalProfilePage extends StatelessWidget {
                                 spacing: 10,
                                 runSpacing: 10,
                                 children: [
-                                  InfoBadge(label: professional.verificationLabel),
-                                  InfoBadge(label: professional.completenessLabel),
+                                  InfoBadge(
+                                      label: professional.verificationLabel),
+                                  InfoBadge(
+                                      label: professional.completenessLabel),
                                 ],
                               ),
                             ],
@@ -187,7 +190,7 @@ class _ProfileDetailsCard extends StatelessWidget {
             _DetailRow(label: 'Região', value: professional.cityLabel),
             _DetailRow(label: 'Área', value: professional.specialtyLabel),
             _DetailRow(label: 'Valor', value: professional.rateLabel),
-            _DetailRow(label: 'Reputacao', value: professional.reputationLabel),
+            _DetailRow(label: 'Reputação', value: professional.reputationLabel),
           ],
         ),
       ),

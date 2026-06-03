@@ -50,21 +50,22 @@ class InstitutionOpportunityOption {
       opportunityType: json['opportunityType']?.toString() ?? 'SHIFT',
       customSpecialtyLabel: customSpecialtyLabel,
       statusValue: json['status']?.toString() ?? '',
-      statusLabel: OpportunityFormatter.statusLabel(json['status']?.toString() ?? ''),
+      statusLabel:
+          OpportunityFormatter.statusLabel(json['status']?.toString() ?? ''),
       shiftLabel: OpportunityFormatter.shiftSummary(
         startAt: json['startAt']?.toString() ?? '',
         endAt: json['endAt']?.toString() ?? '',
       ),
       amountLabel: OpportunityFormatter.amountLabel(grossAmount),
-      specialtyLabel: customSpecialtyLabel != null && customSpecialtyLabel.trim().isNotEmpty
-          ? customSpecialtyLabel
-          : specialty?['name']?.toString() ?? 'Especialidade a definir',
+      specialtyLabel:
+          customSpecialtyLabel != null && customSpecialtyLabel.trim().isNotEmpty
+              ? customSpecialtyLabel
+              : specialty?['name']?.toString() ?? 'Especialidade a definir',
       startAt: json['startAt']?.toString() ?? '',
       endAt: json['endAt']?.toString() ?? '',
       grossAmount: grossAmount,
       urgencyLevel: json['urgencyLevel']?.toString() ?? 'MEDIUM',
-      requiresVerifiedProfile:
-          json['requiresVerifiedProfile'] as bool? ?? true,
+      requiresVerifiedProfile: json['requiresVerifiedProfile'] as bool? ?? true,
       durationHours: durationHours,
     );
   }

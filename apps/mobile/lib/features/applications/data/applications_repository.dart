@@ -58,7 +58,8 @@ class ApplicationsRepository {
       accessToken: accessToken,
       body: {
         'professionalUserId': professionalUserId,
-        if (message != null && message.trim().isNotEmpty) 'message': message.trim(),
+        if (message != null && message.trim().isNotEmpty)
+          'message': message.trim(),
       },
     );
 

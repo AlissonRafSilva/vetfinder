@@ -28,7 +28,8 @@ class CreateInstitutionOpportunityInput {
       'title': title.trim(),
       'description': description.trim(),
       'opportunityType': opportunityType,
-      if (customSpecialtyLabel != null && customSpecialtyLabel!.trim().isNotEmpty)
+      if (customSpecialtyLabel != null &&
+          customSpecialtyLabel!.trim().isNotEmpty)
         'customSpecialtyLabel': customSpecialtyLabel!.trim(),
       'startAt': startAt.toUtc().toIso8601String(),
       'endAt': endAt.toUtc().toIso8601String(),

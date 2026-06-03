@@ -32,8 +32,7 @@ class ApplicationSummary {
       appliedAtLabel: _appliedAtLabel(json['appliedAt']?.toString() ?? ''),
       opportunityTitle:
           opportunity?['title']?.toString() ?? 'Oportunidade sem titulo',
-      institutionName:
-          institution?['tradeName']?.toString() ??
+      institutionName: institution?['tradeName']?.toString() ??
           institution?['legalName']?.toString() ??
           'Instituição',
       specialtyLabel:

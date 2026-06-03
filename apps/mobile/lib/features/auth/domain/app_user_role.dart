@@ -5,7 +5,7 @@ enum AppUserRole {
   ),
   intern(
     apiValue: 'INTERN',
-    label: 'Estagiario',
+    label: 'Estagiário',
   ),
   clinic(
     apiValue: 'CLINIC',

@@ -29,11 +29,11 @@ class AvailabilitySlotModel {
   String get weekdayLabel {
     const values = [
       'Segunda',
-      'Terca',
+      'Terça',
       'Quarta',
       'Quinta',
       'Sexta',
-      'Sabado',
+      'Sábado',
       'Domingo',
     ];
 

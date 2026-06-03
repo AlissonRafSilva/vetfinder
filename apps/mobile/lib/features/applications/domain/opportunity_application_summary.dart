@@ -32,8 +32,7 @@ class OpportunityApplicationSummary {
     return OpportunityApplicationSummary(
       id: json['id']?.toString() ?? '',
       professionalUserId: professional?['id']?.toString() ?? '',
-      professionalName:
-          profile?['fullName']?.toString() ??
+      professionalName: profile?['fullName']?.toString() ??
           professional?['email']?.toString() ??
           'Profissional',
       professionalEmail: professional?['email']?.toString() ?? '',
@@ -50,7 +49,7 @@ class OpportunityApplicationSummary {
       case 'VETERINARIAN':
         return 'Veterinário volante';
       case 'INTERN':
-        return 'Estagiario';
+        return 'Estagiário';
       default:
         return 'Profissional';
     }

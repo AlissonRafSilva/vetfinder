@@ -69,7 +69,8 @@ class AvailableProfessionalSummary {
       reputationLabel: _reputationLabel(json['reviewReceived']),
       verificationLabel: _verificationLabel(verificationStatus),
       trustLabel: _trustLabel(verificationStatus, completenessScore),
-      trustDescription: _trustDescription(verificationStatus, completenessScore),
+      trustDescription:
+          _trustDescription(verificationStatus, completenessScore),
       completenessLabel: 'Perfil $completenessScore% completo',
       isVerified: verificationStatus.toUpperCase() == 'APPROVED',
       specialtyLabel: _specialtyLabel(json),
@@ -82,7 +83,7 @@ class AvailableProfessionalSummary {
       case 'VETERINARIAN':
         return 'Veterinário';
       case 'INTERN':
-        return 'Estagiario';
+        return 'Estagiário';
       default:
         return role.isEmpty ? 'Profissional' : role;
     }
@@ -123,8 +124,10 @@ class AvailableProfessionalSummary {
       return 'Sem avaliacoes ainda';
     }
 
-    final average = ratings.reduce((sum, rating) => sum + rating) / ratings.length;
-    final countLabel = ratings.length == 1 ? '1 avaliação' : '${ratings.length} avaliações';
+    final average =
+        ratings.reduce((sum, rating) => sum + rating) / ratings.length;
+    final countLabel =
+        ratings.length == 1 ? '1 avaliação' : '${ratings.length} avaliações';
 
     return '★ ${average.toStringAsFixed(1)} ($countLabel)';
   }

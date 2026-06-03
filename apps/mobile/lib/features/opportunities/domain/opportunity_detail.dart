@@ -43,14 +43,15 @@ class OpportunityDetail {
     return OpportunityDetail(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Oportunidade sem titulo',
-      description: json['description']?.toString() ?? 'Sem descrição informada.',
-      institution:
-          institution?['tradeName']?.toString() ??
+      description:
+          json['description']?.toString() ?? 'Sem descrição informada.',
+      institution: institution?['tradeName']?.toString() ??
           institution?['legalName']?.toString() ??
           'Instituição',
-      specialty: customSpecialtyLabel != null && customSpecialtyLabel.trim().isNotEmpty
-          ? customSpecialtyLabel
-          : specialty?['name']?.toString() ?? 'Especialidade a definir',
+      specialty:
+          customSpecialtyLabel != null && customSpecialtyLabel.trim().isNotEmpty
+              ? customSpecialtyLabel
+              : specialty?['name']?.toString() ?? 'Especialidade a definir',
       shiftLabel: OpportunityFormatter.shiftSummary(
         startAt: json['startAt']?.toString() ?? '',
         endAt: json['endAt']?.toString() ?? '',
@@ -67,7 +68,8 @@ class OpportunityDetail {
       urgencyLabel: OpportunityFormatter.urgencyLabel(
         json['urgencyLevel']?.toString() ?? '',
       ),
-      statusLabel: OpportunityFormatter.statusLabel(json['status']?.toString() ?? ''),
+      statusLabel:
+          OpportunityFormatter.statusLabel(json['status']?.toString() ?? ''),
       locationLabel: _buildLocationLabel(address),
       requiresVerifiedProfile: json['requiresVerifiedProfile'] == true,
       applicantUserIds: applications
