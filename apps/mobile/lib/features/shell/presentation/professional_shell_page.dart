@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../auth/presentation/auth_gate_page.dart';
 import '../../engagements/presentation/professional_engagements_page.dart';
+import '../../home/presentation/home_dashboard_page.dart';
 import '../../notifications/presentation/notifications_page.dart';
 import '../../opportunities/presentation/opportunities_page.dart';
 import '../../profile/presentation/profile_page.dart';
@@ -43,8 +43,8 @@ class _ProfessionalShellPageState extends State<ProfessionalShellPage> {
               onDestinationSelected: _selectTab,
               destinations: const [
                 NavigationDestination(
-                  icon: Icon(Icons.login_rounded),
-                  label: 'Entrada',
+                  icon: Icon(Icons.dashboard_rounded),
+                  label: 'Início',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.search_rounded),
@@ -82,9 +82,11 @@ class _ProfessionalShellPageState extends State<ProfessionalShellPage> {
     return _pages.putIfAbsent(index, () {
       switch (index) {
         case 0:
-          return AuthGatePage(
+          return HomeDashboardPage(
             onOpenMarketplace: () => _selectTab(1),
             onOpenSchedule: () => _selectTab(2),
+            onOpenEngagements: () => _selectTab(3),
+            onOpenNotifications: () => _selectTab(4),
             onOpenProfile: () => _selectTab(5),
           );
         case 1:
