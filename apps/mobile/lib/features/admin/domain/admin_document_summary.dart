@@ -6,6 +6,7 @@ class AdminDocumentSummary {
     required this.documentTypeLabel,
     required this.statusLabel,
     required this.fileUrl,
+    required this.mimeType,
     required this.createdAtLabel,
   });
 
@@ -15,13 +16,34 @@ class AdminDocumentSummary {
   final String documentTypeLabel;
   final String statusLabel;
   final String fileUrl;
+  final String mimeType;
   final String createdAtLabel;
 
   bool get isImage {
+    if (mimeType.startsWith('image/')) {
+      return true;
+    }
+
     final lowerUrl = fileUrl.toLowerCase();
     return lowerUrl.endsWith('.jpg') ||
         lowerUrl.endsWith('.jpeg') ||
         lowerUrl.endsWith('.png');
+  }
+
+  AdminDocumentSummary copyWith({
+    String? fileUrl,
+    String? mimeType,
+  }) {
+    return AdminDocumentSummary(
+      id: id,
+      ownerLabel: ownerLabel,
+      ownerSubtitle: ownerSubtitle,
+      documentTypeLabel: documentTypeLabel,
+      statusLabel: statusLabel,
+      fileUrl: fileUrl ?? this.fileUrl,
+      mimeType: mimeType ?? this.mimeType,
+      createdAtLabel: createdAtLabel,
+    );
   }
 
   factory AdminDocumentSummary.fromJson(Map<String, dynamic> json) {
@@ -45,6 +67,7 @@ class AdminDocumentSummary {
           _documentTypeLabel(json['documentType']?.toString() ?? ''),
       statusLabel: _statusLabel(json['status']?.toString() ?? ''),
       fileUrl: json['fileUrl']?.toString() ?? '',
+      mimeType: json['mimeType']?.toString() ?? '',
       createdAtLabel: _createdAtLabel(json['createdAt']?.toString() ?? ''),
     );
   }

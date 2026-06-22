@@ -493,11 +493,11 @@ class _AuthHero extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
+                  const Expanded(
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: const [
+                      children: [
                         _HeroPill(label: 'Marketplace veterinário'),
                         _HeroPill(label: 'Plantões sob demanda'),
                       ],

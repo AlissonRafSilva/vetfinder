@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
-import { extname, join } from 'path';
+import { basename, extname, join } from 'path';
 
 const allowedExtensionsByMimeType: Record<string, string[]> = {
   'application/pdf': ['.pdf'],
@@ -59,6 +59,21 @@ export class StorageService {
       mimeType: file.mimetype,
       size: file.buffer.length,
     };
+  }
+
+  resolveLocalDocumentPath(fileUrl: string) {
+    const rawPath = this.extractPathFromUrl(fileUrl);
+    const fileName = basename(rawPath);
+
+    return join(process.cwd(), 'uploads', 'documents', fileName);
+  }
+
+  private extractPathFromUrl(fileUrl: string) {
+    try {
+      return new URL(fileUrl).pathname;
+    } catch {
+      return fileUrl;
+    }
   }
 
   private resolveExtension(fileName: string, mimeType?: string) {

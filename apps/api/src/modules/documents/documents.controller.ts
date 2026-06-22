@@ -8,12 +8,14 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Request } from 'express';
+import type { Response } from 'express';
 import { UserRole, VerificationStatus } from '@prisma/client';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -88,6 +90,29 @@ export class DocumentsController {
     @CurrentUser() user: { userId: string },
   ) {
     return this.documentsService.prepareUpload(dto, user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/file-access')
+  createFileAccess(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: any,
+  ) {
+    const baseUrl = `${request.protocol}://${request.get('host')}`;
+    return this.documentsService.createFileAccess(id, user, baseUrl);
+  }
+
+  @Get('file-access/:token')
+  openTemporaryFile(@Param('token') token: string, @Res() response: Response) {
+    const access = this.documentsService.resolveFileAccessToken(token);
+
+    if (access.mimeType) {
+      response.type(access.mimeType);
+    }
+
+    response.setHeader('Cache-Control', 'no-store');
+    response.sendFile(access.absolutePath);
   }
 
   @UseGuards(JwtAuthGuard)

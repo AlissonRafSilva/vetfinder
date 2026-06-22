@@ -50,7 +50,7 @@ class HomeDashboardPage extends StatelessWidget {
             secondaryActionLabel: 'Completar perfil',
           ),
           const SizedBox(height: 18),
-          Wrap(
+          const Wrap(
             spacing: 10,
             runSpacing: 10,
             children: [
@@ -545,7 +545,7 @@ class _TrustPanel extends StatelessWidget {
                 ? 'Descreva horário, valor, especialidade e urgência com clareza.'
                 : 'Cadastre uma agenda recorrente para aparecer melhor nas buscas.',
           ),
-          _TrustItem(
+          const _TrustItem(
             icon: Icons.star_rounded,
             text:
                 'Avaliações escritas e histórico de contratos constroem reputação dentro da plataforma.',

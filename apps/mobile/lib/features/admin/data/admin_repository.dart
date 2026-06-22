@@ -20,10 +20,36 @@ class AdminRepository {
       throw const ApiException('Lista de documentos invalida.');
     }
 
-    return response
+    final documents = response
         .whereType<Map<String, dynamic>>()
         .map(AdminDocumentSummary.fromJson)
         .toList();
+
+    return Future.wait(
+      documents.map(
+        (document) async {
+          final fileUrl = await createDocumentFileAccessUrl(
+            accessToken: accessToken,
+            documentId: document.id,
+          );
+
+          return document.copyWith(fileUrl: fileUrl);
+        },
+      ),
+    );
+  }
+
+  Future<String> createDocumentFileAccessUrl({
+    required String accessToken,
+    required String documentId,
+  }) async {
+    final response = await _apiClient.postJson(
+      '/documents/$documentId/file-access',
+      accessToken: accessToken,
+      body: const {},
+    );
+
+    return response['url']?.toString() ?? '';
   }
 
   Future<String> reviewDocument({

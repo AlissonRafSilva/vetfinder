@@ -1,4 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { stat } from 'fs/promises';
 import {
   AccountStatus,
   DocumentOwnerType,
@@ -14,6 +21,16 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { CreateDocumentUploadDto } from './dto/create-document-upload.dto';
 import { ReviewDocumentDto } from './dto/review-document.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
+
+type DocumentFileAccess = {
+  documentId: string;
+  absolutePath: string;
+  mimeType: string | null;
+  expiresAt: number;
+};
+
+const fileAccessTokens = new Map<string, DocumentFileAccess>();
+const fileAccessTtlMs = 2 * 60 * 1000;
 
 @Injectable()
 export class DocumentsService {
@@ -222,6 +239,78 @@ export class DocumentsService {
     return document;
   }
 
+  async createFileAccess(id: string, user: AuthenticatedUser, baseUrl: string) {
+    const document = await this.prisma.document.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        ownerType: true,
+        userId: true,
+        institutionId: true,
+        fileUrl: true,
+        mimeType: true,
+        institution: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Documento nao encontrado.');
+    }
+
+    const canAccess =
+      user.role === UserRole.ADMIN ||
+      (document.ownerType === DocumentOwnerType.USER &&
+        document.userId === user.userId) ||
+      (document.ownerType === DocumentOwnerType.INSTITUTION &&
+        document.institution?.userId === user.userId);
+
+    if (!canAccess) {
+      throw new ForbiddenException('Usuario sem permissao para acessar este documento.');
+    }
+
+    const absolutePath = this.storageService.resolveLocalDocumentPath(
+      document.fileUrl,
+    );
+
+    try {
+      await stat(absolutePath);
+    } catch {
+      throw new NotFoundException('Arquivo do documento nao encontrado.');
+    }
+
+    this.cleanupExpiredFileAccessTokens();
+
+    const token = randomUUID();
+    const expiresAt = Date.now() + fileAccessTtlMs;
+
+    fileAccessTokens.set(token, {
+      documentId: document.id,
+      absolutePath,
+      mimeType: document.mimeType,
+      expiresAt,
+    });
+
+    return {
+      url: `${baseUrl}/v1/documents/file-access/${token}`,
+      expiresAt: new Date(expiresAt).toISOString(),
+    };
+  }
+
+  resolveFileAccessToken(token: string) {
+    this.cleanupExpiredFileAccessTokens();
+
+    const access = fileAccessTokens.get(token);
+    if (!access) {
+      throw new NotFoundException('Acesso temporario expirado ou invalido.');
+    }
+
+    return access;
+  }
+
   async review(id: string, dto: ReviewDocumentDto) {
     const existing = await this.prisma.document.findUnique({
       where: { id },
@@ -261,6 +350,16 @@ export class DocumentsService {
       message: 'Revisao de documento registrada com sucesso.',
       document,
     };
+  }
+
+  private cleanupExpiredFileAccessTokens() {
+    const now = Date.now();
+
+    for (const [token, access] of fileAccessTokens.entries()) {
+      if (access.expiresAt <= now) {
+        fileAccessTokens.delete(token);
+      }
+    }
   }
 
   private async applyReviewEffects(
