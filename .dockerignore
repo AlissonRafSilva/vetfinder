@@ -1,0 +1,15 @@
+node_modules
+apps/api/node_modules
+apps/mobile
+.git
+.idea
+.dart_tool
+build
+dist
+coverage
+uploads
+apps/api/uploads
+*.log
+.env
+.env.local
+.env.*.local
