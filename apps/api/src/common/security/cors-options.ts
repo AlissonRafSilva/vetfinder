@@ -2,7 +2,7 @@ export function buildCorsOrigin() {
   const rawOrigins = process.env.CORS_ORIGINS?.trim();
 
   if (!rawOrigins) {
-    return true;
+    return process.env.NODE_ENV === 'production' ? false : true;
   }
 
   const allowedOrigins = rawOrigins

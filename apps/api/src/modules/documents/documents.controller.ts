@@ -13,6 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Request } from 'express';
 import { UserRole, VerificationStatus } from '@prisma/client';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -40,6 +41,29 @@ export class DocumentsController {
     FileInterceptor('file', {
       limits: {
         fileSize: 8 * 1024 * 1024,
+      },
+      fileFilter: (_request: Request, file: any, callback) => {
+        const allowedMimeTypes = new Set([
+          'application/pdf',
+          'image/jpeg',
+          'image/png',
+        ]);
+        const originalName = file.originalname?.toLowerCase() ?? '';
+        const hasAllowedExtension =
+          originalName.endsWith('.pdf') ||
+          originalName.endsWith('.jpg') ||
+          originalName.endsWith('.jpeg') ||
+          originalName.endsWith('.png');
+
+        if (!allowedMimeTypes.has(file.mimetype) || !hasAllowedExtension) {
+          callback(
+            new BadRequestException('Formato invalido. Envie PDF, JPG ou PNG.'),
+            false,
+          );
+          return;
+        }
+
+        callback(null, true);
       },
     }),
   )

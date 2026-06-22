@@ -3,10 +3,16 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { buildCorsOrigin } from './common/security/cors-options';
+import { assertSafeRuntimeConfig } from './common/security/env-security';
+import { securityHeadersMiddleware } from './common/security/security-headers.middleware';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  assertSafeRuntimeConfig();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.use(securityHeadersMiddleware);
 
   app.enableCors({
     origin: buildCorsOrigin(),
