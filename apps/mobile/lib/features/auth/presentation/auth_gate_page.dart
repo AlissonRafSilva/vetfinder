@@ -272,135 +272,22 @@ class _AuthGatePageState extends State<AuthGatePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!keyboardIsOpen) ...[
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    const Color(0xFF115E59),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(32),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.16),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 7,
-                                ),
-                                child: Text(
-                                  'Marketplace veterinário',
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'VetFinder',
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        width: 62,
-                        height: 62,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.22),
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.pets_rounded,
-                          color: Colors.white,
-                          size: 34,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Conecte profissionais veterinários e instituições para cobrir plantões com rapidez.',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.88),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _HeroMetric(label: 'Agenda'),
-                      _HeroMetric(label: 'Geolocalização'),
-                      _HeroMetric(label: 'Split sandbox'),
-                      _HeroMetric(label: 'Alertas'),
-                    ],
-                  ),
-                  const SizedBox(height: 22),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Scrollable.ensureVisible(
-                            _formKey.currentContext ?? context,
-                            duration: const Duration(milliseconds: 350),
-                            curve: Curves.easeOut,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: theme.colorScheme.primary,
-                        ),
-                        icon: const Icon(Icons.login_rounded),
-                        label: const Text('Entrar'),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          setState(() => _mode = _AuthMode.register);
-                          Scrollable.ensureVisible(
-                            _formKey.currentContext ?? context,
-                            duration: const Duration(milliseconds: 350),
-                            curve: Curves.easeOut,
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white),
-                        ),
-                        icon: const Icon(Icons.person_add_alt_1_rounded),
-                        label: const Text('Criar conta'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            _AuthHero(
+              onLoginTap: () {
+                Scrollable.ensureVisible(
+                  _formKey.currentContext ?? context,
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOut,
+                );
+              },
+              onRegisterTap: () {
+                setState(() => _mode = _AuthMode.register);
+                Scrollable.ensureVisible(
+                  _formKey.currentContext ?? context,
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOut,
+                );
+              },
             ),
             const SizedBox(height: 28),
           ],
@@ -542,30 +429,262 @@ class _AuthGatePageState extends State<AuthGatePage> {
   }
 }
 
-class _HeroMetric extends StatelessWidget {
-  const _HeroMetric({required this.label});
+class _AuthHero extends StatelessWidget {
+  const _AuthHero({
+    required this.onLoginTap,
+    required this.onRegisterTap,
+  });
+
+  final VoidCallback onLoginTap;
+  final VoidCallback onRegisterTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF006B5F),
+            Color(0xFF0F766E),
+            Color(0xFF164E63),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(34),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF006B5F).withValues(alpha: 0.22),
+            blurRadius: 32,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -44,
+            top: -48,
+            child: Container(
+              width: 170,
+              height: 170,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            right: 12,
+            bottom: 12,
+            child: Icon(
+              Icons.medical_services_rounded,
+              color: Colors.white.withValues(alpha: 0.08),
+              size: 118,
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: const [
+                        _HeroPill(label: 'Marketplace veterinário'),
+                        _HeroPill(label: 'Plantões sob demanda'),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.22),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.pets_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'VetFinder',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.8,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: Text(
+                  'Contrate plantonistas ou encontre oportunidades veterinárias com localização, agenda e reputação em um só lugar.',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.92),
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+              const Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _HeroMetric(
+                    icon: Icons.schedule_rounded,
+                    value: '24/7',
+                    label: 'urgências e plantões',
+                  ),
+                  _HeroMetric(
+                    icon: Icons.location_on_rounded,
+                    value: 'GPS',
+                    label: 'busca por região',
+                  ),
+                  _HeroMetric(
+                    icon: Icons.verified_user_rounded,
+                    value: 'Trust',
+                    label: 'documentos e avaliações',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: onRegisterTap,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: theme.colorScheme.primary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 14,
+                      ),
+                    ),
+                    icon: const Icon(Icons.rocket_launch_rounded),
+                    label: const Text('Começar agora'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: onLoginTap,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 14,
+                      ),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.72),
+                      ),
+                    ),
+                    icon: const Icon(Icons.login_rounded),
+                    label: const Text('Já tenho conta'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroPill extends StatelessWidget {
+  const _HeroPill({required this.label});
 
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.24),
+          color: Colors.white.withValues(alpha: 0.22),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
+      ),
+    );
+  }
+}
+
+class _HeroMetric extends StatelessWidget {
+  const _HeroMetric({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: 178,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.22),
         ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.78),
+                    height: 1.15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
