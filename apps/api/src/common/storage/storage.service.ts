@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   GetObjectCommand,
@@ -7,8 +7,10 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { NodeHttpHandler } from '@smithy/node-http-handler';
 import { randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
+import { Agent } from 'https';
 import { basename, extname, join } from 'path';
 
 const allowedExtensionsByMimeType: Record<string, string[]> = {
@@ -19,6 +21,7 @@ const allowedExtensionsByMimeType: Record<string, string[]> = {
 
 @Injectable()
 export class StorageService {
+  private readonly logger = new Logger(StorageService.name);
   private s3Client?: S3Client;
 
   constructor(private readonly configService: ConfigService) {}
@@ -61,15 +64,20 @@ export class StorageService {
       const datePrefix = new Date().toISOString().slice(0, 7);
       const key = `documents/${datePrefix}/${fileName}`;
 
-      await this.getS3Client().send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: key,
-          Body: file.buffer,
-          ContentType: file.mimetype ?? 'application/octet-stream',
-          ContentLength: file.buffer.length,
-        }),
-      );
+      try {
+        await this.getS3Client().send(
+          new PutObjectCommand({
+            Bucket: bucket,
+            Key: key,
+            Body: file.buffer,
+            ContentType: file.mimetype ?? 'application/octet-stream',
+            ContentLength: file.buffer.length,
+          }),
+        );
+      } catch (error) {
+        this.logStorageError('upload', error);
+        throw error;
+      }
 
       return {
         fileName,
@@ -110,12 +118,17 @@ export class StorageService {
     }
 
     const client = this.getS3Client();
-    await client.send(
-      new HeadObjectCommand({
-        Bucket: location.bucket,
-        Key: location.key,
-      }),
-    );
+    try {
+      await client.send(
+        new HeadObjectCommand({
+          Bucket: location.bucket,
+          Key: location.key,
+        }),
+      );
+    } catch (error) {
+      this.logStorageError('consulta', error);
+      throw error;
+    }
 
     return getSignedUrl(
       client,
@@ -168,8 +181,19 @@ export class StorageService {
     this.s3Client = new S3Client({
       endpoint: endpoint || undefined,
       region,
+      maxAttempts: 1,
       requestChecksumCalculation: 'WHEN_REQUIRED',
       responseChecksumValidation: 'WHEN_REQUIRED',
+      requestHandler: new NodeHttpHandler({
+        connectionTimeout: 10_000,
+        requestTimeout: 30_000,
+        socketTimeout: 30_000,
+        httpsAgent: new Agent({
+          family: 4,
+          keepAlive: false,
+          minVersion: 'TLSv1.2',
+        }),
+      }),
       forcePathStyle:
         this.configService.get<string>('S3_FORCE_PATH_STYLE') === 'true',
       credentials: {
@@ -197,6 +221,26 @@ export class StorageService {
       bucket: location.hostname,
       key,
     };
+  }
+
+  private logStorageError(operation: string, error: unknown) {
+    const storageError = error as {
+      name?: string;
+      message?: string;
+      code?: string;
+      $metadata?: { httpStatusCode?: number; requestId?: string };
+    };
+
+    this.logger.error(
+      JSON.stringify({
+        operation,
+        name: storageError?.name ?? 'UnknownError',
+        code: storageError?.code,
+        status: storageError?.$metadata?.httpStatusCode,
+        requestId: storageError?.$metadata?.requestId,
+        message: storageError?.message ?? 'Falha desconhecida no storage.',
+      }),
+    );
   }
 
   private resolveExtension(fileName: string, mimeType?: string) {
