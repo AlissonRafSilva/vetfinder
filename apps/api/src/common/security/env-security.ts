@@ -40,4 +40,21 @@ export function assertSafeRuntimeConfig() {
   if (!process.env.CORS_ORIGINS?.trim()) {
     throw new Error('CORS_ORIGINS precisa estar definido em produção.');
   }
+
+  if ((process.env.STORAGE_DRIVER ?? 'local').toLowerCase() === 's3') {
+    const requiredS3Variables = [
+      'STORAGE_BUCKET',
+      'S3_ACCESS_KEY_ID',
+      'S3_SECRET_ACCESS_KEY',
+    ];
+    const missingVariables = requiredS3Variables.filter(
+      (name) => !process.env[name]?.trim(),
+    );
+
+    if (missingVariables.length > 0) {
+      throw new Error(
+        `Configuração S3 incompleta: ${missingVariables.join(', ')}.`,
+      );
+    }
+  }
 }

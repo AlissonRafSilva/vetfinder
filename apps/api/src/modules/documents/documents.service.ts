@@ -76,7 +76,9 @@ export class DocumentsService {
         userId: owner.userId,
         institutionId: owner.institutionId,
         documentType: dto.documentType,
-        fileUrl: `${baseUrl}${storedFile.publicPath}`,
+        fileUrl: storedFile.publicPath.startsWith('/')
+          ? `${baseUrl}${storedFile.publicPath}`
+          : storedFile.publicPath,
         mimeType: storedFile.mimeType,
         status: VerificationStatus.PENDING,
       },
@@ -272,6 +274,28 @@ export class DocumentsService {
       throw new ForbiddenException('Usuario sem permissao para acessar este documento.');
     }
 
+    const expiresAt = Date.now() + fileAccessTtlMs;
+
+    try {
+      const remoteUrl = await this.storageService.createTemporaryDownloadUrl(
+        document.fileUrl,
+        fileAccessTtlMs / 1000,
+      );
+
+      if (remoteUrl) {
+        return {
+          url: remoteUrl,
+          expiresAt: new Date(expiresAt).toISOString(),
+        };
+      }
+    } catch (error) {
+      if (this.isStorageObjectMissing(error)) {
+        throw new NotFoundException('Arquivo do documento nao encontrado.');
+      }
+
+      throw error;
+    }
+
     const absolutePath = this.storageService.resolveLocalDocumentPath(
       document.fileUrl,
     );
@@ -285,8 +309,6 @@ export class DocumentsService {
     this.cleanupExpiredFileAccessTokens();
 
     const token = randomUUID();
-    const expiresAt = Date.now() + fileAccessTtlMs;
-
     fileAccessTokens.set(token, {
       documentId: document.id,
       absolutePath,
@@ -360,6 +382,23 @@ export class DocumentsService {
         fileAccessTokens.delete(token);
       }
     }
+  }
+
+  private isStorageObjectMissing(error: unknown) {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+
+    const storageError = error as {
+      name?: string;
+      $metadata?: { httpStatusCode?: number };
+    };
+
+    return (
+      storageError.name === 'NotFound' ||
+      storageError.name === 'NoSuchKey' ||
+      storageError.$metadata?.httpStatusCode === 404
+    );
   }
 
   private async applyReviewEffects(
