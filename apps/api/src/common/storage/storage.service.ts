@@ -168,6 +168,8 @@ export class StorageService {
     this.s3Client = new S3Client({
       endpoint: endpoint || undefined,
       region,
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
       forcePathStyle:
         this.configService.get<string>('S3_FORCE_PATH_STYLE') === 'true',
       credentials: {
