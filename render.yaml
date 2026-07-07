@@ -16,7 +16,7 @@ services:
       - key: CORS_ORIGINS
         sync: false
       - key: STORAGE_DRIVER
-        value: local
+        value: s3
       - key: STORAGE_BUCKET
         sync: false
       - key: S3_ENDPOINT
@@ -28,7 +28,7 @@ services:
       - key: S3_SECRET_ACCESS_KEY
         sync: false
       - key: S3_FORCE_PATH_STYLE
-        value: "false"
+        value: "true"
       - key: PAYMENT_PROVIDER
         value: sandbox-split
       - key: PLATFORM_FEE_RATE
