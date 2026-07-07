@@ -173,22 +173,51 @@ export class DocumentsService {
       throw new BadRequestException('Arquivo enviado sem conteudo.');
     }
 
-    const allowedMimeTypes = new Set(['application/pdf', 'image/jpeg', 'image/png']);
+    const allowedMimeTypes = new Set([
+      'application/pdf',
+      'application/octet-stream',
+      'image/jpg',
+      'image/jpeg',
+      'image/png',
+    ]);
     const fileName = file.originalname?.toLowerCase() ?? '';
     const hasAllowedExtension =
       fileName.endsWith('.pdf') ||
       fileName.endsWith('.jpg') ||
       fileName.endsWith('.jpeg') ||
       fileName.endsWith('.png');
+    const hasAllowedSignature = this.hasAllowedFileSignature(file.buffer);
 
     if (
       (!file.mimetype || !allowedMimeTypes.has(file.mimetype)) &&
-      !hasAllowedExtension
+      !hasAllowedExtension &&
+      !hasAllowedSignature
     ) {
       throw new BadRequestException(
         'Formato invalido. Envie PDF, JPG ou PNG.',
       );
     }
+  }
+
+  private hasAllowedFileSignature(buffer: Buffer) {
+    if (buffer.length < 4) {
+      return false;
+    }
+
+    const isPdf = buffer.subarray(0, 4).toString('ascii') === '%PDF';
+    const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    const isPng =
+      buffer.length >= 8 &&
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47 &&
+      buffer[4] === 0x0d &&
+      buffer[5] === 0x0a &&
+      buffer[6] === 0x1a &&
+      buffer[7] === 0x0a;
+
+    return isPdf || isJpeg || isPng;
   }
 
   private async resolveDocumentOwner(

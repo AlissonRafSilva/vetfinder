@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_client.dart';
@@ -68,6 +69,7 @@ class DocumentsRepository {
           'file',
           file.bytes!,
           filename: file.name,
+          contentType: _contentTypeFromFileName(file.name),
         ),
       );
     } else if (file.path != null && file.path!.isNotEmpty) {
@@ -76,6 +78,7 @@ class DocumentsRepository {
           'file',
           file.path!,
           filename: file.name,
+          contentType: _contentTypeFromFileName(file.name),
         ),
       );
     } else {
@@ -95,6 +98,22 @@ class DocumentsRepository {
     }
 
     return decoded['message']?.toString() ?? 'Documento enviado com sucesso.';
+  }
+
+  MediaType _contentTypeFromFileName(String fileName) {
+    final extension = fileName.split('.').last.toLowerCase();
+
+    switch (extension) {
+      case 'pdf':
+        return MediaType('application', 'pdf');
+      case 'jpg':
+      case 'jpeg':
+        return MediaType('image', 'jpeg');
+      case 'png':
+        return MediaType('image', 'png');
+      default:
+        return MediaType('application', 'octet-stream');
+    }
   }
 
   String _errorMessageFromResponse(http.Response response) {

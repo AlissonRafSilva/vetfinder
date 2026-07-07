@@ -15,6 +15,7 @@ import { basename, extname, join } from 'path';
 
 const allowedExtensionsByMimeType: Record<string, string[]> = {
   'application/pdf': ['.pdf'],
+  'image/jpg': ['.jpg', '.jpeg'],
   'image/jpeg': ['.jpg', '.jpeg'],
   'image/png': ['.png'],
 };
@@ -57,6 +58,7 @@ export class StorageService {
       .replace(/-+/g, '-')
       .toLowerCase();
     const extension = this.resolveExtension(originalName, file.mimetype);
+    const mimeType = this.resolveMimeType(originalName, file.mimetype);
     const fileName = `${randomUUID()}-${safeBaseName || 'documento'}${extension}`;
 
     if (this.getDriver() === 's3') {
@@ -70,7 +72,7 @@ export class StorageService {
             Bucket: bucket,
             Key: key,
             Body: file.buffer,
-            ContentType: file.mimetype ?? 'application/octet-stream',
+            ContentType: mimeType,
             ContentLength: file.buffer.length,
           }),
         );
@@ -82,7 +84,7 @@ export class StorageService {
       return {
         fileName,
         publicPath: `s3://${bucket}/${key}`,
-        mimeType: file.mimetype,
+        mimeType,
         size: file.buffer.length,
       };
     }
@@ -96,7 +98,7 @@ export class StorageService {
     return {
       fileName,
       publicPath: `/uploads/documents/${fileName}`,
-      mimeType: file.mimetype,
+      mimeType,
       size: file.buffer.length,
     };
   }
@@ -259,12 +261,35 @@ export class StorageService {
     switch (mimeType) {
       case 'application/pdf':
         return '.pdf';
+      case 'image/jpg':
       case 'image/jpeg':
         return '.jpg';
       case 'image/png':
         return '.png';
       default:
         return '';
+    }
+  }
+
+  private resolveMimeType(fileName: string, mimeType?: string) {
+    if (
+      mimeType &&
+      mimeType !== 'application/octet-stream' &&
+      mimeType !== 'image/jpg'
+    ) {
+      return mimeType;
+    }
+
+    switch (extname(fileName).toLowerCase()) {
+      case '.pdf':
+        return 'application/pdf';
+      case '.jpg':
+      case '.jpeg':
+        return 'image/jpeg';
+      case '.png':
+        return 'image/png';
+      default:
+        return mimeType ?? 'application/octet-stream';
     }
   }
 }
