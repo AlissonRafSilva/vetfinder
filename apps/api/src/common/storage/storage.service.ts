@@ -78,7 +78,10 @@ export class StorageService {
         );
       } catch (error) {
         this.logStorageError('upload', error);
-        throw error;
+        this.logger.warn(
+          'Falha no storage S3. Usando storage local temporario para manter o fluxo de documentos disponivel.',
+        );
+        return this.saveLocalUploadedDocument(file, fileName, mimeType);
       }
 
       return {
@@ -87,6 +90,18 @@ export class StorageService {
         mimeType,
         size: file.buffer.length,
       };
+    }
+
+    return this.saveLocalUploadedDocument(file, fileName, mimeType);
+  }
+
+  private async saveLocalUploadedDocument(
+    file: { buffer?: Buffer },
+    fileName: string,
+    mimeType: string,
+  ) {
+    if (!file.buffer) {
+      throw new Error('Arquivo enviado sem conteudo.');
     }
 
     const uploadsDir = join(process.cwd(), 'uploads', 'documents');
