@@ -18,6 +18,7 @@ import { ProfessionalsModule } from './modules/professionals/professionals.modul
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { UsersModule } from './modules/users/users.module';
 import { SpecialtiesModule } from './modules/specialties/specialties.module';
+import { AsaasModule } from './modules/asaas/asaas.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { SpecialtiesModule } from './modules/specialties/specialties.module';
     ReviewsModule,
     NotificationsModule,
     AdminModule,
+    AsaasModule,
   ],
 })
 export class AppModule {}

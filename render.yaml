@@ -32,6 +32,14 @@ services:
       - key: STORAGE_ALLOW_LOCAL_FALLBACK
         value: "false"
       - key: PAYMENT_PROVIDER
-        value: sandbox-split
+        value: asaas
       - key: PLATFORM_FEE_RATE
         value: "0.03"
+      - key: ASAAS_ENVIRONMENT
+        value: sandbox
+      - key: ASAAS_API_URL
+        value: https://api-sandbox.asaas.com/v3
+      - key: ASAAS_API_KEY
+        sync: false
+      - key: ASAAS_WEBHOOK_TOKEN
+        sync: false
