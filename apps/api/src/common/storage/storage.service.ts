@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   GetObjectCommand,
@@ -21,11 +21,38 @@ const allowedExtensionsByMimeType: Record<string, string[]> = {
 };
 
 @Injectable()
-export class StorageService {
+export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
   private s3Client?: S3Client;
 
   constructor(private readonly configService: ConfigService) {}
+
+  onModuleInit() {
+    if (this.getDriver() !== 's3') {
+      return;
+    }
+
+    const requiredVariables = [
+      'STORAGE_BUCKET',
+      'S3_ENDPOINT',
+      'S3_REGION',
+      'S3_ACCESS_KEY_ID',
+      'S3_SECRET_ACCESS_KEY',
+    ];
+    const missingVariables = requiredVariables.filter(
+      (variable) => !this.configService.get<string>(variable)?.trim(),
+    );
+
+    if (missingVariables.length > 0) {
+      throw new Error(
+        `Storage S3 incompleto. Configure: ${missingVariables.join(', ')}.`,
+      );
+    }
+
+    this.logger.log(
+      `Storage S3 configurado: bucket=${this.getBucket()}, region=${this.getRegion()}, pathStyle=${this.usePathStyle()}.`,
+    );
+  }
 
   createUploadPlaceholder(input: { folder: string; fileName: string }) {
     const driver = this.configService.get<string>('STORAGE_DRIVER') ?? 'local';
@@ -78,6 +105,13 @@ export class StorageService {
         );
       } catch (error) {
         this.logStorageError('upload', error);
+
+        if (!this.allowLocalFallback()) {
+          throw new Error(
+            'Nao foi possivel armazenar o arquivo no storage permanente.',
+          );
+        }
+
         this.logger.warn(
           'Falha no storage S3. Usando storage local temporario para manter o fluxo de documentos disponivel.',
         );
@@ -183,7 +217,7 @@ export class StorageService {
     }
 
     const endpoint = this.configService.get<string>('S3_ENDPOINT')?.trim();
-    const region = this.configService.get<string>('S3_REGION')?.trim() || 'auto';
+    const region = this.getRegion();
     const accessKeyId = this.configService
       .get<string>('S3_ACCESS_KEY_ID')
       ?.trim();
@@ -211,8 +245,7 @@ export class StorageService {
           minVersion: 'TLSv1.2',
         }),
       }),
-      forcePathStyle:
-        this.configService.get<string>('S3_FORCE_PATH_STYLE') === 'true',
+      forcePathStyle: this.usePathStyle(),
       credentials: {
         accessKeyId,
         secretAccessKey,
@@ -220,6 +253,31 @@ export class StorageService {
     });
 
     return this.s3Client;
+  }
+
+  private getRegion() {
+    return this.configService.get<string>('S3_REGION')?.trim() || 'auto';
+  }
+
+  private usePathStyle() {
+    return (
+      this.configService.get<string>('S3_FORCE_PATH_STYLE')
+        ?.trim()
+        .toLowerCase() === 'true'
+    );
+  }
+
+  private allowLocalFallback() {
+    const configuredValue = this.configService
+      .get<string>('STORAGE_ALLOW_LOCAL_FALLBACK')
+      ?.trim()
+      .toLowerCase();
+
+    if (configuredValue) {
+      return configuredValue === 'true';
+    }
+
+    return this.configService.get<string>('NODE_ENV') !== 'production';
   }
 
   private parseS3Location(fileUrl: string) {

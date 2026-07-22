@@ -22,13 +22,15 @@ services:
       - key: S3_ENDPOINT
         sync: false
       - key: S3_REGION
-        value: auto
+        sync: false
       - key: S3_ACCESS_KEY_ID
         sync: false
       - key: S3_SECRET_ACCESS_KEY
         sync: false
       - key: S3_FORCE_PATH_STYLE
         value: "true"
+      - key: STORAGE_ALLOW_LOCAL_FALLBACK
+        value: "false"
       - key: PAYMENT_PROVIDER
         value: sandbox-split
       - key: PLATFORM_FEE_RATE
