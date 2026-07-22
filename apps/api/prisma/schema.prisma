@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
@@ -126,49 +126,91 @@ enum SplitStatus {
   FAILED
 }
 
+enum AsaasEnvironment {
+  SANDBOX
+  PRODUCTION
+}
+
+enum AsaasAccountStatus {
+  PENDING
+  ACTIVE
+  BLOCKED
+  REJECTED
+}
+
+enum AsaasOnboardingStatus {
+  NOT_STARTED
+  PENDING_DATA
+  PENDING_DOCUMENTS
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
 model User {
-  id                  String                  @id @default(uuid()) @db.Uuid
-  email               String                  @unique
-  phone               String?                 @db.VarChar(20)
-  passwordHash        String                  @map("password_hash")
-  role                UserRole
-  status              AccountStatus           @default(PENDING_VERIFICATION)
-  lastLoginAt         DateTime?               @map("last_login_at")
-  createdAt           DateTime                @default(now()) @map("created_at")
-  updatedAt           DateTime                @updatedAt @map("updated_at")
-  profile             Profile?
-  veterinarianProfile VeterinarianProfile?
-  internProfile       InternProfile?
-  institution         Institution?
-  documents           Document[]              @relation("user_documents")
-  specialties         ProfessionalSpecialty[]
-  availabilitySlots   AvailabilitySlot[]
-  applications        OpportunityApplication[]
-  invites             OpportunityInvite[]
-  professionalEngagements Engagement[]        @relation("professional_engagements")
-  notifications       Notification[]
-  reviewWritten       Review[]                @relation("written_reviews")
-  reviewReceived      Review[]                @relation("received_reviews")
-  auditLogs           AuditLog[]
+  id                      String                   @id @default(uuid()) @db.Uuid
+  email                   String                   @unique
+  phone                   String?                  @db.VarChar(20)
+  passwordHash            String                   @map("password_hash")
+  role                    UserRole
+  status                  AccountStatus            @default(PENDING_VERIFICATION)
+  lastLoginAt             DateTime?                @map("last_login_at")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
+  profile                 Profile?
+  veterinarianProfile     VeterinarianProfile?
+  internProfile           InternProfile?
+  institution             Institution?
+  documents               Document[]               @relation("user_documents")
+  specialties             ProfessionalSpecialty[]
+  availabilitySlots       AvailabilitySlot[]
+  applications            OpportunityApplication[]
+  invites                 OpportunityInvite[]
+  professionalEngagements Engagement[]             @relation("professional_engagements")
+  notifications           Notification[]
+  reviewWritten           Review[]                 @relation("written_reviews")
+  reviewReceived          Review[]                 @relation("received_reviews")
+  auditLogs               AuditLog[]
+  asaasAccounts           AsaasAccount[]
 
   @@map("users")
 }
 
+model AsaasAccount {
+  id                 String                @id @default(uuid()) @db.Uuid
+  userId             String                @map("user_id") @db.Uuid
+  environment        AsaasEnvironment
+  asaasAccountId     String?               @map("asaas_account_id")
+  asaasWalletId      String?               @map("asaas_wallet_id")
+  accountStatus      AsaasAccountStatus    @default(PENDING) @map("account_status")
+  onboardingStatus   AsaasOnboardingStatus @default(NOT_STARTED) @map("onboarding_status")
+  lastSynchronizedAt DateTime?             @map("last_synchronized_at")
+  createdAt          DateTime              @default(now()) @map("created_at")
+  updatedAt          DateTime              @updatedAt @map("updated_at")
+  user               User                  @relation(fields: [userId], references: [id])
+
+  @@unique([userId, environment])
+  @@unique([environment, asaasAccountId])
+  @@unique([environment, asaasWalletId])
+  @@index([accountStatus, onboardingStatus])
+  @@map("asaas_accounts")
+}
+
 model Profile {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @unique @map("user_id") @db.Uuid
-  fullName   String   @map("full_name")
-  photoUrl   String?  @map("photo_url")
-  city       String?
-  state      String?  @db.VarChar(2)
-  bio        String?
-  isVisible  Boolean  @default(true) @map("is_visible")
-  addressId  String?  @map("address_id") @db.Uuid
-  location   Unsupported("geography(Point, 4326)")?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  user       User     @relation(fields: [userId], references: [id])
-  address    Address? @relation(fields: [addressId], references: [id])
+  id        String                                 @id @default(uuid()) @db.Uuid
+  userId    String                                 @unique @map("user_id") @db.Uuid
+  fullName  String                                 @map("full_name")
+  photoUrl  String?                                @map("photo_url")
+  city      String?
+  state     String?                                @db.VarChar(2)
+  bio       String?
+  isVisible Boolean                                @default(true) @map("is_visible")
+  addressId String?                                @map("address_id") @db.Uuid
+  location  Unsupported("geography(Point, 4326)")?
+  createdAt DateTime                               @default(now()) @map("created_at")
+  updatedAt DateTime                               @updatedAt @map("updated_at")
+  user      User                                   @relation(fields: [userId], references: [id])
+  address   Address?                               @relation(fields: [addressId], references: [id])
 
   @@index([addressId])
   @@map("profiles")
@@ -204,66 +246,66 @@ model InternProfile {
 }
 
 model Institution {
-  id                 String             @id @default(uuid()) @db.Uuid
-  userId             String             @unique @map("user_id") @db.Uuid
-  institutionType    InstitutionType    @map("institution_type")
-  legalName          String             @map("legal_name")
-  tradeName          String             @map("trade_name")
-  cnpj               String             @unique
-  stateRegistration  String?            @map("state_registration")
+  id                 String                                 @id @default(uuid()) @db.Uuid
+  userId             String                                 @unique @map("user_id") @db.Uuid
+  institutionType    InstitutionType                        @map("institution_type")
+  legalName          String                                 @map("legal_name")
+  tradeName          String                                 @map("trade_name")
+  cnpj               String                                 @unique
+  stateRegistration  String?                                @map("state_registration")
   description        String?
-  contactName        String?            @map("contact_name")
-  contactPhone       String?            @map("contact_phone")
-  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
-  addressId          String?            @map("address_id") @db.Uuid
+  contactName        String?                                @map("contact_name")
+  contactPhone       String?                                @map("contact_phone")
+  verificationStatus VerificationStatus                     @default(PENDING) @map("verification_status")
+  addressId          String?                                @map("address_id") @db.Uuid
   location           Unsupported("geography(Point, 4326)")?
-  createdAt          DateTime           @default(now()) @map("created_at")
-  updatedAt          DateTime           @updatedAt @map("updated_at")
-  user               User               @relation(fields: [userId], references: [id])
-  address            Address?           @relation(fields: [addressId], references: [id])
-  documents          Document[]         @relation("institution_documents")
+  createdAt          DateTime                               @default(now()) @map("created_at")
+  updatedAt          DateTime                               @updatedAt @map("updated_at")
+  user               User                                   @relation(fields: [userId], references: [id])
+  address            Address?                               @relation(fields: [addressId], references: [id])
+  documents          Document[]                             @relation("institution_documents")
   opportunities      Opportunity[]
-  engagements        Engagement[]       @relation("institution_engagements")
+  engagements        Engagement[]                           @relation("institution_engagements")
 
   @@index([addressId])
   @@map("institutions")
 }
 
 model Address {
-  id           String        @id @default(uuid()) @db.Uuid
-  zipCode      String?       @map("zip_code")
-  street       String?
-  number       String?
-  complement   String?
-  district     String?
-  city         String?
-  state        String?       @db.VarChar(2)
-  country      String?       @default("BR")
-  lat          Decimal?      @db.Decimal(10, 7)
-  lng          Decimal?      @db.Decimal(10, 7)
-  profiles     Profile[]
-  institutions Institution[]
+  id            String        @id @default(uuid()) @db.Uuid
+  zipCode       String?       @map("zip_code")
+  street        String?
+  number        String?
+  complement    String?
+  district      String?
+  city          String?
+  state         String?       @db.VarChar(2)
+  country       String?       @default("BR")
+  lat           Decimal?      @db.Decimal(10, 7)
+  lng           Decimal?      @db.Decimal(10, 7)
+  profiles      Profile[]
+  institutions  Institution[]
   opportunities Opportunity[]
 
   @@map("addresses")
 }
 
 model Document {
-  id               String             @id @default(uuid()) @db.Uuid
-  ownerType        DocumentOwnerType  @map("owner_type")
-  userId           String?            @map("user_id") @db.Uuid
-  institutionId    String?            @map("institution_id") @db.Uuid
-  documentType     DocumentType       @map("document_type")
-  fileUrl          String             @map("file_url")
-  mimeType         String?            @map("mime_type")
-  status           VerificationStatus @default(PENDING)
-  rejectionReason  String?            @map("rejection_reason")
-  reviewedBy       String?            @map("reviewed_by") @db.Uuid
-  reviewedAt       DateTime?          @map("reviewed_at")
-  expiresAt        DateTime?          @map("expires_at")
-  createdAt        DateTime           @default(now()) @map("created_at")
-  user             User?              @relation("user_documents", fields: [userId], references: [id])
-  institution      Institution?       @relation("institution_documents", fields: [institutionId], references: [id])
+  id              String             @id @default(uuid()) @db.Uuid
+  ownerType       DocumentOwnerType  @map("owner_type")
+  userId          String?            @map("user_id") @db.Uuid
+  institutionId   String?            @map("institution_id") @db.Uuid
+  documentType    DocumentType       @map("document_type")
+  fileUrl         String             @map("file_url")
+  mimeType        String?            @map("mime_type")
+  status          VerificationStatus @default(PENDING)
+  rejectionReason String?            @map("rejection_reason")
+  reviewedBy      String?            @map("reviewed_by") @db.Uuid
+  reviewedAt      DateTime?          @map("reviewed_at")
+  expiresAt       DateTime?          @map("expires_at")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  user            User?              @relation("user_documents", fields: [userId], references: [id])
+  institution     Institution?       @relation("institution_documents", fields: [institutionId], references: [id])
 
   @@index([ownerType])
   @@index([userId])
@@ -310,27 +352,27 @@ model AvailabilitySlot {
 }
 
 model Opportunity {
-  id                      String                    @id @default(uuid()) @db.Uuid
-  institutionId           String                    @map("institution_id") @db.Uuid
+  id                      String                                 @id @default(uuid()) @db.Uuid
+  institutionId           String                                 @map("institution_id") @db.Uuid
   title                   String
   description             String
-  opportunityType         OpportunityType          @map("opportunity_type")
-  specialtyId             String?                  @map("specialty_id") @db.Uuid
-  customSpecialtyLabel    String?                  @map("custom_specialty_label")
-  startAt                 DateTime                 @map("start_at")
-  endAt                   DateTime                 @map("end_at")
-  durationHours           Decimal?                 @map("duration_hours") @db.Decimal(5, 2)
-  grossAmount             Decimal                  @map("gross_amount") @db.Decimal(10, 2)
-  urgencyLevel            UrgencyLevel             @default(MEDIUM) @map("urgency_level")
-  status                  OpportunityStatus        @default(DRAFT)
-  addressId               String?                  @map("address_id") @db.Uuid
+  opportunityType         OpportunityType                        @map("opportunity_type")
+  specialtyId             String?                                @map("specialty_id") @db.Uuid
+  customSpecialtyLabel    String?                                @map("custom_specialty_label")
+  startAt                 DateTime                               @map("start_at")
+  endAt                   DateTime                               @map("end_at")
+  durationHours           Decimal?                               @map("duration_hours") @db.Decimal(5, 2)
+  grossAmount             Decimal                                @map("gross_amount") @db.Decimal(10, 2)
+  urgencyLevel            UrgencyLevel                           @default(MEDIUM) @map("urgency_level")
+  status                  OpportunityStatus                      @default(DRAFT)
+  addressId               String?                                @map("address_id") @db.Uuid
   location                Unsupported("geography(Point, 4326)")?
-  requiresVerifiedProfile Boolean                  @default(true) @map("requires_verified_profile")
-  createdAt               DateTime                 @default(now()) @map("created_at")
-  updatedAt               DateTime                 @updatedAt @map("updated_at")
-  institution             Institution              @relation(fields: [institutionId], references: [id])
-  specialty               Specialty?               @relation(fields: [specialtyId], references: [id])
-  address                 Address?                 @relation(fields: [addressId], references: [id])
+  requiresVerifiedProfile Boolean                                @default(true) @map("requires_verified_profile")
+  createdAt               DateTime                               @default(now()) @map("created_at")
+  updatedAt               DateTime                               @updatedAt @map("updated_at")
+  institution             Institution                            @relation(fields: [institutionId], references: [id])
+  specialty               Specialty?                             @relation(fields: [specialtyId], references: [id])
+  address                 Address?                               @relation(fields: [addressId], references: [id])
   applications            OpportunityApplication[]
   invites                 OpportunityInvite[]
   engagements             Engagement[]
@@ -400,21 +442,21 @@ model Engagement {
 }
 
 model Payment {
-  id                String          @id @default(uuid()) @db.Uuid
-  engagementId      String          @unique @map("engagement_id") @db.Uuid
+  id                String         @id @default(uuid()) @db.Uuid
+  engagementId      String         @unique @map("engagement_id") @db.Uuid
   provider          String
-  providerPaymentId String?         @map("provider_payment_id")
-  providerStatus    String?         @map("provider_status")
-  checkoutUrl       String?         @map("checkout_url")
-  providerPayload   Json?           @map("provider_payload")
-  status            PaymentStatus   @default(PENDING)
-  grossAmount       Decimal         @map("gross_amount") @db.Decimal(10, 2)
-  platformFeeAmount Decimal         @map("platform_fee_amount") @db.Decimal(10, 2)
-  netAmount         Decimal         @map("net_amount") @db.Decimal(10, 2)
-  paidAt            DateTime?       @map("paid_at")
-  refundedAt        DateTime?       @map("refunded_at")
-  createdAt         DateTime        @default(now()) @map("created_at")
-  engagement        Engagement      @relation(fields: [engagementId], references: [id])
+  providerPaymentId String?        @map("provider_payment_id")
+  providerStatus    String?        @map("provider_status")
+  checkoutUrl       String?        @map("checkout_url")
+  providerPayload   Json?          @map("provider_payload")
+  status            PaymentStatus  @default(PENDING)
+  grossAmount       Decimal        @map("gross_amount") @db.Decimal(10, 2)
+  platformFeeAmount Decimal        @map("platform_fee_amount") @db.Decimal(10, 2)
+  netAmount         Decimal        @map("net_amount") @db.Decimal(10, 2)
+  paidAt            DateTime?      @map("paid_at")
+  refundedAt        DateTime?      @map("refunded_at")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  engagement        Engagement     @relation(fields: [engagementId], references: [id])
   splits            PaymentSplit[]
 
   @@index([status])
@@ -469,15 +511,15 @@ model Notification {
 }
 
 model AuditLog {
-  id          String   @id @default(uuid()) @db.Uuid
-  actorUserId String?  @map("actor_user_id") @db.Uuid
-  actorType   String?  @map("actor_type")
-  action      String
-  entityType  String   @map("entity_type")
-  entityId    String   @map("entity_id")
-  metadataJson Json?   @map("metadata_json")
-  createdAt   DateTime @default(now()) @map("created_at")
-  actor       User?    @relation(fields: [actorUserId], references: [id])
+  id           String   @id @default(uuid()) @db.Uuid
+  actorUserId  String?  @map("actor_user_id") @db.Uuid
+  actorType    String?  @map("actor_type")
+  action       String
+  entityType   String   @map("entity_type")
+  entityId     String   @map("entity_id")
+  metadataJson Json?    @map("metadata_json")
+  createdAt    DateTime @default(now()) @map("created_at")
+  actor        User?    @relation(fields: [actorUserId], references: [id])
 
   @@index([entityType, entityId])
   @@map("audit_logs")
