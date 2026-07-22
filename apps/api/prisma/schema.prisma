@@ -147,6 +147,13 @@ enum AsaasOnboardingStatus {
   REJECTED
 }
 
+enum AsaasWebhookProcessingStatus {
+  RECEIVED
+  PROCESSED
+  IGNORED
+  FAILED
+}
+
 model User {
   id                      String                   @id @default(uuid()) @db.Uuid
   email                   String                   @unique
@@ -194,6 +201,21 @@ model AsaasAccount {
   @@unique([environment, asaasWalletId])
   @@index([accountStatus, onboardingStatus])
   @@map("asaas_accounts")
+}
+
+model AsaasWebhookEvent {
+  id               String                       @id @default(uuid()) @db.Uuid
+  asaasEventId     String                       @unique @map("asaas_event_id")
+  eventType        String                       @map("event_type")
+  asaasAccountId   String?                      @map("asaas_account_id")
+  providerPaymentId String?                     @map("provider_payment_id")
+  processingStatus AsaasWebhookProcessingStatus @default(RECEIVED) @map("processing_status")
+  receivedAt       DateTime                     @default(now()) @map("received_at")
+  processedAt      DateTime?                    @map("processed_at")
+
+  @@index([eventType, receivedAt])
+  @@index([processingStatus])
+  @@map("asaas_webhook_events")
 }
 
 model Profile {

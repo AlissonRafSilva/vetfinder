@@ -43,10 +43,19 @@ export class AsaasService implements OnModuleInit {
     }
 
     const apiKey = this.configService.get<string>('ASAAS_API_KEY')?.trim();
+    const webhookToken = this.configService
+      .get<string>('ASAAS_WEBHOOK_TOKEN')
+      ?.trim();
     const apiUrl = this.getApiUrl();
 
     if (!apiKey) {
       throw new Error('ASAAS_API_KEY precisa estar configurada.');
+    }
+
+    if (!webhookToken || webhookToken.length < 32) {
+      throw new Error(
+        'ASAAS_WEBHOOK_TOKEN precisa ter pelo menos 32 caracteres.',
+      );
     }
 
     if (!apiUrl.startsWith('https://')) {
