@@ -66,37 +66,12 @@ export class AsaasAccountsService {
       throw error;
     }
 
+    let providerAccount: { id: string; walletId: string };
     try {
-      const providerAccount = await this.asaasService.createSubaccount({
+      providerAccount = await this.asaasService.createSubaccount({
         name: user.profile.fullName,
         email: user.email,
         ...dto,
-      });
-
-      return await this.prisma.$transaction(async (tx) => {
-        const account = await tx.asaasAccount.update({
-          where: { id: pendingAccount.id },
-          data: {
-            asaasAccountId: providerAccount.id,
-            asaasWalletId: providerAccount.walletId,
-            accountStatus: AsaasAccountStatus.PENDING,
-            onboardingStatus: AsaasOnboardingStatus.UNDER_REVIEW,
-            lastSynchronizedAt: new Date(),
-          },
-        });
-
-        await tx.auditLog.create({
-          data: {
-            actorUserId: user.id,
-            actorType: 'USER',
-            action: 'ASAAS_ACCOUNT_CREATED',
-            entityType: 'ASAAS_ACCOUNT',
-            entityId: account.id,
-            metadataJson: { environment },
-          },
-        });
-
-        return account;
       });
     } catch (error) {
       await this.prisma.asaasAccount.deleteMany({
@@ -107,6 +82,32 @@ export class AsaasAccountsService {
       });
       throw error;
     }
+
+    return this.prisma.$transaction(async (tx) => {
+      const account = await tx.asaasAccount.update({
+        where: { id: pendingAccount.id },
+        data: {
+          asaasAccountId: providerAccount.id,
+          asaasWalletId: providerAccount.walletId,
+          accountStatus: AsaasAccountStatus.PENDING,
+          onboardingStatus: AsaasOnboardingStatus.UNDER_REVIEW,
+          lastSynchronizedAt: new Date(),
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: user.id,
+          actorType: 'USER',
+          action: 'ASAAS_ACCOUNT_CREATED',
+          entityType: 'ASAAS_ACCOUNT',
+          entityId: account.id,
+          metadataJson: { environment },
+        },
+      });
+
+      return account;
+    });
   }
 
   async findMine(authenticatedUser: AuthenticatedUser) {
