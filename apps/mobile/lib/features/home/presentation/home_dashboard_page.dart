@@ -324,7 +324,8 @@ class _ProfessionalActionGrid extends StatelessWidget {
         _ActionTile(
           icon: Icons.calendar_month_rounded,
           title: 'Disponibilizar agenda',
-          message: 'Mostre seus horários livres para receber convites melhores.',
+          message:
+              'Mostre seus horários livres para receber convites melhores.',
           actionLabel: 'Atualizar agenda',
           onTap: onOpenSchedule,
         ),
@@ -348,7 +349,8 @@ class _ProfessionalActionGrid extends StatelessWidget {
         _ActionTile(
           icon: Icons.verified_user_rounded,
           title: 'Fortalecer perfil',
-          message: 'Documentos, localização e reputação aumentam sua conversão.',
+          message:
+              'Documentos, localização e reputação aumentam sua conversão.',
           actionLabel: 'Abrir perfil',
           onTap: onOpenProfile,
         ),
@@ -387,7 +389,8 @@ class _InstitutionActionGrid extends StatelessWidget {
         _ActionTile(
           icon: Icons.groups_rounded,
           title: 'Buscar disponíveis',
-          message: 'Encontre profissionais por agenda, distância e especialidade.',
+          message:
+              'Encontre profissionais por agenda, distância e especialidade.',
           actionLabel: 'Ver disponíveis',
           onTap: onOpenMarketplace,
         ),
@@ -411,7 +414,8 @@ class _InstitutionActionGrid extends StatelessWidget {
         _ActionTile(
           icon: Icons.apartment_rounded,
           title: 'Completar instituição',
-          message: 'Dados e documentos verificados aumentam a confiança da vaga.',
+          message:
+              'Dados e documentos verificados aumentam a confiança da vaga.',
           actionLabel: 'Abrir perfil',
           onTap: onOpenProfile,
         ),
