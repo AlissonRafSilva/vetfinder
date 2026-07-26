@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/network/api_client.dart';
@@ -34,7 +35,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
   PaymentSummary? _createdPayment;
   ReviewSummary? _createdReview;
   bool _isCreatingPayment = false;
-  bool _isConfirmingPayment = false;
+  bool _isRefreshingPayment = false;
   bool _isCreatingReview = false;
   bool _shouldRefreshOnExit = false;
   String? _paymentFeedback;
@@ -117,7 +118,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
           builder: (context) => AlertDialog(
             title: const Text('Registrar pagamento'),
             content: const Text(
-              'Gerar checkout sandbox para este plantão? O contrato continuará aguardando pagamento até a confirmação do gateway.',
+              'Gerar uma cobrança Pix no Asaas Sandbox? O contrato será confirmado automaticamente após o webhook de pagamento.',
             ),
             actions: [
               TextButton(
@@ -156,7 +157,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
         _createdPayment = payment;
         _paymentFuture = Future.value(payment);
         _shouldRefreshOnExit = true;
-        _paymentFeedback = 'Checkout sandbox criado com sucesso.';
+        _paymentFeedback = 'Cobrança Pix Asaas criada com sucesso.';
       });
     } on ApiException catch (error) {
       if (!mounted) {
@@ -175,24 +176,23 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
     }
   }
 
-  Future<void> _confirmSandboxPayment(PaymentSummary payment) async {
+  Future<void> _refreshPaymentStatus() async {
     final session = AppSessionScope.of(context);
     if (!session.isAuthenticated ||
-        !session.isInstitutionUser ||
         session.accessToken == null ||
-        _isConfirmingPayment) {
+        _isRefreshingPayment) {
       return;
     }
 
     setState(() {
-      _isConfirmingPayment = true;
+      _isRefreshingPayment = true;
       _paymentFeedback = null;
     });
 
     try {
-      final confirmedPayment = await _paymentsRepository.confirmSandboxPayment(
+      final payment = await _paymentsRepository.fetchPaymentByEngagement(
         accessToken: session.accessToken!,
-        paymentId: payment.id,
+        engagementId: widget.item.id,
       );
 
       if (!mounted) {
@@ -200,12 +200,12 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
       }
 
       setState(() {
-        _createdPayment = confirmedPayment;
-        _paymentFuture = Future.value(confirmedPayment);
+        _createdPayment = payment;
+        _paymentFuture = Future.value(payment);
         _loadedPaymentKey =
             '${session.userId}:${session.accessToken}:${widget.item.id}';
         _shouldRefreshOnExit = true;
-        _paymentFeedback = 'Pagamento sandbox confirmado com sucesso.';
+        _paymentFeedback = 'Status do pagamento atualizado.';
       });
     } on ApiException catch (error) {
       if (!mounted) {
@@ -217,7 +217,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
       });
     } finally {
       if (mounted) {
-        setState(() => _isConfirmingPayment = false);
+        setState(() => _isRefreshingPayment = false);
       }
     }
   }
@@ -420,11 +420,10 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
               createdPayment: _createdPayment,
               feedback: _paymentFeedback,
               canRegisterPayment: _canRegisterPayment,
-              canConfirmSandboxPayment: widget.isInstitutionView,
               isCreatingPayment: _isCreatingPayment,
-              isConfirmingPayment: _isConfirmingPayment,
+              isRefreshingPayment: _isRefreshingPayment,
               onRegisterPayment: _registerPayment,
-              onConfirmSandboxPayment: _confirmSandboxPayment,
+              onRefreshPayment: _refreshPaymentStatus,
               onOpenCheckout: _openCheckout,
             ),
             const SizedBox(height: 14),
@@ -484,11 +483,10 @@ class _PaymentSection extends StatelessWidget {
     required this.createdPayment,
     required this.feedback,
     required this.canRegisterPayment,
-    required this.canConfirmSandboxPayment,
     required this.isCreatingPayment,
-    required this.isConfirmingPayment,
+    required this.isRefreshingPayment,
     required this.onRegisterPayment,
-    required this.onConfirmSandboxPayment,
+    required this.onRefreshPayment,
     required this.onOpenCheckout,
   });
 
@@ -496,11 +494,10 @@ class _PaymentSection extends StatelessWidget {
   final PaymentSummary? createdPayment;
   final String? feedback;
   final bool canRegisterPayment;
-  final bool canConfirmSandboxPayment;
   final bool isCreatingPayment;
-  final bool isConfirmingPayment;
+  final bool isRefreshingPayment;
   final VoidCallback onRegisterPayment;
-  final ValueChanged<PaymentSummary> onConfirmSandboxPayment;
+  final VoidCallback onRefreshPayment;
   final ValueChanged<PaymentSummary> onOpenCheckout;
 
   @override
@@ -551,7 +548,7 @@ class _PaymentSection extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Ambiente sandbox: este fluxo simula checkout e split. O gateway real será conectado após escolha jurídica/financeira.',
+                      'Ambiente Asaas Sandbox: a cobrança e o split são processados no gateway de testes, sem movimentar dinheiro real.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onTertiaryContainer,
                         fontWeight: FontWeight.w700,
@@ -565,9 +562,8 @@ class _PaymentSection extends StatelessWidget {
             if (createdPayment != null)
               _PaymentDetails(
                 payment: createdPayment!,
-                canConfirmSandbox: canConfirmSandboxPayment,
-                isConfirmingPayment: isConfirmingPayment,
-                onConfirmSandboxPayment: onConfirmSandboxPayment,
+                isRefreshingPayment: isRefreshingPayment,
+                onRefreshPayment: onRefreshPayment,
                 onOpenCheckout: onOpenCheckout,
               )
             else if (paymentFuture == null)
@@ -590,15 +586,14 @@ class _PaymentSection extends StatelessWidget {
                   if (payment != null) {
                     return _PaymentDetails(
                       payment: payment,
-                      canConfirmSandbox: canConfirmSandboxPayment,
-                      isConfirmingPayment: isConfirmingPayment,
-                      onConfirmSandboxPayment: onConfirmSandboxPayment,
+                      isRefreshingPayment: isRefreshingPayment,
+                      onRefreshPayment: onRefreshPayment,
                       onOpenCheckout: onOpenCheckout,
                     );
                   }
 
                   return const Text(
-                    'Aguardando pagamento. A instituição pode gerar um checkout sandbox enquanto o gateway real não foi escolhido.',
+                    'Aguardando a instituição gerar a cobrança Pix.',
                   );
                 },
               ),
@@ -622,7 +617,7 @@ class _PaymentSection extends StatelessWidget {
                   label: Text(
                     isCreatingPayment
                         ? 'Registrando pagamento...'
-                        : 'Gerar checkout sandbox',
+                        : 'Gerar cobrança Pix',
                   ),
                 ),
               ),
@@ -637,16 +632,14 @@ class _PaymentSection extends StatelessWidget {
 class _PaymentDetails extends StatelessWidget {
   const _PaymentDetails({
     required this.payment,
-    required this.canConfirmSandbox,
-    required this.isConfirmingPayment,
-    required this.onConfirmSandboxPayment,
+    required this.isRefreshingPayment,
+    required this.onRefreshPayment,
     required this.onOpenCheckout,
   });
 
   final PaymentSummary payment;
-  final bool canConfirmSandbox;
-  final bool isConfirmingPayment;
-  final ValueChanged<PaymentSummary> onConfirmSandboxPayment;
+  final bool isRefreshingPayment;
+  final VoidCallback onRefreshPayment;
   final ValueChanged<PaymentSummary> onOpenCheckout;
 
   @override
@@ -667,6 +660,33 @@ class _PaymentDetails extends StatelessWidget {
           value: payment.netAmountLabel,
         ),
         _DetailRow(label: 'Data', value: payment.paidAtLabel),
+        if (payment.hasPixCopyPaste) ...[
+          const SizedBox(height: 12),
+          SelectableText(
+            payment.pixCopyPaste!,
+            maxLines: 3,
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(
+                  ClipboardData(text: payment.pixCopyPaste!),
+                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Código Pix copiado.'),
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.copy_rounded),
+              label: const Text('Copiar código Pix'),
+            ),
+          ),
+        ],
         if (payment.hasCheckout) ...[
           const SizedBox(height: 12),
           SizedBox(
@@ -674,27 +694,23 @@ class _PaymentDetails extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: () => onOpenCheckout(payment),
               icon: const Icon(Icons.open_in_new_rounded),
-              label: const Text('Abrir checkout sandbox'),
+              label: const Text('Abrir fatura Asaas'),
             ),
           ),
         ],
-        if (canConfirmSandbox && !payment.isPaid) ...[
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: isConfirmingPayment
-                  ? null
-                  : () => onConfirmSandboxPayment(payment),
-              icon: const Icon(Icons.verified_rounded),
-              label: Text(
-                isConfirmingPayment
-                    ? 'Confirmando pagamento...'
-                    : 'Confirmar pagamento sandbox',
-              ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: isRefreshingPayment ? null : onRefreshPayment,
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(
+              isRefreshingPayment
+                  ? 'Atualizando pagamento...'
+                  : 'Atualizar pagamento',
             ),
           ),
-        ],
+        ),
       ],
     );
   }

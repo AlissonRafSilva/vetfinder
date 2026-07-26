@@ -17,26 +17,7 @@ class PaymentsRepository {
       accessToken: accessToken,
       body: {
         'engagementId': engagementId,
-        'provider': 'sandbox-split',
       },
-    );
-
-    final payment = response['payment'];
-    if (payment is! Map<String, dynamic>) {
-      throw const ApiException('Pagamento retornado pela API e invalido.');
-    }
-
-    return PaymentSummary.fromJson(payment);
-  }
-
-  Future<PaymentSummary> confirmSandboxPayment({
-    required String accessToken,
-    required String paymentId,
-  }) async {
-    final response = await _apiClient.patchJson(
-      '/payments/$paymentId/confirm-sandbox',
-      accessToken: accessToken,
-      body: const {},
     );
 
     final payment = response['payment'];

@@ -11,6 +11,7 @@ class PaymentSummary {
     required this.paidAtLabel,
     required this.checkoutUrl,
     required this.providerStatusLabel,
+    required this.pixCopyPaste,
   });
 
   final String id;
@@ -22,11 +23,19 @@ class PaymentSummary {
   final String paidAtLabel;
   final String? checkoutUrl;
   final String providerStatusLabel;
+  final String? pixCopyPaste;
 
   bool get isPaid => statusLabel == 'Pago';
   bool get hasCheckout => checkoutUrl != null && checkoutUrl!.isNotEmpty;
+  bool get isAsaas => providerLabel.toLowerCase() == 'asaas';
+  bool get hasPixCopyPaste =>
+      pixCopyPaste != null && pixCopyPaste!.trim().isNotEmpty;
 
   factory PaymentSummary.fromJson(Map<String, dynamic> json) {
+    final providerPayload = json['providerPayload'];
+    final pixCopyPaste = providerPayload is Map<String, dynamic>
+        ? providerPayload['pixCopyPaste']?.toString()
+        : null;
     return PaymentSummary(
       id: json['id']?.toString() ?? '',
       statusLabel: _statusLabel(json['status']?.toString() ?? ''),
@@ -39,6 +48,7 @@ class PaymentSummary {
       checkoutUrl: json['checkoutUrl']?.toString(),
       providerStatusLabel:
           _providerStatusLabel(json['providerStatus']?.toString() ?? ''),
+      pixCopyPaste: pixCopyPaste,
     );
   }
 
@@ -65,6 +75,18 @@ class PaymentSummary {
         return 'Checkout criado';
       case 'PAID_SANDBOX':
         return 'Pago no sandbox';
+      case 'PENDING':
+        return 'Aguardando pagamento';
+      case 'CONFIRMED':
+        return 'Pagamento confirmado';
+      case 'RECEIVED':
+        return 'Pagamento recebido';
+      case 'OVERDUE':
+        return 'Cobrança vencida';
+      case 'REFUNDED':
+        return 'Pagamento estornado';
+      case 'CREATE_FAILED':
+        return 'Falha ao gerar cobrança';
       default:
         return status.isEmpty ? 'Sem retorno do provedor' : status;
     }

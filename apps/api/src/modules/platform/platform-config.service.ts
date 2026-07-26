@@ -22,7 +22,7 @@ export class PlatformConfigService {
     return this.roundMoney(grossAmount - platformFeeAmount);
   }
 
-  private getPlatformFeeRate() {
+  getPlatformFeeRate() {
     const rawRate = this.configService.get<string>('PLATFORM_FEE_RATE');
     const parsedRate = Number(rawRate ?? '0.03');
 

@@ -9,7 +9,7 @@ class ApiClient {
     http.Client? httpClient,
   }) : _httpClient = httpClient ?? http.Client();
 
-  static const _requestTimeout = Duration(seconds: 12);
+  static const _requestTimeout = Duration(seconds: 45);
 
   final String baseUrl;
   final http.Client _httpClient;
@@ -50,11 +50,11 @@ class ApiClient {
           .timeout(_requestTimeout);
     } on TimeoutException {
       throw const ApiException(
-        'Tempo esgotado ao conectar com a API. Verifique se o celular está na mesma rede do PC.',
+        'A API demorou para responder. Aguarde alguns segundos e tente novamente.',
       );
     } catch (_) {
       throw const ApiException(
-        'Não foi possível conectar com a API. Verifique o IP do PC, o Wi-Fi e se o backend está ligado.',
+        'Não foi possível conectar com a API. Verifique sua internet e tente novamente.',
       );
     }
 
@@ -80,11 +80,11 @@ class ApiClient {
           .timeout(_requestTimeout);
     } on TimeoutException {
       throw const ApiException(
-        'Tempo esgotado ao conectar com a API. Verifique se o celular está na mesma rede do PC.',
+        'A API demorou para responder. Aguarde alguns segundos e tente novamente.',
       );
     } catch (_) {
       throw const ApiException(
-        'Não foi possível conectar com a API. Verifique o IP do PC, o Wi-Fi e se o backend está ligado.',
+        'Não foi possível conectar com a API. Verifique sua internet e tente novamente.',
       );
     }
 
@@ -115,11 +115,11 @@ class ApiClient {
           .timeout(_requestTimeout);
     } on TimeoutException {
       throw const ApiException(
-        'Tempo esgotado ao conectar com a API. Verifique se o celular está na mesma rede do PC.',
+        'A API demorou para responder. Aguarde alguns segundos e tente novamente.',
       );
     } catch (_) {
       throw const ApiException(
-        'Não foi possível conectar com a API. Verifique o IP do PC, o Wi-Fi e se o backend está ligado.',
+        'Não foi possível conectar com a API. Verifique sua internet e tente novamente.',
       );
     }
 
@@ -150,11 +150,11 @@ class ApiClient {
           .timeout(_requestTimeout);
     } on TimeoutException {
       throw const ApiException(
-        'Tempo esgotado ao conectar com a API. Verifique se o celular está na mesma rede do PC.',
+        'A API demorou para responder. Aguarde alguns segundos e tente novamente.',
       );
     } catch (_) {
       throw const ApiException(
-        'Não foi possível conectar com a API. Verifique o IP do PC, o Wi-Fi e se o backend está ligado.',
+        'Não foi possível conectar com a API. Verifique sua internet e tente novamente.',
       );
     }
 
