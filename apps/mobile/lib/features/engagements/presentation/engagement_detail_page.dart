@@ -297,7 +297,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
   bool get _canRegisterPayment {
     return widget.isInstitutionView &&
         widget.item.statusLabel == 'Aguardando pagamento' &&
-        _createdPayment == null;
+        (_createdPayment == null || _createdPayment!.isFailed);
   }
 
   bool get _canReview {
@@ -617,7 +617,9 @@ class _PaymentSection extends StatelessWidget {
                   label: Text(
                     isCreatingPayment
                         ? 'Registrando pagamento...'
-                        : 'Gerar cobrança Pix',
+                        : createdPayment?.isFailed == true
+                            ? 'Tentar gerar cobrança novamente'
+                            : 'Gerar cobrança Pix',
                   ),
                 ),
               ),

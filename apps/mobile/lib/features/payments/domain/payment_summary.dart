@@ -26,6 +26,7 @@ class PaymentSummary {
   final String? pixCopyPaste;
 
   bool get isPaid => statusLabel == 'Pago';
+  bool get isFailed => statusLabel == 'Falhou';
   bool get hasCheckout => checkoutUrl != null && checkoutUrl!.isNotEmpty;
   bool get isAsaas => providerLabel.toLowerCase() == 'asaas';
   bool get hasPixCopyPaste =>
