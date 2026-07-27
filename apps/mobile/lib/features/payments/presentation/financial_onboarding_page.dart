@@ -32,6 +32,7 @@ class _FinancialOnboardingPageState extends State<FinancialOnboardingPage> {
   Future<AsaasAccountSummary?>? _accountFuture;
   String? _companyType;
   bool _isSubmitting = false;
+  bool _isResetting = false;
   String? _feedback;
 
   bool get _isCompany => _cpfCnpjController.text.length > 11;
@@ -143,6 +144,60 @@ class _FinancialOnboardingPageState extends State<FinancialOnboardingPage> {
     }
   }
 
+  Future<void> _resetSandboxAccount() async {
+    final token = AppSessionScope.of(context).accessToken;
+    if (token == null || _isResetting) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Reiniciar cadastro Sandbox'),
+            content: const Text(
+              'Use esta opção somente quando a subconta de teste já tiver sido excluída no Asaas. O vínculo financeiro local será removido para permitir um novo cadastro.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Reiniciar'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _isResetting = true;
+      _feedback = null;
+    });
+    try {
+      await _repository.resetSandboxAccount(accessToken: token);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _feedback = 'Cadastro Sandbox reiniciado. Preencha os novos dados.';
+        _accountFuture = Future.value(null);
+      });
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() => _feedback = error.message);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isResetting = false);
+      }
+    }
+  }
+
   double _parseIncome(String value) {
     return double.parse(value.replaceAll('.', '').replaceAll(',', '.'));
   }
@@ -175,9 +230,25 @@ class _FinancialOnboardingPageState extends State<FinancialOnboardingPage> {
                 ),
                 const SizedBox(height: 18),
                 if (account != null)
-                  _AccountStatusCard(account: account, onRefresh: _refresh)
+                  _AccountStatusCard(
+                    account: account,
+                    onRefresh: _refresh,
+                    onReset: account.environment == 'SANDBOX'
+                        ? _resetSandboxAccount
+                        : null,
+                    isResetting: _isResetting,
+                  )
                 else
                   _buildForm(),
+                if (_feedback != null && account != null) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    _feedback!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
               ],
             ),
           );
@@ -391,10 +462,17 @@ class _FinancialOnboardingPageState extends State<FinancialOnboardingPage> {
 }
 
 class _AccountStatusCard extends StatelessWidget {
-  const _AccountStatusCard({required this.account, required this.onRefresh});
+  const _AccountStatusCard({
+    required this.account,
+    required this.onRefresh,
+    required this.onReset,
+    required this.isResetting,
+  });
 
   final AsaasAccountSummary account;
   final VoidCallback onRefresh;
+  final VoidCallback? onReset;
+  final bool isResetting;
 
   @override
   Widget build(BuildContext context) {
@@ -444,6 +522,16 @@ class _AccountStatusCard extends StatelessWidget {
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Atualizar status'),
             ),
+            if (onReset != null && !approved) ...[
+              const SizedBox(height: 10),
+              TextButton.icon(
+                onPressed: isResetting ? null : onReset,
+                icon: const Icon(Icons.restart_alt_rounded),
+                label: Text(
+                  isResetting ? 'Reiniciando...' : 'Reiniciar cadastro Sandbox',
+                ),
+              ),
+            ],
           ],
         ),
       ),

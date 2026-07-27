@@ -168,6 +168,39 @@ class ApiClient {
     return decoded;
   }
 
+  Future<Map<String, dynamic>> deleteJson(
+    String path, {
+    String? accessToken,
+  }) async {
+    final uri = Uri.parse('$baseUrl$path');
+    final http.Response response;
+    try {
+      response = await _httpClient
+          .delete(
+            uri,
+            headers: _buildHeaders(accessToken: accessToken),
+          )
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw const ApiException(
+        'A API demorou para responder. Aguarde alguns segundos e tente novamente.',
+      );
+    } catch (_) {
+      throw const ApiException(
+        'Não foi possível conectar com a API. Verifique sua internet e tente novamente.',
+      );
+    }
+
+    _throwIfRequestFailed(response);
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const ApiException('Resposta inesperada da API.');
+    }
+
+    return decoded;
+  }
+
   Map<String, String> _buildHeaders({String? accessToken}) {
     return {
       'Content-Type': 'application/json',

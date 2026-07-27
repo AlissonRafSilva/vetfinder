@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import {
   CurrentUser,
@@ -27,5 +27,10 @@ export class AsaasController {
   @Get('me')
   findMine(@CurrentUser() user: AuthenticatedUser) {
     return this.accountsService.findMine(user);
+  }
+
+  @Delete('me')
+  resetMine(@CurrentUser() user: AuthenticatedUser) {
+    return this.accountsService.resetMine(user);
   }
 }

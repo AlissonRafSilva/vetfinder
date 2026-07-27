@@ -9,6 +9,7 @@ import {
   AsaasEnvironment,
   AsaasOnboardingStatus,
   Prisma,
+  SplitStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
@@ -125,6 +126,65 @@ export class AsaasAccountsService {
     }
 
     return account;
+  }
+
+  async resetMine(authenticatedUser: AuthenticatedUser) {
+    const environment = this.getEnvironment();
+    if (environment !== AsaasEnvironment.SANDBOX) {
+      throw new BadRequestException(
+        'A reinicializacao da conta financeira so esta disponivel no Sandbox.',
+      );
+    }
+
+    const account = await this.prisma.asaasAccount.findUnique({
+      where: {
+        userId_environment: {
+          userId: authenticatedUser.userId,
+          environment,
+        },
+      },
+    });
+    if (!account) {
+      throw new NotFoundException('Cadastro financeiro nao encontrado.');
+    }
+
+    const pendingSplits = await this.prisma.paymentSplit.count({
+      where: {
+        recipientId: authenticatedUser.userId,
+        status: {
+          in: [SplitStatus.PENDING, SplitStatus.SCHEDULED],
+        },
+      },
+    });
+    if (pendingSplits > 0) {
+      throw new ConflictException(
+        'Existem pagamentos pendentes para esta carteira. O cadastro nao pode ser reiniciado.',
+      );
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.auditLog.create({
+        data: {
+          actorUserId: authenticatedUser.userId,
+          actorType: 'USER',
+          action: 'ASAAS_SANDBOX_ACCOUNT_RESET',
+          entityType: 'ASAAS_ACCOUNT',
+          entityId: account.id,
+          metadataJson: {
+            environment,
+            previousAccountStatus: account.accountStatus,
+            previousOnboardingStatus: account.onboardingStatus,
+          },
+        },
+      }),
+      this.prisma.asaasAccount.delete({
+        where: { id: account.id },
+      }),
+    ]);
+
+    return {
+      message: 'Cadastro financeiro Sandbox reiniciado com sucesso.',
+    };
   }
 
   private getEnvironment() {

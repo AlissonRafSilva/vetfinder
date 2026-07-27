@@ -37,4 +37,13 @@ class AsaasAccountsRepository {
     );
     return AsaasAccountSummary.fromJson(response);
   }
+
+  Future<void> resetSandboxAccount({
+    required String accessToken,
+  }) async {
+    await _apiClient.deleteJson(
+      '/payments/asaas/accounts/me',
+      accessToken: accessToken,
+    );
+  }
 }
