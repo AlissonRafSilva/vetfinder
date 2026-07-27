@@ -51,6 +51,10 @@ type AsaasSubaccountResponse = {
   apiKey?: string;
 };
 
+type AsaasAccountStatusResponse = {
+  general?: string;
+};
+
 type AsaasCustomerResponse = {
   id: string;
 };
@@ -133,7 +137,11 @@ export class AsaasService implements OnModuleInit {
 
   async createSubaccount(
     input: CreateAsaasSubaccountInput,
-  ): Promise<Pick<AsaasSubaccountResponse, 'id' | 'walletId'>> {
+  ): Promise<
+    Pick<AsaasSubaccountResponse, 'id' | 'walletId'> & {
+      generalStatus?: string;
+    }
+  > {
     const response = await fetch(`${this.getApiUrl()}/accounts`, {
       method: 'POST',
       headers: this.getHeaders(),
@@ -170,8 +178,15 @@ export class AsaasService implements OnModuleInit {
       );
     }
 
-    // A apiKey da subconta pode vir na resposta, mas nao deve ser persistida.
-    return { id: account.id, walletId: account.walletId };
+    // A apiKey e usada apenas em memoria para a consulta inicial e nunca e persistida.
+    const initialStatus = account.apiKey
+      ? await this.getInitialAccountStatus(account.apiKey)
+      : undefined;
+    return {
+      id: account.id,
+      walletId: account.walletId,
+      generalStatus: initialStatus?.general,
+    };
   }
 
   async ensureCustomer(
@@ -361,6 +376,40 @@ export class AsaasService implements OnModuleInit {
         'PAYMENT_SPLIT_DIVERGENCE_BLOCK_FINISHED',
       ],
     };
+  }
+
+  private async getInitialAccountStatus(apiKey: string) {
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      if (attempt > 1) {
+        await new Promise((resolve) => setTimeout(resolve, 2_000));
+      }
+
+      try {
+        const response = await fetch(`${this.getApiUrl()}/myAccount/status/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            access_token: apiKey,
+            'User-Agent': 'VetFinder/0.1',
+          },
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (!response.ok) {
+          continue;
+        }
+
+        const status =
+          (await response.json()) as AsaasAccountStatusResponse;
+        if (status.general) {
+          return status;
+        }
+      } catch {
+        // O webhook permanece como fonte de atualizacoes caso a consulta falhe.
+      }
+    }
+
+    return undefined;
   }
 
   private async request<T>(

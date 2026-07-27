@@ -67,7 +67,11 @@ export class AsaasAccountsService {
       throw error;
     }
 
-    let providerAccount: { id: string; walletId: string };
+    let providerAccount: {
+      id: string;
+      walletId: string;
+      generalStatus?: string;
+    };
     try {
       providerAccount = await this.asaasService.createSubaccount({
         name: user.profile.fullName,
@@ -85,13 +89,18 @@ export class AsaasAccountsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      const approved = providerAccount.generalStatus === 'APPROVED';
       const account = await tx.asaasAccount.update({
         where: { id: pendingAccount.id },
         data: {
           asaasAccountId: providerAccount.id,
           asaasWalletId: providerAccount.walletId,
-          accountStatus: AsaasAccountStatus.PENDING,
-          onboardingStatus: AsaasOnboardingStatus.UNDER_REVIEW,
+          accountStatus: approved
+            ? AsaasAccountStatus.ACTIVE
+            : AsaasAccountStatus.PENDING,
+          onboardingStatus: approved
+            ? AsaasOnboardingStatus.APPROVED
+            : AsaasOnboardingStatus.UNDER_REVIEW,
           lastSynchronizedAt: new Date(),
         },
       });
