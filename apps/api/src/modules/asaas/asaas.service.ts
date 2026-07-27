@@ -96,6 +96,12 @@ export class AsaasService implements OnModuleInit {
     const webhookToken = this.configService
       .get<string>('ASAAS_WEBHOOK_TOKEN')
       ?.trim();
+    const webhookUrl = this.configService
+      .get<string>('ASAAS_WEBHOOK_URL')
+      ?.trim();
+    const webhookEmail = this.configService
+      .get<string>('ASAAS_WEBHOOK_EMAIL')
+      ?.trim();
     const apiUrl = this.getApiUrl();
 
     if (!apiKey) {
@@ -106,6 +112,14 @@ export class AsaasService implements OnModuleInit {
       throw new Error(
         'ASAAS_WEBHOOK_TOKEN precisa ter pelo menos 32 caracteres.',
       );
+    }
+
+    if (!webhookUrl || !webhookUrl.startsWith('https://')) {
+      throw new Error('ASAAS_WEBHOOK_URL precisa usar HTTPS.');
+    }
+
+    if (!webhookEmail || !webhookEmail.includes('@')) {
+      throw new Error('ASAAS_WEBHOOK_EMAIL precisa ser um e-mail valido.');
     }
 
     if (!apiUrl.startsWith('https://')) {
@@ -123,7 +137,10 @@ export class AsaasService implements OnModuleInit {
     const response = await fetch(`${this.getApiUrl()}/accounts`, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        ...input,
+        webhooks: [this.getSubaccountWebhook()],
+      }),
       signal: AbortSignal.timeout(30_000),
     });
     const payload = (await response.json().catch(() => ({}))) as
@@ -290,6 +307,59 @@ export class AsaasService implements OnModuleInit {
       Accept: 'application/json',
       access_token: apiKey,
       'User-Agent': 'VetFinder/0.1',
+    };
+  }
+
+  private getSubaccountWebhook() {
+    const url = this.configService.get<string>('ASAAS_WEBHOOK_URL')?.trim();
+    const email = this.configService
+      .get<string>('ASAAS_WEBHOOK_EMAIL')
+      ?.trim();
+    const authToken = this.configService
+      .get<string>('ASAAS_WEBHOOK_TOKEN')
+      ?.trim();
+    if (!url || !email || !authToken) {
+      throw new Error('Configuracao do webhook Asaas incompleta.');
+    }
+
+    return {
+      name: 'VetFinder - conta e pagamentos',
+      url,
+      email,
+      sendType: 'SEQUENTIALLY',
+      interrupted: false,
+      enabled: true,
+      apiVersion: 3,
+      authToken,
+      events: [
+        'ACCOUNT_STATUS_BANK_ACCOUNT_INFO_APPROVED',
+        'ACCOUNT_STATUS_BANK_ACCOUNT_INFO_AWAITING_APPROVAL',
+        'ACCOUNT_STATUS_BANK_ACCOUNT_INFO_PENDING',
+        'ACCOUNT_STATUS_BANK_ACCOUNT_INFO_REJECTED',
+        'ACCOUNT_STATUS_COMMERCIAL_INFO_APPROVED',
+        'ACCOUNT_STATUS_COMMERCIAL_INFO_AWAITING_APPROVAL',
+        'ACCOUNT_STATUS_COMMERCIAL_INFO_PENDING',
+        'ACCOUNT_STATUS_COMMERCIAL_INFO_REJECTED',
+        'ACCOUNT_STATUS_DOCUMENT_APPROVED',
+        'ACCOUNT_STATUS_DOCUMENT_AWAITING_APPROVAL',
+        'ACCOUNT_STATUS_DOCUMENT_PENDING',
+        'ACCOUNT_STATUS_DOCUMENT_REJECTED',
+        'ACCOUNT_STATUS_GENERAL_APPROVAL_APPROVED',
+        'ACCOUNT_STATUS_GENERAL_APPROVAL_AWAITING_APPROVAL',
+        'ACCOUNT_STATUS_GENERAL_APPROVAL_PENDING',
+        'ACCOUNT_STATUS_GENERAL_APPROVAL_REJECTED',
+        'PAYMENT_CREATED',
+        'PAYMENT_UPDATED',
+        'PAYMENT_CONFIRMED',
+        'PAYMENT_RECEIVED',
+        'PAYMENT_OVERDUE',
+        'PAYMENT_DELETED',
+        'PAYMENT_REFUNDED',
+        'PAYMENT_PARTIALLY_REFUNDED',
+        'PAYMENT_SPLIT_CANCELLED',
+        'PAYMENT_SPLIT_DIVERGENCE_BLOCK',
+        'PAYMENT_SPLIT_DIVERGENCE_BLOCK_FINISHED',
+      ],
     };
   }
 
