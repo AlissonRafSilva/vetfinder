@@ -522,7 +522,7 @@ class _AccountStatusCard extends StatelessWidget {
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Atualizar status'),
             ),
-            if (onReset != null && !approved) ...[
+            if (onReset != null) ...[
               const SizedBox(height: 10),
               TextButton.icon(
                 onPressed: isResetting ? null : onReset,
