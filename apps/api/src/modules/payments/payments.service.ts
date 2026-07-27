@@ -7,6 +7,7 @@ import {
 import {
   AsaasAccountStatus,
   AsaasEnvironment,
+  AsaasOnboardingStatus,
   EngagementStatus,
   PaymentStatus,
   Prisma,
@@ -176,7 +177,10 @@ export class PaymentsService {
 
     if (
       !professionalAccount?.asaasWalletId ||
-      professionalAccount.accountStatus !== AsaasAccountStatus.ACTIVE
+      professionalAccount.onboardingStatus !==
+        AsaasOnboardingStatus.APPROVED ||
+      professionalAccount.accountStatus === AsaasAccountStatus.BLOCKED ||
+      professionalAccount.accountStatus === AsaasAccountStatus.REJECTED
     ) {
       throw new ConflictException(
         'O profissional precisa ter uma conta Asaas aprovada antes da cobranca.',
