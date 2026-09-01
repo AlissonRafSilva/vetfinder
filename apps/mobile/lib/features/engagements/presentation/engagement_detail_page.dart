@@ -548,7 +548,7 @@ class _PaymentSection extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Ambiente Asaas Sandbox: a cobrança e o split são processados no gateway de testes, sem movimentar dinheiro real.',
+                      'Ambiente Asaas Sandbox: a cobrança e o split são processados no gateway de testes, sem movimentar dinheiro real. O split percentual é calculado pelo Asaas após a tarifa do gateway.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onTertiaryContainer,
                         fontWeight: FontWeight.w700,
@@ -656,11 +656,21 @@ class _PaymentDetails extends StatelessWidget {
           value: payment.providerStatusLabel,
         ),
         _DetailRow(label: 'Valor bruto', value: payment.grossAmountLabel),
-        _DetailRow(label: 'Split plataforma', value: payment.platformFeeLabel),
         _DetailRow(
-          label: 'Split profissional',
+          label: 'Comissão VetFinder (3%)',
+          value: payment.platformFeeLabel,
+        ),
+        _DetailRow(
+          label: 'Valor contratado do profissional',
           value: payment.netAmountLabel,
         ),
+        if (payment.isAsaas)
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Text(
+              'O valor efetivo do split é apurado pelo Asaas sobre o líquido da cobrança, após a tarifa do gateway.',
+            ),
+          ),
         _DetailRow(label: 'Data', value: payment.paidAtLabel),
         if (payment.hasPixCopyPaste) ...[
           const SizedBox(height: 12),
