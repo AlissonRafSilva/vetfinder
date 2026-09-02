@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { UserRole, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
@@ -125,7 +125,11 @@ export class ProfessionalsService {
     };
   }
 
-  async findByUserId(userId: string) {
+  async findByUserId(userId: string, currentUser: AuthenticatedUser) {
+    if (currentUser.userId !== userId && currentUser.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Este perfil detalhado pertence a outro usuario.');
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {

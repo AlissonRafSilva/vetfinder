@@ -27,8 +27,12 @@ export class ProfessionalsController {
     return this.professionalsService.createInternProfile(dto, user);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':userId')
-  findProfessionalProfile(@Param('userId') userId: string) {
-    return this.professionalsService.findByUserId(userId);
+  findProfessionalProfile(
+    @Param('userId') userId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.professionalsService.findByUserId(userId, user);
   }
 }

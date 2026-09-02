@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { UserRole } from '@prisma/client';
+import { AccountStatus, UserRole } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthTokenPayload } from './auth.tokens';
@@ -30,7 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       },
     });
 
-    if (!user) {
+    if (!user || user.status === AccountStatus.SUSPENDED) {
       throw new UnauthorizedException('Usuario autenticado nao encontrado.');
     }
 

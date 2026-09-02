@@ -9,8 +9,12 @@ class ProfileRepository {
 
   Future<Map<String, dynamic>> fetchProfessionalProfile({
     required String userId,
+    required String accessToken,
   }) {
-    return _apiClient.getJson('/professionals/$userId');
+    return _apiClient.getJsonWithToken(
+      '/professionals/$userId',
+      accessToken: accessToken,
+    );
   }
 
   Future<Map<String, dynamic>> fetchMyInstitutionProfile({

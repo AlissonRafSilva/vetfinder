@@ -207,6 +207,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       final professional = await _profileRepository.fetchProfessionalProfile(
         userId: session.userId!,
+        accessToken: session.accessToken!,
       );
 
       if (!mounted) {
