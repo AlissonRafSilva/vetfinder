@@ -12,6 +12,7 @@ import '../../documents/data/documents_repository.dart';
 import '../../documents/domain/document_summary.dart';
 import '../../payments/presentation/financial_onboarding_page.dart';
 import '../data/profile_repository.dart';
+import 'security_privacy_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -555,6 +556,14 @@ class _ProfilePageState extends State<ProfilePage> {
               status: session.status,
             ),
             const SizedBox(height: 18),
+            _SecurityPrivacyCard(
+              onOpen: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const SecurityPrivacyPage(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
             _ValidationGuidanceCard(
               isInstitution: isInstitution,
               roleValue: session.roleValue,
@@ -753,6 +762,62 @@ class _FinancialOnboardingCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     const Text(
                       'Configure sua carteira Asaas para receber plantões com split automático.',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SecurityPrivacyCard extends StatelessWidget {
+  const _SecurityPrivacyCard({required this.onOpen});
+
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(26),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(17),
+                ),
+                child: Icon(
+                  Icons.shield_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Segurança e privacidade',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    const Text(
+                      'Altere a senha, exporte seus dados ou encerre sua conta.',
                     ),
                   ],
                 ),

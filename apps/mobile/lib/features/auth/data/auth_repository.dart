@@ -43,6 +43,22 @@ class AuthRepository {
     return AuthResult.fromLoginJson(response);
   }
 
+  Future<String> changePassword({
+    required String accessToken,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await _apiClient.postJson(
+      '/auth/change-password',
+      accessToken: accessToken,
+      body: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      },
+    );
+    return response['message']?.toString() ?? 'Senha atualizada com sucesso.';
+  }
+
   Future<AuthResult> fetchCurrentUser({
     required String accessToken,
     required AuthResult currentSession,
