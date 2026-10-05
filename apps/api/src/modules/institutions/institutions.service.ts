@@ -108,6 +108,10 @@ export class InstitutionsService {
     currentAddressId?: string | null,
   ) {
     const hasLocationData =
+      Boolean(dto.street?.trim()) ||
+      Boolean(dto.number?.trim()) ||
+      Boolean(dto.district?.trim()) ||
+      Boolean(dto.zipCode?.trim()) ||
       Boolean(dto.city?.trim()) ||
       Boolean(dto.state?.trim()) ||
       dto.lat != null ||
@@ -118,6 +122,11 @@ export class InstitutionsService {
     }
 
     const data = {
+      street: dto.street?.trim() || undefined,
+      number: dto.number?.trim() || undefined,
+      complement: dto.complement?.trim() || undefined,
+      district: dto.district?.trim() || undefined,
+      zipCode: dto.zipCode?.trim() || undefined,
       city: dto.city?.trim() || undefined,
       state: dto.state?.trim().toUpperCase() || undefined,
       country: 'BR',

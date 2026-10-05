@@ -54,6 +54,11 @@ export class ProfessionalsService {
       userId: currentUser.userId,
       email: user.email,
       existingProfile: user.profile,
+      street: dto.street,
+      number: dto.number,
+      complement: dto.complement,
+      district: dto.district,
+      zipCode: dto.zipCode,
       city: dto.city,
       state: dto.state,
       lat: dto.lat,
@@ -111,6 +116,11 @@ export class ProfessionalsService {
       userId: currentUser.userId,
       email: user.email,
       existingProfile: user.profile,
+      street: dto.street,
+      number: dto.number,
+      complement: dto.complement,
+      district: dto.district,
+      zipCode: dto.zipCode,
       city: dto.city,
       state: dto.state,
       lat: dto.lat,
@@ -163,12 +173,21 @@ export class ProfessionalsService {
     userId: string;
     email: string;
     existingProfile: { id: string; addressId: string | null; fullName: string } | null;
+    street?: string;
+    number?: string;
+    complement?: string;
+    district?: string;
+    zipCode?: string;
     city?: string;
     state?: string;
     lat?: number;
     lng?: number;
   }) {
     const hasLocationData =
+      Boolean(input.street?.trim()) ||
+      Boolean(input.number?.trim()) ||
+      Boolean(input.district?.trim()) ||
+      Boolean(input.zipCode?.trim()) ||
       Boolean(input.city?.trim()) ||
       Boolean(input.state?.trim()) ||
       input.lat != null ||
@@ -179,6 +198,11 @@ export class ProfessionalsService {
     }
 
     const addressData = {
+      street: input.street?.trim() || undefined,
+      number: input.number?.trim() || undefined,
+      complement: input.complement?.trim() || undefined,
+      district: input.district?.trim() || undefined,
+      zipCode: input.zipCode?.trim() || undefined,
       city: input.city?.trim() || undefined,
       state: input.state?.trim().toUpperCase() || undefined,
       country: 'BR',

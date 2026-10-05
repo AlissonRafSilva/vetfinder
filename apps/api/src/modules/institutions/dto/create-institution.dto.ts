@@ -41,6 +41,31 @@ export class CreateInstitutionDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  street?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  number?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  complement?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  district?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  zipCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
   city?: string;
 
   @IsOptional()
