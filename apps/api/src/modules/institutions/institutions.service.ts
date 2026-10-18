@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRole, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
+import { UpdateProfileAddressDto } from '../../common/dto/update-profile-address.dto';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
 import { CreateInstitutionDto } from './dto/create-institution.dto';
 
@@ -81,6 +82,53 @@ export class InstitutionsService {
     }
 
     return institution;
+  }
+
+  async updateMyAddress(dto: UpdateProfileAddressDto, currentUser: AuthenticatedUser) {
+    if (currentUser.role !== UserRole.CLINIC && currentUser.role !== UserRole.HOSPITAL) {
+      throw new NotFoundException('Usuario nao possui perfil institucional.');
+    }
+
+    const institution = await this.prisma.institution.findUnique({
+      where: { userId: currentUser.userId },
+      select: { addressId: true },
+    });
+    if (!institution) {
+      throw new NotFoundException('Instituicao nao encontrada para este usuario.');
+    }
+
+    const addressData = {
+      street: dto.street !== undefined ? dto.street.trim() || null : undefined,
+      number: dto.number !== undefined ? dto.number.trim() || null : undefined,
+      complement:
+        dto.complement !== undefined ? dto.complement.trim() || null : undefined,
+      district:
+        dto.district !== undefined ? dto.district.trim() || null : undefined,
+      zipCode:
+        dto.zipCode !== undefined ? dto.zipCode.trim() || null : undefined,
+      city: dto.city !== undefined ? dto.city.trim() || null : undefined,
+      state:
+        dto.state !== undefined
+          ? dto.state.trim().toUpperCase() || null
+          : undefined,
+      country: 'BR',
+      lat: dto.lat,
+      lng: dto.lng,
+    };
+
+    const address = institution.addressId
+      ? await this.prisma.address.update({
+          where: { id: institution.addressId },
+          data: addressData,
+        })
+      : await this.prisma.address.create({ data: addressData });
+
+    await this.prisma.institution.update({
+      where: { userId: currentUser.userId },
+      data: { addressId: address.id },
+    });
+
+    return { message: 'Endereco atualizado com sucesso.', address };
   }
 
   async findById(id: string) {

@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { UserRole, VerificationStatus } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
+import { UpdateProfileAddressDto } from '../../common/dto/update-profile-address.dto';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
 import { CreateInternProfileDto } from './dto/create-intern-profile.dto';
 import { CreateVeterinarianProfileDto } from './dto/create-veterinarian-profile.dto';
@@ -167,6 +168,74 @@ export class ProfessionalsService {
     }
 
     return user;
+  }
+
+  async updateMyAddress(dto: UpdateProfileAddressDto, currentUser: AuthenticatedUser) {
+    if (
+      currentUser.role !== UserRole.VETERINARIAN &&
+      currentUser.role !== UserRole.INTERN
+    ) {
+      throw new ForbiddenException('Este usuario nao possui endereco profissional.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: currentUser.userId },
+      select: {
+        id: true,
+        email: true,
+        profile: { select: { addressId: true } },
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('Usuario nao encontrado.');
+    }
+
+    const addressData = {
+      street: dto.street !== undefined ? dto.street.trim() || null : undefined,
+      number: dto.number !== undefined ? dto.number.trim() || null : undefined,
+      complement:
+        dto.complement !== undefined ? dto.complement.trim() || null : undefined,
+      district:
+        dto.district !== undefined ? dto.district.trim() || null : undefined,
+      zipCode:
+        dto.zipCode !== undefined ? dto.zipCode.trim() || null : undefined,
+      city: dto.city !== undefined ? dto.city.trim() || null : undefined,
+      state:
+        dto.state !== undefined
+          ? dto.state.trim().toUpperCase() || null
+          : undefined,
+      country: 'BR',
+      lat: dto.lat,
+      lng: dto.lng,
+    };
+
+    const address = user.profile?.addressId
+      ? await this.prisma.address.update({
+          where: { id: user.profile.addressId },
+          data: addressData,
+        })
+      : await this.prisma.address.create({ data: addressData });
+
+    await this.prisma.profile.upsert({
+      where: { userId: user.id },
+      update: {
+        city: dto.city !== undefined ? dto.city.trim() || null : undefined,
+        state:
+          dto.state !== undefined
+            ? dto.state.trim().toUpperCase() || null
+            : undefined,
+        addressId: address.id,
+      },
+      create: {
+        userId: user.id,
+        fullName: user.email.split('@')[0],
+        city: dto.city?.trim() || null,
+        state: dto.state?.trim().toUpperCase() || null,
+        addressId: address.id,
+      },
+    });
+
+    return { message: 'Endereco atualizado com sucesso.', address };
   }
 
   private async upsertBaseProfileLocation(input: {

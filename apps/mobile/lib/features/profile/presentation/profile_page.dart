@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../core/location/current_location_service.dart';
 import '../../../core/network/api_client.dart';
@@ -34,6 +37,13 @@ class _ProfilePageState extends State<ProfilePage> {
   final _vetDistanceController = TextEditingController();
   final _profileLatController = TextEditingController();
   final _profileLngController = TextEditingController();
+  final _addressStreetController = TextEditingController();
+  final _addressNumberController = TextEditingController();
+  final _addressComplementController = TextEditingController();
+  final _addressDistrictController = TextEditingController();
+  final _addressZipCodeController = TextEditingController();
+  final _addressCityController = TextEditingController();
+  final _addressStateController = TextEditingController();
   bool _vetEmergencyCare = true;
   bool _vetCanTravel = true;
 
@@ -69,6 +79,13 @@ class _ProfilePageState extends State<ProfilePage> {
     _vetDistanceController.dispose();
     _profileLatController.dispose();
     _profileLngController.dispose();
+    _addressStreetController.dispose();
+    _addressNumberController.dispose();
+    _addressComplementController.dispose();
+    _addressDistrictController.dispose();
+    _addressZipCodeController.dispose();
+    _addressCityController.dispose();
+    _addressStateController.dispose();
     _internUniversityController.dispose();
     _internPeriodController.dispose();
     _internGraduationController.dispose();
@@ -142,6 +159,11 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _feedbackMessage = 'Status da conta atualizado.';
         _isFeedbackError = false;
+        if (session.accessToken != null) {
+          _documentsFuture = _documentsRepository.fetchMine(
+            accessToken: session.accessToken!,
+          );
+        }
       });
     } on ApiException catch (error) {
       if (!mounted) {
@@ -202,6 +224,7 @@ class _ProfilePageState extends State<ProfilePage> {
           final address = institution['address'] as Map<String, dynamic>?;
           _profileLatController.text = address?['lat']?.toString() ?? '';
           _profileLngController.text = address?['lng']?.toString() ?? '';
+          _setAddressFields(address);
         });
         return;
       }
@@ -224,6 +247,7 @@ class _ProfilePageState extends State<ProfilePage> {
         final address = baseProfile?['address'] as Map<String, dynamic>?;
         _profileLatController.text = address?['lat']?.toString() ?? '';
         _profileLngController.text = address?['lng']?.toString() ?? '';
+        _setAddressFields(address);
 
         if (veterinarianProfile != null) {
           _vetCrmvController.text =
@@ -262,6 +286,13 @@ class _ProfilePageState extends State<ProfilePage> {
     _vetDistanceController.clear();
     _profileLatController.clear();
     _profileLngController.clear();
+    _addressStreetController.clear();
+    _addressNumberController.clear();
+    _addressComplementController.clear();
+    _addressDistrictController.clear();
+    _addressZipCodeController.clear();
+    _addressCityController.clear();
+    _addressStateController.clear();
     _vetEmergencyCare = true;
     _vetCanTravel = true;
     _internUniversityController.clear();
@@ -277,6 +308,17 @@ class _ProfilePageState extends State<ProfilePage> {
     _locationFeedback = null;
     _feedbackMessage = null;
     _isFeedbackError = false;
+  }
+
+  void _setAddressFields(Map<String, dynamic>? address) {
+    _addressStreetController.text = address?['street']?.toString() ?? '';
+    _addressNumberController.text = address?['number']?.toString() ?? '';
+    _addressComplementController.text =
+        address?['complement']?.toString() ?? '';
+    _addressDistrictController.text = address?['district']?.toString() ?? '';
+    _addressZipCodeController.text = address?['zipCode']?.toString() ?? '';
+    _addressCityController.text = address?['city']?.toString() ?? '';
+    _addressStateController.text = address?['state']?.toString() ?? '';
   }
 
   String _dateOnly(String? value) {
@@ -309,6 +351,13 @@ class _ProfilePageState extends State<ProfilePage> {
         maxDistanceKm: _vetDistanceController.text,
         latitude: _profileLatController.text,
         longitude: _profileLngController.text,
+        street: _addressStreetController.text,
+        number: _addressNumberController.text,
+        complement: _addressComplementController.text,
+        district: _addressDistrictController.text,
+        zipCode: _addressZipCodeController.text,
+        city: _addressCityController.text,
+        state: _addressStateController.text,
       );
     });
   }
@@ -323,6 +372,13 @@ class _ProfilePageState extends State<ProfilePage> {
         expectedGraduationDate: _internGraduationController.text,
         latitude: _profileLatController.text,
         longitude: _profileLngController.text,
+        street: _addressStreetController.text,
+        number: _addressNumberController.text,
+        complement: _addressComplementController.text,
+        district: _addressDistrictController.text,
+        zipCode: _addressZipCodeController.text,
+        city: _addressCityController.text,
+        state: _addressStateController.text,
       );
     });
   }
@@ -344,7 +400,38 @@ class _ProfilePageState extends State<ProfilePage> {
         contactPhone: _contactPhoneController.text,
         latitude: _profileLatController.text,
         longitude: _profileLngController.text,
+        street: _addressStreetController.text,
+        number: _addressNumberController.text,
+        complement: _addressComplementController.text,
+        district: _addressDistrictController.text,
+        zipCode: _addressZipCodeController.text,
+        city: _addressCityController.text,
+        state: _addressStateController.text,
       );
+    });
+  }
+
+  Future<void> _saveAddress() async {
+    final session = AppSessionScope.of(context);
+    await _runSave(() async {
+      final response = await _profileRepository.updateMyAddress(
+        accessToken: session.accessToken!,
+        isInstitution: session.isInstitutionUser,
+        street: _addressStreetController.text,
+        number: _addressNumberController.text,
+        complement: _addressComplementController.text,
+        district: _addressDistrictController.text,
+        zipCode: _addressZipCodeController.text,
+        city: _addressCityController.text,
+        state: _addressStateController.text,
+        latitude: _profileLatController.text,
+        longitude: _profileLngController.text,
+      );
+      final address = response['address'] as Map<String, dynamic>?;
+      if (address != null) {
+        _setAddressFields(address);
+      }
+      return response['message']?.toString() ?? 'Endereço atualizado.';
     });
   }
 
@@ -364,12 +451,27 @@ class _ProfilePageState extends State<ProfilePage> {
         return;
       }
 
+      void fillIfAvailable(TextEditingController controller, String? value) {
+        if (value != null && value.trim().isNotEmpty) {
+          controller.text = value.trim();
+        }
+      }
+
       setState(() {
         if (result.location != null) {
           _profileLatController.text =
               result.location!.latitude.toStringAsFixed(6);
           _profileLngController.text =
               result.location!.longitude.toStringAsFixed(6);
+        }
+        final address = result.address;
+        if (address != null) {
+          fillIfAvailable(_addressZipCodeController, address.zipCode);
+          fillIfAvailable(_addressStreetController, address.street);
+          fillIfAvailable(_addressNumberController, address.number);
+          fillIfAvailable(_addressDistrictController, address.district);
+          fillIfAvailable(_addressCityController, address.city);
+          fillIfAvailable(_addressStateController, address.state);
         }
         _locationFeedback = result.message;
         _isFeedbackError = !result.isSuccess;
@@ -505,6 +607,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final session = AppSessionScope.of(context);
     final isInstitution = session.isInstitutionUser;
+    final requiredDocuments = _requiredDocumentsForSession(session);
     final keyboardIsOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final sectionTitle =
         isInstitution ? 'Perfil da instituição' : 'Perfil profissional';
@@ -546,14 +649,50 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 18),
           if (!keyboardIsOpen) ...[
-            _SessionCard(
-              isInstitution: isInstitution,
-              onLogout: session.logout,
-              onRefreshStatus: _refreshSessionManually,
-              isRefreshingStatus: _isRefreshingSession,
-              email: session.email,
+            FutureBuilder<List<DocumentSummary>>(
+              future: _documentsFuture,
+              builder: (context, snapshot) {
+                final isVerified = snapshot.hasData &&
+                    _areRequiredDocumentsApproved(
+                      snapshot.data!,
+                      requiredDocuments,
+                    );
+                return _SessionCard(
+                  isInstitution: isInstitution,
+                  onLogout: session.logout,
+                  onRefreshStatus: _refreshSessionManually,
+                  isRefreshingStatus: _isRefreshingSession,
+                  email: session.email,
+                  roleValue: session.roleValue,
+                  isVerified: isVerified,
+                );
+              },
+            ),
+            const SizedBox(height: 18),
+            _ProfileSnapshotCard(
               roleValue: session.roleValue,
-              status: session.status,
+              isInstitution: isInstitution,
+              crmvNumber: _vetCrmvController.text,
+              crmvState: _vetCrmvStateController.text,
+              rate: _vetRateController.text,
+              experience: _vetExperienceController.text,
+              university: _internUniversityController.text,
+              coursePeriod: _internPeriodController.text,
+              graduation: _internGraduationController.text,
+              legalName: _legalNameController.text,
+              tradeName: _tradeNameController.text,
+              cnpj: _cnpjController.text,
+              contactName: _contactNameController.text,
+              contactPhone: _contactPhoneController.text,
+              address: [
+                _addressStreetController.text,
+                _addressNumberController.text,
+                _addressComplementController.text,
+                _addressDistrictController.text,
+                _addressCityController.text,
+                _addressStateController.text,
+                _addressZipCodeController.text,
+              ].where((part) => part.trim().isNotEmpty).join(', '),
             ),
             const SizedBox(height: 18),
             _SecurityPrivacyCard(
@@ -564,10 +703,21 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const SizedBox(height: 18),
-            _ValidationGuidanceCard(
-              isInstitution: isInstitution,
-              roleValue: session.roleValue,
-              status: session.status,
+            FutureBuilder<List<DocumentSummary>>(
+              future: _documentsFuture,
+              builder: (context, snapshot) {
+                final isVerified = snapshot.hasData &&
+                    _areRequiredDocumentsApproved(
+                      snapshot.data!,
+                      requiredDocuments,
+                    );
+                return _ValidationGuidanceCard(
+                  isInstitution: isInstitution,
+                  roleValue: session.roleValue,
+                  status: session.status,
+                  isDocumentsVerified: isVerified,
+                );
+              },
             ),
             const SizedBox(height: 18),
             if (session.canApplyToOpportunities) ...[
@@ -590,7 +740,7 @@ class _ProfilePageState extends State<ProfilePage> {
           if (!keyboardIsOpen) ...[
             _DocumentsValidationSection(
               documentsFuture: _documentsFuture,
-              requiredDocuments: _requiredDocumentsForSession(session),
+              requiredDocuments: requiredDocuments,
               isSubmitting: _isSubmittingDocument,
               onSubmit: _submitDocument,
               onRefresh: () {
@@ -607,6 +757,21 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 18),
           ],
+          _EditProfileAddressCard(
+            streetController: _addressStreetController,
+            numberController: _addressNumberController,
+            complementController: _addressComplementController,
+            districtController: _addressDistrictController,
+            zipCodeController: _addressZipCodeController,
+            cityController: _addressCityController,
+            stateController: _addressStateController,
+            isSaving: _isSaving,
+            isDetectingLocation: _isDetectingLocation,
+            feedback: _locationFeedback,
+            onDetectLocation: _detectProfileLocation,
+            onSubmit: _saveAddress,
+          ),
+          const SizedBox(height: 18),
           if (session.roleValue == AppUserRole.veterinarian.apiValue)
             _VeterinarianForm(
               crmvController: _vetCrmvController,
@@ -614,14 +779,9 @@ class _ProfilePageState extends State<ProfilePage> {
               rateController: _vetRateController,
               experienceController: _vetExperienceController,
               distanceController: _vetDistanceController,
-              latitudeController: _profileLatController,
-              longitudeController: _profileLngController,
               emergencyCare: _vetEmergencyCare,
               canTravel: _vetCanTravel,
               isSaving: _isSaving,
-              isDetectingLocation: _isDetectingLocation,
-              locationFeedback: _locationFeedback,
-              onDetectLocation: _detectProfileLocation,
               onEmergencyCareChanged: (value) {
                 setState(() => _vetEmergencyCare = value);
               },
@@ -635,12 +795,7 @@ class _ProfilePageState extends State<ProfilePage> {
               universityController: _internUniversityController,
               periodController: _internPeriodController,
               graduationController: _internGraduationController,
-              latitudeController: _profileLatController,
-              longitudeController: _profileLngController,
               isSaving: _isSaving,
-              isDetectingLocation: _isDetectingLocation,
-              locationFeedback: _locationFeedback,
-              onDetectLocation: _detectProfileLocation,
               onSubmit: _saveInternProfile,
             )
           else if (isInstitution)
@@ -652,12 +807,7 @@ class _ProfilePageState extends State<ProfilePage> {
               descriptionController: _descriptionController,
               contactNameController: _contactNameController,
               contactPhoneController: _contactPhoneController,
-              latitudeController: _profileLatController,
-              longitudeController: _profileLngController,
               isSaving: _isSaving,
-              isDetectingLocation: _isDetectingLocation,
-              locationFeedback: _locationFeedback,
-              onDetectLocation: _detectProfileLocation,
               onSubmit: _saveInstitutionProfile,
             ),
         ],
@@ -717,6 +867,20 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return const [];
+  }
+
+  bool _areRequiredDocumentsApproved(
+    List<DocumentSummary> documents,
+    List<_RequiredDocument> requiredDocuments,
+  ) {
+    return requiredDocuments.isNotEmpty &&
+        requiredDocuments.every(
+          (required) => documents.any(
+            (document) =>
+                document.documentType == required.documentType &&
+                document.statusLabel == 'Aprovado',
+          ),
+        );
   }
 }
 
@@ -832,6 +996,125 @@ class _SecurityPrivacyCard extends StatelessWidget {
   }
 }
 
+class _ProfileSnapshotCard extends StatelessWidget {
+  const _ProfileSnapshotCard({
+    required this.roleValue,
+    required this.isInstitution,
+    required this.crmvNumber,
+    required this.crmvState,
+    required this.rate,
+    required this.experience,
+    required this.university,
+    required this.coursePeriod,
+    required this.graduation,
+    required this.legalName,
+    required this.tradeName,
+    required this.cnpj,
+    required this.contactName,
+    required this.contactPhone,
+    required this.address,
+  });
+
+  final String? roleValue;
+  final bool isInstitution;
+  final String crmvNumber;
+  final String crmvState;
+  final String rate;
+  final String experience;
+  final String university;
+  final String coursePeriod;
+  final String graduation;
+  final String legalName;
+  final String tradeName;
+  final String cnpj;
+  final String contactName;
+  final String contactPhone;
+  final String address;
+
+  @override
+  Widget build(BuildContext context) {
+    final details = _details();
+    final theme = Theme.of(context);
+    return Card(
+      child: ExpansionTile(
+        leading: Icon(Icons.badge_outlined, color: theme.colorScheme.primary),
+        title: Text(
+          'Resumo do meu perfil',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        subtitle: const Text('Consulte seus dados cadastrais'),
+        childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        children: [
+          if (details.every((detail) => detail.$2.isEmpty))
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Complete o cadastro abaixo para visualizar seus dados aqui.',
+              ),
+            )
+          else
+            ...details.map(
+              (detail) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 126,
+                      child: Text(
+                        detail.$1,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        detail.$2.isEmpty ? 'Não informado' : detail.$2,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  List<(String, String)> _details() {
+    if (isInstitution) {
+      return [
+        ('Nome fantasia', tradeName),
+        ('Razao social', legalName),
+        ('CNPJ', cnpj),
+        ('Responsavel', contactName),
+        ('Telefone', contactPhone),
+        ('Endereço', address),
+      ];
+    }
+    if (roleValue == AppUserRole.intern.apiValue) {
+      return [
+        ('Universidade', university),
+        ('Periodo', coursePeriod),
+        ('Previsao de formatura', graduation),
+        ('Endereço', address),
+      ];
+    }
+    return [
+      ('CRMV', crmvNumber.isEmpty ? '' : '$crmvNumber/$crmvState'),
+      ('Valor base', rate.isEmpty ? '' : 'R\$ $rate'),
+      ('Experiencia', experience.isEmpty ? '' : '$experience anos'),
+      ('Endereço', address),
+    ];
+  }
+}
+
 class _SessionCard extends StatelessWidget {
   const _SessionCard({
     required this.isInstitution,
@@ -840,7 +1123,7 @@ class _SessionCard extends StatelessWidget {
     required this.isRefreshingStatus,
     required this.email,
     required this.roleValue,
-    required this.status,
+    required this.isVerified,
   });
 
   final bool isInstitution;
@@ -849,7 +1132,7 @@ class _SessionCard extends StatelessWidget {
   final bool isRefreshingStatus;
   final String? email;
   final String? roleValue;
-  final String? status;
+  final bool isVerified;
 
   @override
   Widget build(BuildContext context) {
@@ -882,45 +1165,72 @@ class _SessionCard extends StatelessWidget {
                     children: [
                       Text(
                         email ?? 'Usuário autenticado',
-                        style: theme.textTheme.titleLarge,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        roleValue ?? 'Perfil não identificado',
-                        style: theme.textTheme.bodyMedium,
-                      ),
+                      InfoBadge(label: _roleLabel(roleValue)),
                     ],
                   ),
                 ),
-                InfoBadge(label: status ?? 'Ativo'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: isRefreshingStatus ? null : onRefreshStatus,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: Text(
-                    isRefreshingStatus ? 'Atualizando...' : 'Atualizar status',
+                if (isVerified)
+                  Tooltip(
+                    message: 'Documentação aprovada',
+                    child: Icon(
+                      Icons.verified_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 30,
+                    ),
                   ),
-                ),
-                InfoBadge(label: roleValue ?? 'Perfil'),
-                InfoBadge(label: status ?? 'Status'),
-                const InfoBadge(label: 'JWT ativo'),
               ],
             ),
-            const SizedBox(height: 18),
-            OutlinedButton(
-              onPressed: onLogout,
-              child: const Text('Encerrar sessão'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: isRefreshingStatus ? null : onRefreshStatus,
+                  icon: isRefreshingStatus
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh_rounded),
+                  label:
+                      Text(isRefreshingStatus ? 'Atualizando...' : 'Atualizar'),
+                ),
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: onLogout,
+                  icon: const Icon(Icons.logout_rounded),
+                  label: const Text('Sair'),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _roleLabel(String? value) {
+    switch (value?.toUpperCase()) {
+      case 'VETERINARIAN':
+        return 'Veterinário';
+      case 'INTERN':
+        return 'Estagiário';
+      case 'CLINIC':
+        return 'Clínica';
+      case 'HOSPITAL':
+        return 'Hospital';
+      case 'ADMIN':
+        return 'Administrador';
+      default:
+        return 'Perfil';
+    }
   }
 }
 
@@ -929,22 +1239,30 @@ class _ValidationGuidanceCard extends StatelessWidget {
     required this.isInstitution,
     required this.roleValue,
     required this.status,
+    required this.isDocumentsVerified,
   });
 
   final bool isInstitution;
   final String? roleValue;
   final String? status;
+  final bool isDocumentsVerified;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isApproved = status == 'ACTIVE';
-    final color =
-        isApproved ? theme.colorScheme.primary : theme.colorScheme.tertiary;
-    final title =
-        isApproved ? 'Cadastro validado' : 'Cadastro aguardando validação';
+    final isApproved = isDocumentsVerified;
+    final color = isApproved
+        ? theme.colorScheme.primary
+        : status == 'BLOCKED'
+            ? theme.colorScheme.error
+            : theme.colorScheme.tertiary;
+    final title = isApproved
+        ? 'Documentação aprovada'
+        : status == 'BLOCKED'
+            ? 'Conta bloqueada'
+            : 'Documentos aguardando aprovação';
     final message = isApproved
-        ? 'Seu perfil esta liberado para usar os fluxos principais do marketplace.'
+        ? 'Os documentos obrigatórios do perfil foram aprovados.'
         : _pendingMessage();
 
     return Card(
@@ -967,25 +1285,18 @@ class _ValidationGuidanceCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      InfoBadge(label: _statusLabel(status)),
-                    ],
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(message),
                   if (!isApproved) ...[
                     const SizedBox(height: 10),
                     Text(
-                      'Depois que o admin aprovar os documentos, faça login novamente para atualizar a liberação da conta.',
+                      'A verificação aparece depois que todos os documentos obrigatórios forem aprovados.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -1002,26 +1313,14 @@ class _ValidationGuidanceCard extends StatelessWidget {
 
   String _pendingMessage() {
     if (isInstitution) {
-      return 'Envie o comprovante de CNPJ. Enquanto a instituição não for aprovada, publicar vagas e fechar plantões pode ser bloqueado.';
+      return 'Envie o comprovante de CNPJ para validação da instituição.';
     }
 
     if (roleValue == AppUserRole.intern.apiValue) {
-      return 'Envie a foto de perfil e a declaração de matrícula para aumentar confiança e destaque nas oportunidades de estágio.';
+      return 'Envie a foto de perfil e a declaração de matrícula para validação.';
     }
 
-    return 'Envie a foto de perfil e o comprovante CRMV para aumentar confiança e destaque nas vagas veterinárias.';
-  }
-
-  String _statusLabel(String? value) {
-    if (value == 'ACTIVE') {
-      return 'Aprovado';
-    }
-
-    if (value == 'BLOCKED') {
-      return 'Bloqueado';
-    }
-
-    return 'Pendente';
+    return 'Envie a foto de perfil e o comprovante CRMV para validação.';
   }
 }
 
@@ -1237,16 +1536,11 @@ class _VeterinarianForm extends StatelessWidget {
     required this.rateController,
     required this.experienceController,
     required this.distanceController,
-    required this.latitudeController,
-    required this.longitudeController,
     required this.emergencyCare,
     required this.canTravel,
     required this.isSaving,
-    required this.isDetectingLocation,
-    required this.locationFeedback,
     required this.onEmergencyCareChanged,
     required this.onCanTravelChanged,
-    required this.onDetectLocation,
     required this.onSubmit,
   });
 
@@ -1255,16 +1549,11 @@ class _VeterinarianForm extends StatelessWidget {
   final TextEditingController rateController;
   final TextEditingController experienceController;
   final TextEditingController distanceController;
-  final TextEditingController latitudeController;
-  final TextEditingController longitudeController;
   final bool emergencyCare;
   final bool canTravel;
   final bool isSaving;
-  final bool isDetectingLocation;
-  final String? locationFeedback;
   final ValueChanged<bool> onEmergencyCareChanged;
   final ValueChanged<bool> onCanTravelChanged;
-  final VoidCallback onDetectLocation;
   final VoidCallback onSubmit;
 
   @override
@@ -1290,13 +1579,6 @@ class _VeterinarianForm extends StatelessWidget {
           controller: distanceController,
           label: 'Distância máxima em km',
           keyboardType: TextInputType.number,
-        ),
-        _LocationFields(
-          latitudeController: latitudeController,
-          longitudeController: longitudeController,
-          isDetectingLocation: isDetectingLocation,
-          feedback: locationFeedback,
-          onDetectLocation: onDetectLocation,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
@@ -1325,24 +1607,14 @@ class _InternForm extends StatelessWidget {
     required this.universityController,
     required this.periodController,
     required this.graduationController,
-    required this.latitudeController,
-    required this.longitudeController,
     required this.isSaving,
-    required this.isDetectingLocation,
-    required this.locationFeedback,
-    required this.onDetectLocation,
     required this.onSubmit,
   });
 
   final TextEditingController universityController;
   final TextEditingController periodController;
   final TextEditingController graduationController;
-  final TextEditingController latitudeController;
-  final TextEditingController longitudeController;
   final bool isSaving;
-  final bool isDetectingLocation;
-  final String? locationFeedback;
-  final VoidCallback onDetectLocation;
   final VoidCallback onSubmit;
 
   @override
@@ -1360,13 +1632,6 @@ class _InternForm extends StatelessWidget {
         _TextField(
           controller: graduationController,
           label: 'Previsão de formatura (AAAA-MM-DD)',
-        ),
-        _LocationFields(
-          latitudeController: latitudeController,
-          longitudeController: longitudeController,
-          isDetectingLocation: isDetectingLocation,
-          feedback: locationFeedback,
-          onDetectLocation: onDetectLocation,
         ),
         _SubmitButton(
           label: 'Salvar perfil de estagiário',
@@ -1387,12 +1652,7 @@ class _InstitutionForm extends StatelessWidget {
     required this.descriptionController,
     required this.contactNameController,
     required this.contactPhoneController,
-    required this.latitudeController,
-    required this.longitudeController,
     required this.isSaving,
-    required this.isDetectingLocation,
-    required this.locationFeedback,
-    required this.onDetectLocation,
     required this.onSubmit,
   });
 
@@ -1403,12 +1663,7 @@ class _InstitutionForm extends StatelessWidget {
   final TextEditingController descriptionController;
   final TextEditingController contactNameController;
   final TextEditingController contactPhoneController;
-  final TextEditingController latitudeController;
-  final TextEditingController longitudeController;
   final bool isSaving;
-  final bool isDetectingLocation;
-  final String? locationFeedback;
-  final VoidCallback onDetectLocation;
   final VoidCallback onSubmit;
 
   @override
@@ -1435,13 +1690,6 @@ class _InstitutionForm extends StatelessWidget {
           label: 'Descrição da instituição',
           maxLines: 3,
         ),
-        _LocationFields(
-          latitudeController: latitudeController,
-          longitudeController: longitudeController,
-          isDetectingLocation: isDetectingLocation,
-          feedback: locationFeedback,
-          onDetectLocation: onDetectLocation,
-        ),
         _SubmitButton(
           label: 'Salvar instituição',
           isSaving: isSaving,
@@ -1452,69 +1700,270 @@ class _InstitutionForm extends StatelessWidget {
   }
 }
 
-class _LocationFields extends StatelessWidget {
+class _EditProfileAddressCard extends StatelessWidget {
+  const _EditProfileAddressCard({
+    required this.streetController,
+    required this.numberController,
+    required this.complementController,
+    required this.districtController,
+    required this.zipCodeController,
+    required this.cityController,
+    required this.stateController,
+    required this.isSaving,
+    required this.isDetectingLocation,
+    required this.feedback,
+    required this.onDetectLocation,
+    required this.onSubmit,
+  });
+
+  final TextEditingController streetController;
+  final TextEditingController numberController;
+  final TextEditingController complementController;
+  final TextEditingController districtController;
+  final TextEditingController zipCodeController;
+  final TextEditingController cityController;
+  final TextEditingController stateController;
+  final bool isSaving;
+  final bool isDetectingLocation;
+  final String? feedback;
+  final VoidCallback onDetectLocation;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ProfileFormCard(
+      title: 'Editar perfil',
+      subtitle:
+          'Atualize seu endereço e salve sem alterar seu cadastro profissional.',
+      children: [
+        _LocationFields(
+          streetController: streetController,
+          numberController: numberController,
+          complementController: complementController,
+          districtController: districtController,
+          zipCodeController: zipCodeController,
+          cityController: cityController,
+          stateController: stateController,
+          isDetectingLocation: isDetectingLocation,
+          feedback: feedback,
+          onDetectLocation: onDetectLocation,
+        ),
+        _SubmitButton(
+          label: 'Salvar endereço',
+          isSaving: isSaving,
+          onPressed: onSubmit,
+        ),
+      ],
+    );
+  }
+}
+
+class _LocationFields extends StatefulWidget {
   const _LocationFields({
-    required this.latitudeController,
-    required this.longitudeController,
+    required this.streetController,
+    required this.numberController,
+    required this.complementController,
+    required this.districtController,
+    required this.zipCodeController,
+    required this.cityController,
+    required this.stateController,
     required this.isDetectingLocation,
     required this.feedback,
     required this.onDetectLocation,
   });
 
-  final TextEditingController latitudeController;
-  final TextEditingController longitudeController;
+  final TextEditingController streetController;
+  final TextEditingController numberController;
+  final TextEditingController complementController;
+  final TextEditingController districtController;
+  final TextEditingController zipCodeController;
+  final TextEditingController cityController;
+  final TextEditingController stateController;
   final bool isDetectingLocation;
   final String? feedback;
   final VoidCallback onDetectLocation;
 
   @override
+  State<_LocationFields> createState() => _LocationFieldsState();
+}
+
+class _LocationFieldsState extends State<_LocationFields> {
+  bool _isLookingUpCep = false;
+  String? _cepMessage;
+  bool _cepLookupFailed = false;
+  String? _lastLookupCep;
+  int _lookupGeneration = 0;
+
+  Future<void> _lookupCep(String value) async {
+    final cep = value.replaceAll(RegExp(r'\D'), '');
+    if (cep.length != 8) {
+      _lastLookupCep = null;
+      _lookupGeneration++;
+      if (_cepMessage != null || _isLookingUpCep) {
+        setState(() {
+          _cepMessage = null;
+          _cepLookupFailed = false;
+          _isLookingUpCep = false;
+        });
+      }
+      return;
+    }
+
+    if (_lastLookupCep == cep) {
+      return;
+    }
+
+    _lastLookupCep = cep;
+    final generation = ++_lookupGeneration;
+    setState(() {
+      _isLookingUpCep = true;
+      _cepMessage = null;
+    });
+
+    try {
+      final response = await http
+          .get(Uri.https('viacep.com.br', '/ws/$cep/json/'))
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) {
+        throw const FormatException('Falha na consulta do CEP.');
+      }
+
+      final address = jsonDecode(response.body) as Map<String, dynamic>;
+      if (address['erro'] == true || address['erro'] == 'true') {
+        if (mounted && generation == _lookupGeneration) {
+          setState(() {
+            _cepMessage = 'CEP não encontrado. Confira os números.';
+            _cepLookupFailed = true;
+          });
+        }
+        return;
+      }
+
+      if (!mounted || generation != _lookupGeneration) {
+        return;
+      }
+
+      widget.streetController.text = address['logradouro']?.toString() ?? '';
+      widget.districtController.text = address['bairro']?.toString() ?? '';
+      widget.cityController.text = address['localidade']?.toString() ?? '';
+      widget.stateController.text = address['uf']?.toString() ?? '';
+      setState(() {
+        _cepMessage = 'Endereço preenchido pelo CEP. Você pode editá-lo.';
+        _cepLookupFailed = false;
+      });
+    } catch (_) {
+      if (mounted && generation == _lookupGeneration) {
+        setState(() {
+          _cepMessage =
+              'Não foi possível consultar o CEP. Preencha o endereço manualmente.';
+          _cepLookupFailed = true;
+        });
+      }
+    } finally {
+      if (mounted && generation == _lookupGeneration) {
+        setState(() => _isLookingUpCep = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Localização',
+            'Endereço',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: TextField(
+              controller: widget.zipCodeController,
+              keyboardType: TextInputType.number,
+              onChanged: _lookupCep,
+              decoration: InputDecoration(
+                labelText: 'CEP',
+                helperText: _cepMessage,
+                helperStyle: TextStyle(
+                  color: _cepLookupFailed
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.primary,
+                ),
+                suffixIcon: _isLookingUpCep
+                    ? const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+          ),
           Row(
             children: [
               Expanded(
+                flex: 3,
                 child: _TextField(
-                  controller: latitudeController,
-                  label: 'Latitude',
-                  keyboardType: TextInputType.number,
+                  controller: widget.streetController,
+                  label: 'Rua/avenida',
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: _TextField(
-                  controller: longitudeController,
-                  label: 'Longitude',
-                  keyboardType: TextInputType.number,
+                  controller: widget.numberController,
+                  label: 'Número',
+                ),
+              ),
+            ],
+          ),
+          _TextField(
+            controller: widget.complementController,
+            label: 'Complemento',
+          ),
+          _TextField(controller: widget.districtController, label: 'Bairro'),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: _TextField(
+                  controller: widget.cityController,
+                  label: 'Cidade',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _TextField(
+                  controller: widget.stateController,
+                  label: 'UF',
+                  maxLines: 1,
                 ),
               ),
             ],
           ),
           OutlinedButton.icon(
-            onPressed: isDetectingLocation ? null : onDetectLocation,
+            onPressed:
+                widget.isDetectingLocation ? null : widget.onDetectLocation,
             icon: const Icon(Icons.my_location_rounded),
             label: Text(
-              isDetectingLocation
+              widget.isDetectingLocation
                   ? 'Detectando localização...'
                   : 'Usar localização atual',
             ),
           ),
-          if (feedback != null) ...[
+          if (widget.feedback != null) ...[
             const SizedBox(height: 8),
             Text(
-              feedback!,
+              widget.feedback!,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -1542,28 +1991,21 @@ class _ProfileFormCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 18),
-            ...children,
-          ],
+      child: ExpansionTile(
+        leading: Icon(Icons.edit_outlined, color: theme.colorScheme.primary),
+        title: Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
+        subtitle: Text(
+          subtitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+        children: children,
       ),
     );
   }

@@ -1,5 +1,25 @@
 import 'package:geolocator/geolocator.dart';
 
+import 'package:geocoding/geocoding.dart';
+
+class CurrentAddress {
+  const CurrentAddress({
+    this.zipCode,
+    this.street,
+    this.number,
+    this.district,
+    this.city,
+    this.state,
+  });
+
+  final String? zipCode;
+  final String? street;
+  final String? number;
+  final String? district;
+  final String? city;
+  final String? state;
+}
+
 class CurrentLocation {
   const CurrentLocation({
     required this.latitude,
@@ -13,11 +33,13 @@ class CurrentLocation {
 class CurrentLocationResult {
   const CurrentLocationResult({
     this.location,
+    this.address,
     required this.message,
     required this.isSuccess,
   });
 
   final CurrentLocation? location;
+  final CurrentAddress? address;
   final String message;
   final bool isSuccess;
 }
@@ -62,12 +84,37 @@ class CurrentLocationService {
       ),
     );
 
+    CurrentAddress? address;
+    var message = 'Localização detectada.';
+    try {
+      final placemarks = await Geocoding().placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      if (placemarks.isNotEmpty) {
+        final placemark = placemarks.first;
+        address = CurrentAddress(
+          zipCode: placemark.postalCode,
+          street: placemark.street ?? placemark.thoroughfare,
+          number: placemark.subThoroughfare,
+          district: placemark.subLocality ?? placemark.subAdministrativeArea,
+          city: placemark.locality ?? placemark.subAdministrativeArea,
+          state: placemark.administrativeArea,
+        );
+        message = 'Localização e endereço detectados. Confira os dados.';
+      }
+    } catch (_) {
+      message = 'Localização detectada, mas não foi possível obter o endereço. '
+          'Preencha os campos ausentes manualmente.';
+    }
+
     return CurrentLocationResult(
       location: CurrentLocation(
         latitude: position.latitude,
         longitude: position.longitude,
       ),
-      message: 'Localização detectada com sucesso.',
+      address: address,
+      message: message,
       isSuccess: true,
     );
   }

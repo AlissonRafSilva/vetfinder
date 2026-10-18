@@ -26,6 +26,36 @@ class ProfileRepository {
     );
   }
 
+  Future<Map<String, dynamic>> updateMyAddress({
+    required String accessToken,
+    required bool isInstitution,
+    required String street,
+    required String number,
+    required String complement,
+    required String district,
+    required String zipCode,
+    required String city,
+    required String state,
+    required String latitude,
+    required String longitude,
+  }) {
+    return _apiClient.patchJson(
+      isInstitution ? '/institutions/me/address' : '/professionals/me/address',
+      accessToken: accessToken,
+      body: {
+        'street': street.trim(),
+        'number': number.trim(),
+        'complement': complement.trim(),
+        'district': district.trim(),
+        'zipCode': zipCode.trim(),
+        'city': city.trim(),
+        'state': state.trim().toUpperCase(),
+        if (latitude.trim().isNotEmpty) 'lat': num.tryParse(latitude.trim()),
+        if (longitude.trim().isNotEmpty) 'lng': num.tryParse(longitude.trim()),
+      },
+    );
+  }
+
   Future<String> createVeterinarianProfile({
     required String accessToken,
     required String crmvNumber,
@@ -35,8 +65,15 @@ class ProfileRepository {
     required bool emergencyCare,
     required bool canTravel,
     required String maxDistanceKm,
-    required String latitude,
-    required String longitude,
+    String latitude = '',
+    String longitude = '',
+    String street = '',
+    String number = '',
+    String complement = '',
+    String district = '',
+    String zipCode = '',
+    String city = '',
+    String state = '',
   }) async {
     final response = await _apiClient.postJson(
       '/professionals/veterinarians',
@@ -52,6 +89,13 @@ class ProfileRepository {
         'canTravel': canTravel,
         if (maxDistanceKm.trim().isNotEmpty)
           'maxDistanceKm': int.tryParse(maxDistanceKm.trim()),
+        if (street.trim().isNotEmpty) 'street': street.trim(),
+        if (number.trim().isNotEmpty) 'number': number.trim(),
+        if (complement.trim().isNotEmpty) 'complement': complement.trim(),
+        if (district.trim().isNotEmpty) 'district': district.trim(),
+        if (zipCode.trim().isNotEmpty) 'zipCode': zipCode.trim(),
+        if (city.trim().isNotEmpty) 'city': city.trim(),
+        if (state.trim().isNotEmpty) 'state': state.trim().toUpperCase(),
         if (latitude.trim().isNotEmpty) 'lat': num.tryParse(latitude.trim()),
         if (longitude.trim().isNotEmpty) 'lng': num.tryParse(longitude.trim()),
       },
@@ -66,8 +110,15 @@ class ProfileRepository {
     required String universityName,
     required String coursePeriod,
     required String expectedGraduationDate,
-    required String latitude,
-    required String longitude,
+    String latitude = '',
+    String longitude = '',
+    String street = '',
+    String number = '',
+    String complement = '',
+    String district = '',
+    String zipCode = '',
+    String city = '',
+    String state = '',
   }) async {
     final response = await _apiClient.postJson(
       '/professionals/interns',
@@ -77,6 +128,13 @@ class ProfileRepository {
         if (coursePeriod.trim().isNotEmpty) 'coursePeriod': coursePeriod.trim(),
         if (expectedGraduationDate.trim().isNotEmpty)
           'expectedGraduationDate': expectedGraduationDate.trim(),
+        if (street.trim().isNotEmpty) 'street': street.trim(),
+        if (number.trim().isNotEmpty) 'number': number.trim(),
+        if (complement.trim().isNotEmpty) 'complement': complement.trim(),
+        if (district.trim().isNotEmpty) 'district': district.trim(),
+        if (zipCode.trim().isNotEmpty) 'zipCode': zipCode.trim(),
+        if (city.trim().isNotEmpty) 'city': city.trim(),
+        if (state.trim().isNotEmpty) 'state': state.trim().toUpperCase(),
         if (latitude.trim().isNotEmpty) 'lat': num.tryParse(latitude.trim()),
         if (longitude.trim().isNotEmpty) 'lng': num.tryParse(longitude.trim()),
       },
@@ -96,8 +154,15 @@ class ProfileRepository {
     required String description,
     required String contactName,
     required String contactPhone,
-    required String latitude,
-    required String longitude,
+    String latitude = '',
+    String longitude = '',
+    String street = '',
+    String number = '',
+    String complement = '',
+    String district = '',
+    String zipCode = '',
+    String city = '',
+    String state = '',
   }) async {
     final response = await _apiClient.postJson(
       '/institutions',
@@ -112,6 +177,13 @@ class ProfileRepository {
         if (description.trim().isNotEmpty) 'description': description.trim(),
         if (contactName.trim().isNotEmpty) 'contactName': contactName.trim(),
         if (contactPhone.trim().isNotEmpty) 'contactPhone': contactPhone.trim(),
+        if (street.trim().isNotEmpty) 'street': street.trim(),
+        if (number.trim().isNotEmpty) 'number': number.trim(),
+        if (complement.trim().isNotEmpty) 'complement': complement.trim(),
+        if (district.trim().isNotEmpty) 'district': district.trim(),
+        if (zipCode.trim().isNotEmpty) 'zipCode': zipCode.trim(),
+        if (city.trim().isNotEmpty) 'city': city.trim(),
+        if (state.trim().isNotEmpty) 'state': state.trim().toUpperCase(),
         if (latitude.trim().isNotEmpty) 'lat': num.tryParse(latitude.trim()),
         if (longitude.trim().isNotEmpty) 'lng': num.tryParse(longitude.trim()),
       },

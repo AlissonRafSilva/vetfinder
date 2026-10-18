@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { CurrentUser, type AuthenticatedUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UpdateProfileAddressDto } from '../../common/dto/update-profile-address.dto';
 import { CreateInternProfileDto } from './dto/create-intern-profile.dto';
 import { CreateVeterinarianProfileDto } from './dto/create-veterinarian-profile.dto';
 import { ProfessionalsService } from './professionals.service';
@@ -25,6 +26,15 @@ export class ProfessionalsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.professionalsService.createInternProfile(dto, user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/address')
+  updateMyAddress(
+    @Body() dto: UpdateProfileAddressDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.professionalsService.updateMyAddress(dto, user);
   }
 
   @UseGuards(JwtAuthGuard)
