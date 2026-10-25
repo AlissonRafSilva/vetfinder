@@ -1,16 +1,10 @@
-import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { QuotePaymentDto } from './quote-payment.dto';
 
-export class CreatePaymentDto {
-  @IsUUID()
-  engagementId!: string;
-
+export class CreatePaymentDto extends QuotePaymentDto {
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  provider?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  providerPaymentId?: string;
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  @Max(99999999.99)
+  expectedChargeAmount?: number;
 }

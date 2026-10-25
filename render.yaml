@@ -43,3 +43,7 @@ services:
         sync: false
       - key: ASAAS_WEBHOOK_TOKEN
         sync: false
+      - key: ASAAS_WEBHOOK_URL
+        value: https://vetfinder-api.onrender.com/v1/payments/asaas/webhook
+      - key: ASAAS_WEBHOOK_EMAIL
+        sync: false

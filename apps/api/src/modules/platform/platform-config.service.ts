@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PlatformConfigService {
@@ -14,12 +15,19 @@ export class PlatformConfigService {
     };
   }
 
-  calculatePlatformFee(grossAmount: number) {
-    return this.roundMoney(grossAmount * this.getPlatformFeeRate());
+  calculatePlatformFee(professionalAmount: number) {
+    return new Prisma.Decimal(professionalAmount)
+      .times(this.getPlatformFeeRate()).toDecimalPlaces(2).toNumber();
   }
 
-  calculateNetAmount(grossAmount: number, platformFeeAmount: number) {
-    return this.roundMoney(grossAmount - platformFeeAmount);
+  calculateEngagementAmounts(professionalAmount: number) {
+    const netAmount = new Prisma.Decimal(professionalAmount).toDecimalPlaces(2);
+    const platformFeeAmount = this.calculatePlatformFee(netAmount.toNumber());
+    return {
+      netAmount: netAmount.toNumber(),
+      platformFeeAmount,
+      grossAmount: netAmount.plus(platformFeeAmount).toNumber(),
+    };
   }
 
   getPlatformFeeRate() {

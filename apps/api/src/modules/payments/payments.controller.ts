@@ -6,11 +6,18 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentsService } from './payments.service';
+import { QuotePaymentDto } from './dto/quote-payment.dto';
 
 @Controller('payments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
+
+  @Roles(UserRole.CLINIC, UserRole.HOSPITAL)
+  @Post('quote')
+  quote(@Body() dto: QuotePaymentDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.paymentsService.quote(dto, user);
+  }
 
   @Roles(UserRole.CLINIC, UserRole.HOSPITAL)
   @Post()

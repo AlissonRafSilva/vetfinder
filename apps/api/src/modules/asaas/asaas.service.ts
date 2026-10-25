@@ -5,6 +5,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 
 export type CreateAsaasSubaccountInput = {
   name: string;
@@ -41,7 +42,7 @@ export type CreateAsaasPixChargeInput = {
   value: number;
   dueDate: string;
   professionalWalletId: string;
-  professionalPercent: number;
+  professionalAmount: number;
   splitExternalReference: string;
 };
 
@@ -63,12 +64,28 @@ type AsaasCustomerListResponse = {
   data?: AsaasCustomerResponse[];
 };
 
-type AsaasChargeResponse = {
+export type AsaasChargeSplit = {
+  id?: string;
+  walletId?: string;
+  status?: string;
+  fixedValue?: number;
+  percentualValue?: number;
+  totalValue?: number;
+  externalReference?: string;
+};
+
+export type AsaasChargeResponse = {
   id: string;
   status: string;
   invoiceUrl?: string;
   value?: number;
   netValue?: number;
+  externalReference?: string;
+  customer?: string;
+  billingType?: string;
+  paymentDate?: string;
+  confirmedDate?: string;
+  split?: AsaasChargeSplit[];
 };
 
 type AsaasChargeListResponse = {
@@ -107,6 +124,13 @@ export class AsaasService implements OnModuleInit {
       .get<string>('ASAAS_WEBHOOK_EMAIL')
       ?.trim();
     const apiUrl = this.getApiUrl();
+    const environment = this.getEnvironment();
+    const expectedApiUrl = environment === 'production'
+      ? 'https://api.asaas.com/v3' : 'https://api-sandbox.asaas.com/v3';
+
+    if (!['sandbox', 'production'].includes(environment) || apiUrl !== expectedApiUrl) {
+      throw new Error('ASAAS_ENVIRONMENT e ASAAS_API_URL precisam apontar para o mesmo ambiente oficial.');
+    }
 
     if (!apiKey) {
       throw new Error('ASAAS_API_KEY precisa estar configurada.');
@@ -227,11 +251,12 @@ export class AsaasService implements OnModuleInit {
       input.externalReference,
     );
     if (existing) {
+      this.assertExpectedCharge(existing, input);
       return existing;
     }
 
     try {
-      return await this.request<AsaasChargeResponse>(
+      const created = await this.request<AsaasChargeResponse>(
         '/payments',
         {
           method: 'POST',
@@ -245,7 +270,7 @@ export class AsaasService implements OnModuleInit {
             split: [
               {
                 walletId: input.professionalWalletId,
-                percentualValue: input.professionalPercent,
+                fixedValue: input.professionalAmount,
                 externalReference: input.splitExternalReference,
                 description: 'Repasse do profissional VetFinder',
               },
@@ -254,11 +279,14 @@ export class AsaasService implements OnModuleInit {
         },
         'create_pix_charge',
       );
+      this.assertExpectedCharge(created, input);
+      return created;
     } catch (error) {
       const recovered = await this.findChargeByExternalReference(
         input.externalReference,
       ).catch(() => undefined);
       if (recovered) {
+        this.assertExpectedCharge(recovered, input);
         return recovered;
       }
       throw error;
@@ -273,19 +301,99 @@ export class AsaasService implements OnModuleInit {
     );
   }
 
-  private async findChargeByExternalReference(
+  async getCharge(paymentId: string): Promise<AsaasChargeResponse> {
+    return this.request<AsaasChargeResponse>(
+      `/payments/${encodeURIComponent(paymentId)}`,
+      { method: 'GET' },
+      'get_payment',
+    );
+  }
+
+  async quotePixCharge(serviceAmount: number) {
+    const serviceValue = new Prisma.Decimal(serviceAmount);
+    if (!serviceValue.isFinite() || serviceValue.lte(0)) {
+      throw new BadGatewayException('O valor do plantao precisa ser positivo.');
+    }
+
+    let chargeValue = serviceValue.toDecimalPlaces(2);
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const simulation = await this.request<{ pix?: { netValue?: number } }>(
+        '/payments/simulate',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            value: chargeValue.toNumber(),
+            billingTypes: ['PIX'],
+          }),
+        },
+        'quote_pix_charge',
+      );
+      const net = simulation.pix?.netValue;
+      if (typeof net !== 'number' || !Number.isFinite(net)) {
+        throw new BadGatewayException('O Asaas nao retornou a tarifa do Pix.');
+      }
+      const netValue = new Prisma.Decimal(net).toDecimalPlaces(2);
+      const missing = serviceValue.minus(netValue);
+      if (missing.isZero()) {
+        return {
+          serviceAmount: serviceValue.toNumber(),
+          chargeAmount: chargeValue.toNumber(),
+          gatewayFeeAmount: chargeValue.minus(serviceValue).toNumber(),
+        };
+      }
+      chargeValue = chargeValue.plus(missing).toDecimalPlaces(2);
+      if (chargeValue.lt(serviceValue) || chargeValue.gt('99999999.99')) {
+        break;
+      }
+    }
+
+    throw new BadGatewayException(
+      'Nao foi possivel confirmar a tarifa do Pix. Tente atualizar a simulacao.',
+    );
+  }
+
+  async findChargeByExternalReference(
     externalReference: string,
   ): Promise<AsaasChargeResponse | undefined> {
     const query = new URLSearchParams({
       externalReference,
-      limit: '1',
+      limit: '2',
     });
     const result = await this.request<AsaasChargeListResponse>(
       `/payments?${query.toString()}`,
       { method: 'GET' },
       'find_pix_charge',
     );
+    if ((result.data?.length ?? 0) > 1) {
+      throw new BadGatewayException(
+        'Existe mais de uma cobranca para este pagamento. Solicite conciliacao.',
+      );
+    }
     return result.data?.[0];
+  }
+
+  private assertExpectedCharge(
+    charge: AsaasChargeResponse,
+    input: CreateAsaasPixChargeInput,
+  ) {
+    const split = (Array.isArray(charge.split) ? charge.split : []).find(
+      (item) => item.externalReference === input.splitExternalReference,
+    );
+    if (
+      !charge.id || !charge.status ||
+      charge.externalReference !== input.externalReference ||
+      charge.customer !== input.customerId ||
+      charge.value !== input.value ||
+      charge.billingType !== 'PIX' ||
+      charge.split?.length !== 1 ||
+      split?.walletId !== input.professionalWalletId ||
+      split.fixedValue !== input.professionalAmount ||
+      (split.percentualValue ?? 0) !== 0
+    ) {
+      throw new BadGatewayException(
+        'A cobranca existente diverge dos valores ou da carteira do contrato.',
+      );
+    }
   }
 
   getEnvironment() {
@@ -307,8 +415,9 @@ export class AsaasService implements OnModuleInit {
   private getApiUrl() {
     return (
       this.configService.get<string>('ASAAS_API_URL') ??
-      'https://api-sandbox.asaas.com/v3'
-    ).replace(/\/$/, '');
+      (this.getEnvironment() === 'production'
+        ? 'https://api.asaas.com/v3' : 'https://api-sandbox.asaas.com/v3')
+    ).trim().replace(/\/+$/, '');
   }
 
   private getHeaders() {
@@ -372,6 +481,7 @@ export class AsaasService implements OnModuleInit {
         'PAYMENT_REFUNDED',
         'PAYMENT_PARTIALLY_REFUNDED',
         'PAYMENT_SPLIT_CANCELLED',
+        'PAYMENT_SPLIT_DONE',
         'PAYMENT_SPLIT_DIVERGENCE_BLOCK',
         'PAYMENT_SPLIT_DIVERGENCE_BLOCK_FINISHED',
       ],

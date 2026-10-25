@@ -3,24 +3,28 @@ import {
   AsaasAccountStatus,
   AsaasOnboardingStatus,
   AsaasWebhookProcessingStatus,
-  EngagementStatus,
-  PaymentStatus,
   Prisma,
-  SplitStatus,
 } from '@prisma/client';
+import { isUUID } from 'class-validator';
 import { PrismaService } from '../../common/database/prisma.service';
+import { AsaasPaymentReconciliationService } from './asaas-payment-reconciliation.service';
+import { AsaasChargeResponse } from './asaas.service';
 
 type AsaasWebhookPayload = {
   id?: unknown;
   event?: unknown;
   account?: { id?: unknown };
   accountStatus?: { general?: unknown };
-  payment?: { id?: unknown; status?: unknown };
+  payment?: AsaasChargeResponse;
+  additionalInfo?: { splitId?: unknown };
 };
 
 @Injectable()
 export class AsaasWebhookService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reconciliation: AsaasPaymentReconciliationService,
+  ) {}
 
   async receive(input: unknown) {
     const payload = input as AsaasWebhookPayload;
@@ -59,13 +63,7 @@ export class AsaasWebhookService {
         ) {
           return { received: true, duplicate: true };
         }
-        webhookEvent = await this.prisma.asaasWebhookEvent.update({
-          where: { id: existing.id },
-          data: {
-            processingStatus: AsaasWebhookProcessingStatus.RECEIVED,
-            processedAt: null,
-          },
-        });
+        webhookEvent = existing;
       } else {
         throw error;
       }
@@ -95,10 +93,13 @@ export class AsaasWebhookService {
       );
       return { received: true, ignored: true };
     } catch (error) {
-      await this.markEvent(
-        webhookEvent.id,
-        AsaasWebhookProcessingStatus.FAILED,
-      );
+      await this.prisma.asaasWebhookEvent.updateMany({
+        where: {
+          id: webhookEvent.id,
+          processingStatus: { not: AsaasWebhookProcessingStatus.PROCESSED },
+        },
+        data: { processingStatus: AsaasWebhookProcessingStatus.FAILED },
+      });
       throw error;
     }
   }
@@ -144,148 +145,43 @@ export class AsaasWebhookService {
     providerPaymentId: string,
     payload: AsaasWebhookPayload,
   ) {
-    const payment = await this.prisma.payment.findFirst({
-      where: { providerPaymentId },
-      select: { id: true, engagementId: true },
-    });
-    if (!payment) {
-      await this.markEvent(
-        webhookEventId,
-        AsaasWebhookProcessingStatus.IGNORED,
-      );
+    const supported = new Set([
+      'PAYMENT_CREATED', 'PAYMENT_UPDATED', 'PAYMENT_RESTORED',
+      'PAYMENT_AUTHORIZED', 'PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED',
+      'PAYMENT_OVERDUE', 'PAYMENT_DELETED', 'PAYMENT_REFUNDED',
+      'PAYMENT_PARTIALLY_REFUNDED', 'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED',
+      'PAYMENT_CHARGEBACK_REQUESTED', 'PAYMENT_CHARGEBACK_DISPUTE',
+      'PAYMENT_AWAITING_CHARGEBACK_REVERSAL', 'PAYMENT_SPLIT_CANCELLED',
+      'PAYMENT_SPLIT_DONE', 'PAYMENT_SPLIT_DIVERGENCE_BLOCK',
+      'PAYMENT_SPLIT_DIVERGENCE_BLOCK_FINISHED',
+    ]);
+    if (!supported.has(eventType) || !payload.payment) {
+      await this.markEvent(webhookEventId, AsaasWebhookProcessingStatus.IGNORED);
       return { received: true, ignored: true };
     }
 
-    const providerStatus =
-      this.optionalString(payload.payment?.status) ?? eventType;
-    if (eventType === 'PAYMENT_RECEIVED') {
-      await this.prisma.$transaction([
-        this.prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: PaymentStatus.PAID,
-            providerStatus,
-            paidAt: new Date(),
-          },
-        }),
-        this.prisma.paymentSplit.updateMany({
-          where: { paymentId: payment.id },
-          data: { status: SplitStatus.SCHEDULED },
-        }),
-        this.prisma.engagement.update({
-          where: { id: payment.engagementId },
-          data: {
-            status: EngagementStatus.CONFIRMED,
-            confirmedAt: new Date(),
-          },
-        }),
-        this.processedEventUpdate(webhookEventId),
-      ]);
-      return { received: true };
-    }
-
-    if (eventType === 'PAYMENT_CONFIRMED') {
-      await this.prisma.$transaction([
-        this.prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: PaymentStatus.AUTHORIZED,
-            providerStatus,
-          },
-        }),
-        this.prisma.engagement.update({
-          where: { id: payment.engagementId },
-          data: {
-            status: EngagementStatus.CONFIRMED,
-            confirmedAt: new Date(),
-          },
-        }),
-        this.processedEventUpdate(webhookEventId),
-      ]);
-      return { received: true };
-    }
-
-    if (eventType === 'PAYMENT_REFUNDED') {
-      await this.prisma.$transaction([
-        this.prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: PaymentStatus.REFUNDED,
-            providerStatus,
-            refundedAt: new Date(),
-          },
-        }),
-        this.processedEventUpdate(webhookEventId),
-      ]);
-      return { received: true };
-    }
-
-    if (eventType === 'PAYMENT_PARTIALLY_REFUNDED') {
-      await this.prisma.$transaction([
-        this.prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: PaymentStatus.PARTIALLY_REFUNDED,
-            providerStatus,
-            refundedAt: new Date(),
-          },
-        }),
-        this.processedEventUpdate(webhookEventId),
-      ]);
-      return { received: true };
-    }
-
-    if (
-      eventType === 'PAYMENT_OVERDUE' ||
-      eventType === 'PAYMENT_DELETED' ||
-      eventType === 'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED'
-    ) {
-      await this.prisma.$transaction([
-        this.prisma.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: PaymentStatus.FAILED,
-            providerStatus,
-          },
-        }),
-        this.processedEventUpdate(webhookEventId),
-      ]);
-      return { received: true };
-    }
-
-    if (
-      eventType === 'PAYMENT_SPLIT_CANCELLED' ||
-      eventType === 'PAYMENT_SPLIT_DIVERGENCE_BLOCK'
-    ) {
-      await this.prisma.$transaction([
-        this.prisma.payment.update({
-          where: { id: payment.id },
-          data: { providerStatus },
-        }),
-        this.prisma.paymentSplit.updateMany({
-          where: { paymentId: payment.id },
-          data: { status: SplitStatus.FAILED },
-        }),
-        this.processedEventUpdate(webhookEventId),
-      ]);
-      return { received: true };
-    }
-
-    await this.markEvent(
-      webhookEventId,
-      AsaasWebhookProcessingStatus.IGNORED,
-    );
-    return { received: true, ignored: true };
-  }
-
-  private processedEventUpdate(id: string) {
-    return this.prisma.asaasWebhookEvent.update({
-      where: { id },
-      data: {
-        processingStatus: AsaasWebhookProcessingStatus.PROCESSED,
-        processedAt: new Date(),
+    const reference = this.optionalString(payload.payment.externalReference);
+    const payment = await this.prisma.payment.findFirst({
+      where: {
+        provider: 'asaas',
+        OR: [
+          { providerPaymentId },
+          ...(reference && isUUID(reference) ? [{ id: reference }] : []),
+        ],
       },
+      select: { id: true },
     });
+    if (!payment) {
+      await this.markEvent(webhookEventId, AsaasWebhookProcessingStatus.IGNORED);
+      return { received: true, ignored: true };
+    }
+
+    await this.reconciliation.applyCharge(payment.id, payload.payment, {
+      eventType,
+      webhookEventId,
+      splitId: this.optionalString(payload.additionalInfo?.splitId),
+    });
+    return { received: true };
   }
 
   private mapAccountStatus(generalStatus?: string) {

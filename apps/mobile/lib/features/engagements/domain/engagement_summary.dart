@@ -14,6 +14,7 @@ class EngagementSummary {
     required this.platformFeeLabel,
     required this.netAmountLabel,
     required this.statusLabel,
+    required this.shiftDatePassed,
     required this.sourceLabel,
     required this.createdAtLabel,
   });
@@ -30,6 +31,7 @@ class EngagementSummary {
   final String platformFeeLabel;
   final String netAmountLabel;
   final String statusLabel;
+  final bool shiftDatePassed;
   final String sourceLabel;
   final String createdAtLabel;
 
@@ -41,6 +43,12 @@ class EngagementSummary {
     final institution = json['institution'] as Map<String, dynamic>?;
     final customSpecialtyLabel =
         opportunity?['customSpecialtyLabel']?.toString();
+    final status = json['status']?.toString() ?? '';
+    final endAt = DateTime.tryParse(opportunity?['endAt']?.toString() ?? '');
+    final shiftDatePassed = endAt != null &&
+        endAt.isBefore(DateTime.now()) &&
+        status.toUpperCase() != 'COMPLETED' &&
+        status.toUpperCase() != 'CANCELLED';
 
     return EngagementSummary(
       id: json['id']?.toString() ?? '',
@@ -66,7 +74,8 @@ class EngagementSummary {
       platformFeeLabel:
           OpportunityFormatter.amountLabel(json['platformFeeAmount']),
       netAmountLabel: OpportunityFormatter.amountLabel(json['netAmount']),
-      statusLabel: _statusLabel(json['status']?.toString() ?? ''),
+      statusLabel: _statusLabel(status),
+      shiftDatePassed: shiftDatePassed,
       sourceLabel: _sourceLabel(json['sourceType']?.toString() ?? ''),
       createdAtLabel: _createdAtLabel(json['createdAt']?.toString() ?? ''),
     );

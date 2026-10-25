@@ -18,6 +18,7 @@ export class CreateEngagementDto {
   @Transform(({ value }) => Number(value))
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
+  // Legacy request name: the agreed amount received in full by the professional.
   grossAmount!: number;
 
   @IsOptional()

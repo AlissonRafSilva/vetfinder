@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -16,10 +17,22 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AsaasService } from '../asaas/asaas.service';
+import {
+  AsaasPaymentReconciliationService,
+} from '../asaas/asaas-payment-reconciliation.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
-import { PlatformConfigService } from '../platform/platform-config.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { QuotePaymentDto } from './dto/quote-payment.dto';
 import { PaymentProvider } from './payment-provider';
+
+type CheckoutEngagement = Prisma.EngagementGetPayload<{
+  include: {
+    institution: {
+      include: { user: { select: { email: true } }; address: true };
+    };
+    payment: { include: { splits: true } };
+  };
+}>;
 
 @Injectable()
 export class PaymentsService {
@@ -27,12 +40,12 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly paymentProvider: PaymentProvider,
     private readonly asaasService: AsaasService,
-    private readonly platformConfigService: PlatformConfigService,
+    private readonly reconciliation: AsaasPaymentReconciliationService,
   ) {}
 
-  async create(dto: CreatePaymentDto, user: AuthenticatedUser) {
+  private async checkoutEngagement(engagementId: string, user: AuthenticatedUser) {
     const engagement = await this.prisma.engagement.findUnique({
-      where: { id: dto.engagementId },
+      where: { id: engagementId },
       include: {
         institution: {
           include: {
@@ -60,22 +73,55 @@ export class PaymentsService {
       throw new ForbiddenException('Voce nao pode criar pagamento para este fechamento.');
     }
 
-    if (
-      engagement.payment &&
-      !(
-        this.asaasService.isEnabled() &&
-        engagement.payment.provider === 'asaas' &&
-        engagement.payment.status === PaymentStatus.FAILED &&
-        !engagement.payment.providerPaymentId
-      )
-    ) {
-      throw new ConflictException(
-        'Ja existe pagamento registrado para este fechamento.',
-      );
+    return engagement;
+  }
+
+  async quote(dto: QuotePaymentDto, user: AuthenticatedUser) {
+    const engagement = await this.checkoutEngagement(dto.engagementId, user);
+    if (engagement.status !== EngagementStatus.PENDING_PAYMENT) {
+      throw new ConflictException('Este contrato nao esta aguardando pagamento.');
+    }
+    if (!this.asaasService.isEnabled()) {
+      throw new ConflictException('O gateway Asaas precisa estar habilitado para simular o Pix.');
+    }
+    const amounts = await this.asaasService.quotePixCharge(Number(engagement.grossAmount));
+    return {
+      ...amounts,
+      serviceAmount: Number(engagement.netAmount),
+      subtotalAmount: Number(engagement.grossAmount),
+      platformFeeAmount: Number(engagement.platformFeeAmount),
+      professionalAmount: Number(engagement.netAmount),
+      gatewayFeePayer: 'INSTITUTION',
+      platformFeePayer: 'INSTITUTION',
+      environment: this.asaasService.getEnvironment(),
+      expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
+    };
+  }
+
+  async create(dto: CreatePaymentDto, user: AuthenticatedUser) {
+    const engagement = await this.checkoutEngagement(dto.engagementId, user);
+    if (engagement.payment && !(
+      this.asaasService.isEnabled() && engagement.payment.provider === 'asaas' &&
+      engagement.payment.status === PaymentStatus.FAILED && !engagement.payment.providerPaymentId
+    )) {
+      const payment = engagement.payment.provider === 'asaas' && this.asaasService.isEnabled()
+        ? await this.reconciliation.refresh(engagement.payment.id)
+        : engagement.payment;
+      return { message: 'Pagamento existente recuperado.', payment };
+    }
+    if (engagement.status !== EngagementStatus.PENDING_PAYMENT) {
+      throw new ConflictException('Este contrato nao esta aguardando pagamento.');
     }
 
     if (this.asaasService.isEnabled()) {
-      return this.createAsaasPayment(engagement);
+      if (dto.expectedChargeAmount === undefined) {
+        throw new BadRequestException('Confirme o valor total com a tarifa antes de gerar o Pix.');
+      }
+      return this.createAsaasPayment(engagement, dto.expectedChargeAmount);
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new ConflictException('O gateway de pagamentos precisa estar configurado antes de gerar cobrancas.');
     }
 
     const paymentIntent = this.paymentProvider.createPaymentIntent({
@@ -84,14 +130,13 @@ export class PaymentsService {
       platformFeeAmount: engagement.platformFeeAmount,
       netAmount: engagement.netAmount,
     });
-    const provider = dto.provider ?? paymentIntent.provider;
 
     const payment = await this.prisma.$transaction(async (tx) => {
       const createdPayment = await tx.payment.create({
         data: {
           engagementId: dto.engagementId,
-          provider,
-          providerPaymentId: dto.providerPaymentId ?? paymentIntent.providerPaymentId,
+          provider: paymentIntent.provider,
+          providerPaymentId: paymentIntent.providerPaymentId,
           providerStatus: paymentIntent.providerStatus,
           checkoutUrl: paymentIntent.checkoutUrl,
           providerPayload: paymentIntent.providerPayload,
@@ -134,34 +179,10 @@ export class PaymentsService {
     };
   }
 
-  private async createAsaasPayment(engagement: {
-    id: string;
-    professionalUserId: string;
-    grossAmount: Prisma.Decimal;
-    platformFeeAmount: Prisma.Decimal;
-    netAmount: Prisma.Decimal;
-    institution: {
-      id: string;
-      legalName: string;
-      tradeName: string;
-      cnpj: string;
-      contactPhone: string | null;
-      userId: string;
-      user: { email: string };
-      address: {
-        street: string | null;
-        number: string | null;
-        complement: string | null;
-        district: string | null;
-        zipCode: string | null;
-      } | null;
-    };
-    payment: {
-      id: string;
-      providerPaymentId: string | null;
-      status: PaymentStatus;
-    } | null;
-  }) {
+  private async createAsaasPayment(
+    engagement: CheckoutEngagement,
+    expectedChargeAmount: number,
+  ) {
     const environment =
       this.asaasService.getEnvironment() === 'production'
         ? AsaasEnvironment.PRODUCTION
@@ -187,9 +208,51 @@ export class PaymentsService {
       );
     }
 
-    const payment =
-      engagement.payment ??
-      (await this.prisma.$transaction(async (tx) => {
+    const quote = await this.asaasService.quotePixCharge(Number(engagement.grossAmount));
+    if (!new Prisma.Decimal(expectedChargeAmount).equals(quote.chargeAmount)) {
+      throw new ConflictException(
+        'A tarifa do Pix mudou. Atualize a simulacao e confirme o novo total.',
+      );
+    }
+    const metadata: Prisma.InputJsonObject = {
+      ...quote,
+      serviceAmount: Number(engagement.netAmount),
+      subtotalAmount: Number(engagement.grossAmount),
+      platformFeeAmount: Number(engagement.platformFeeAmount),
+      professionalAmount: Number(engagement.netAmount),
+      pricingModel: 'INSTITUTION_PAYS_GATEWAY_FEE',
+      gatewayFeePayer: 'INSTITUTION',
+      platformFeePayer: 'INSTITUTION',
+      professionalWalletId: professionalAccount.asaasWalletId,
+      environment: this.asaasService.getEnvironment(),
+      creationStartedAt: new Date().toISOString(),
+    };
+    let payment: { id: string };
+    if (engagement.payment) {
+      const claimed = await this.prisma.payment.updateMany({
+        where: {
+          id: engagement.payment.id,
+          status: PaymentStatus.FAILED,
+          providerPaymentId: null,
+        },
+        data: {
+          status: PaymentStatus.PENDING,
+          providerStatus: 'CREATING',
+          providerPayload: metadata,
+        },
+      });
+      if (!claimed.count) {
+        return {
+          message: 'Pagamento existente recuperado.',
+          payment: await this.prisma.payment.findUniqueOrThrow({
+            where: { id: engagement.payment.id }, include: { splits: true },
+          }),
+        };
+      }
+      payment = engagement.payment;
+    } else {
+      try {
+        payment = await this.prisma.$transaction(async (tx) => {
         const created = await tx.payment.create({
           data: {
             engagementId: engagement.id,
@@ -199,6 +262,7 @@ export class PaymentsService {
             grossAmount: engagement.grossAmount,
             platformFeeAmount: engagement.platformFeeAmount,
             netAmount: engagement.netAmount,
+            providerPayload: metadata,
           },
         });
 
@@ -221,8 +285,21 @@ export class PaymentsService {
         });
 
         return created;
-      }));
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          return {
+            message: 'Pagamento existente recuperado.',
+            payment: await this.prisma.payment.findUniqueOrThrow({
+              where: { engagementId: engagement.id }, include: { splits: true },
+            }),
+          };
+        }
+        throw error;
+      }
+    }
 
+    let createdChargeId: string | undefined;
     try {
       const customer = await this.asaasService.ensureCustomer({
         externalReference: `vetfinder-institution-${engagement.institution.id}`,
@@ -237,20 +314,17 @@ export class PaymentsService {
         province: engagement.institution.address?.district ?? undefined,
         postalCode: engagement.institution.address?.zipCode ?? undefined,
       });
-      const platformPercent =
-        this.platformConfigService.getPlatformFeeRate() * 100;
-      const professionalPercent =
-        Math.round((100 - platformPercent) * 10_000) / 10_000;
       const charge = await this.asaasService.createPixCharge({
         customerId: customer.id,
         externalReference: payment.id,
         description: `Plantao VetFinder ${engagement.id}`,
-        value: Number(engagement.grossAmount),
+        value: quote.chargeAmount,
         dueDate: this.tomorrowDate(),
         professionalWalletId: professionalAccount.asaasWalletId,
-        professionalPercent,
+        professionalAmount: Number(engagement.netAmount),
         splitExternalReference: `payment-split-${payment.id}`,
       });
+      createdChargeId = charge.id;
 
       let pixQrCode:
         | { payload?: string; expirationDate?: string }
@@ -261,23 +335,9 @@ export class PaymentsService {
         // A fatura continua valida mesmo quando o QR Code nao esta disponivel.
       }
 
-      const updated = await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          providerPaymentId: charge.id,
-          providerStatus: charge.status,
-          checkoutUrl: charge.invoiceUrl,
-          status: PaymentStatus.PENDING,
-          providerPayload: {
-            customerId: customer.id,
-            billingType: 'PIX',
-            pixCopyPaste: pixQrCode?.payload ?? null,
-            pixExpirationDate: pixQrCode?.expirationDate ?? null,
-            professionalPercent,
-            splitCalculationBasis: 'ASAAS_NET_VALUE',
-          },
-        },
-        include: { splits: true },
+      const updated = await this.reconciliation.applyCharge(payment.id, charge, {
+        pixCopyPaste: pixQrCode?.payload,
+        pixExpirationDate: pixQrCode?.expirationDate,
       });
 
       return {
@@ -285,11 +345,21 @@ export class PaymentsService {
         payment: updated,
       };
     } catch (error) {
-      await this.prisma.payment.update({
-        where: { id: payment.id },
+      const recovered = await this.prisma.payment.findUniqueOrThrow({
+        where: { id: payment.id }, include: { splits: true },
+      });
+      if (recovered.providerPaymentId && recovered.status !== PaymentStatus.FAILED) {
+        return { message: 'Pagamento existente recuperado.', payment: recovered };
+      }
+      await this.prisma.payment.updateMany({
+        where: {
+          id: payment.id, providerPaymentId: null,
+          status: PaymentStatus.PENDING, providerStatus: 'CREATING',
+        },
         data: {
           status: PaymentStatus.FAILED,
-          providerStatus: 'CREATE_FAILED',
+          providerStatus: createdChargeId ? 'RECONCILIATION_REQUIRED' : 'CREATE_FAILED',
+          ...(createdChargeId ? { providerPaymentId: createdChargeId } : {}),
         },
       });
       throw error;
@@ -326,6 +396,10 @@ export class PaymentsService {
 
     if (payment.engagement.institution.userId !== user.userId) {
       throw new ForbiddenException('Voce nao pode confirmar este pagamento.');
+    }
+
+    if (payment.provider !== 'sandbox-split' || process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('A confirmacao manual so pode ser usada no simulador local.');
     }
 
     if (payment.status === PaymentStatus.PAID) {
@@ -394,7 +468,8 @@ export class PaymentsService {
       throw new ForbiddenException('Voce nao pode visualizar este pagamento.');
     }
 
-    return payment;
+    return payment.provider === 'asaas' && this.asaasService.isEnabled()
+      ? this.reconciliation.refresh(payment.id) : payment;
   }
 
   async findByEngagement(engagementId: string, user: AuthenticatedUser) {
@@ -424,6 +499,7 @@ export class PaymentsService {
       throw new ForbiddenException('Voce nao pode visualizar este pagamento.');
     }
 
-    return payment;
+    return payment.provider === 'asaas' && this.asaasService.isEnabled()
+      ? this.reconciliation.refresh(payment.id) : payment;
   }
 }

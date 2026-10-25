@@ -113,40 +113,63 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
       return;
     }
 
-    final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Registrar pagamento'),
-            content: const Text(
-              'Gerar uma cobrança Pix no Asaas Sandbox? O contrato será confirmado automaticamente após o webhook de pagamento.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Gerar checkout'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-
-    if (!confirmed) {
-      return;
-    }
-
     setState(() {
       _isCreatingPayment = true;
       _paymentFeedback = null;
     });
 
     try {
+      final quote = await _paymentsRepository.quotePayment(
+        accessToken: session.accessToken!,
+        engagementId: widget.item.id,
+      );
+      if (!mounted) return;
+      final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Confirmar cobrança Pix'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (quote.isSandbox) ...[
+                      const Text(
+                          'Sandbox: teste sem movimentar dinheiro real.'),
+                      const SizedBox(height: 16),
+                    ],
+                    Text('Valor do plantão: ${quote.serviceAmountLabel}'),
+                    Text('Comissão VetFinder: ${quote.platformFeeLabel}'),
+                    Text('Tarifa Asaas: ${quote.gatewayFeeLabel}'),
+                    const SizedBox(height: 12),
+                    Text('Total da clínica: ${quote.chargeAmountLabel}',
+                        style: const TextStyle(fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 12),
+                    Text('Profissional: ${quote.professionalAmountLabel}'),
+                    const SizedBox(height: 12),
+                    const Text(
+                        'O profissional recebe integralmente o valor combinado. A clínica paga a comissão VetFinder e a tarifa Asaas adicionalmente.'),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Confirmar e gerar Pix'),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+      if (!confirmed || !mounted) return;
       final payment = await _paymentsRepository.createCheckoutPayment(
         accessToken: session.accessToken!,
         engagementId: widget.item.id,
+        expectedChargeAmount: quote.chargeAmount,
       );
 
       if (!mounted) {
@@ -297,11 +320,19 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
   bool get _canRegisterPayment {
     return widget.isInstitutionView &&
         widget.item.statusLabel == 'Aguardando pagamento' &&
-        (_createdPayment == null || _createdPayment!.isFailed);
+        (_createdPayment == null || _createdPayment!.canRetryCharge);
+  }
+
+  String get _contractStatusLabel {
+    if (widget.item.statusLabel == 'Aguardando pagamento' &&
+        _createdPayment?.isConfirmed == true) {
+      return 'Confirmado';
+    }
+    return widget.item.statusLabel;
   }
 
   bool get _canReview {
-    return _createdPayment != null ||
+    return _createdPayment?.isPaid == true ||
         widget.item.statusLabel == 'Confirmado' ||
         widget.item.statusLabel == 'Em andamento' ||
         widget.item.statusLabel == 'Concluido';
@@ -342,11 +373,11 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
                       runSpacing: 10,
                       children: [
                         InfoBadge(
-                          label: _createdPayment == null
-                              ? widget.item.statusLabel
-                              : 'Confirmado',
+                          label: _contractStatusLabel,
                         ),
                         InfoBadge(label: widget.item.sourceLabel),
+                        if (widget.item.shiftDatePassed)
+                          const InfoBadge(label: 'Data do plantão passou'),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -392,9 +423,7 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
                     label: 'Fechamento', value: widget.item.createdAtLabel),
                 _DetailRow(
                   label: 'Status',
-                  value: _createdPayment == null
-                      ? widget.item.statusLabel
-                      : 'Confirmado',
+                  value: _contractStatusLabel,
                 ),
               ],
             ),
@@ -403,13 +432,14 @@ class _EngagementDetailPageState extends State<EngagementDetailPage> {
               title: 'Financeiro',
               children: [
                 _DetailRow(
-                    label: 'Valor bruto', value: widget.item.grossAmountLabel),
+                    label: 'Subtotal com comissão',
+                    value: widget.item.grossAmountLabel),
                 _DetailRow(
-                  label: 'Taxa da plataforma',
+                  label: 'Comissão VetFinder',
                   value: widget.item.platformFeeLabel,
                 ),
                 _DetailRow(
-                  label: 'Valor líquido profissional',
+                  label: 'Valor do profissional',
                   value: widget.item.netAmountLabel,
                 ),
               ],
@@ -548,7 +578,9 @@ class _PaymentSection extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Ambiente Asaas Sandbox: a cobrança e o split são processados no gateway de testes, sem movimentar dinheiro real. O split percentual é calculado pelo Asaas após a tarifa do gateway.',
+                      createdPayment?.isSandbox == true
+                          ? 'Asaas Sandbox: teste sem movimentar dinheiro real.'
+                          : 'A clínica paga o valor combinado do profissional, a comissão VetFinder e a tarifa Asaas. Confira o total antes de gerar o Pix.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onTertiaryContainer,
                         fontWeight: FontWeight.w700,
@@ -655,20 +687,38 @@ class _PaymentDetails extends StatelessWidget {
           label: 'Status do provedor',
           value: payment.providerStatusLabel,
         ),
-        _DetailRow(label: 'Valor bruto', value: payment.grossAmountLabel),
         _DetailRow(
-          label: 'Comissão VetFinder (3%)',
+            label: 'Subtotal com comissão', value: payment.grossAmountLabel),
+        if (payment.clinicPaysGatewayFee) ...[
+          _DetailRow(label: 'Tarifa Asaas', value: payment.gatewayFeeLabel),
+          _DetailRow(
+              label: 'Total da clínica', value: payment.chargeAmountLabel),
+        ],
+        _DetailRow(
+          label: 'Comissão VetFinder',
           value: payment.platformFeeLabel,
         ),
         _DetailRow(
           label: 'Valor contratado do profissional',
           value: payment.netAmountLabel,
         ),
-        if (payment.isAsaas)
-          const Padding(
-            padding: EdgeInsets.only(top: 6),
+        if (payment.isAsaas) ...[
+          _DetailRow(label: 'Repasse', value: payment.professionalSplitLabel),
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
             child: Text(
-              'O valor efetivo do split é apurado pelo Asaas sobre o líquido da cobrança, após a tarifa do gateway.',
+              payment.clinicPaysGatewayFee
+                  ? 'O valor contratado do profissional é preservado. A clínica paga a comissão e a tarifa adicionalmente.'
+                  : 'Cobrança anterior ao novo modelo de tarifas. Consulte a conciliação do Asaas para o valor efetivo do repasse.',
+            ),
+          ),
+        ],
+        if (payment.financialDivergence)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'Esta cobrança precisa de conciliação. Não gere outro pagamento; entre em contato com o suporte.',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
         _DetailRow(label: 'Data', value: payment.paidAtLabel),

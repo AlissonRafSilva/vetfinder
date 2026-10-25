@@ -36,6 +36,7 @@ export class EngagementsService {
         status: true,
         institutionId: true,
         opportunityType: true,
+        startAt: true,
         institution: {
           select: {
             userId: true,
@@ -61,6 +62,10 @@ export class EngagementsService {
 
     if (opportunity.status !== OpportunityStatus.OPEN) {
       throw new ConflictException('A oportunidade precisa estar aberta para ser fechada.');
+    }
+
+    if (opportunity.startAt <= new Date()) {
+      throw new ConflictException('O horario desta vaga ja comecou. Atualize a data antes de fechar o plantao.');
     }
 
     const existingEngagement = await this.prisma.engagement.findFirst({
@@ -155,15 +160,23 @@ export class EngagementsService {
       throw new ForbiddenException('Veterinarios volantes nao podem fechar vagas de estagio.');
     }
 
-    const platformFeeAmount = this.platformConfigService.calculatePlatformFee(
-      dto.grossAmount,
-    );
-    const netAmount = this.platformConfigService.calculateNetAmount(
-      dto.grossAmount,
-      platformFeeAmount,
-    );
+    const { grossAmount, platformFeeAmount, netAmount } =
+      this.platformConfigService.calculateEngagementAmounts(
+        dto.grossAmount,
+      );
 
     const engagement = await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.opportunity.updateMany({
+        where: {
+          id: dto.opportunityId,
+          status: OpportunityStatus.OPEN,
+          startAt: { gt: new Date() },
+        },
+        data: { status: OpportunityStatus.FILLED },
+      });
+      if (!claimed.count) {
+        throw new ConflictException('A vaga expirou ou ja foi fechada por outra solicitacao.');
+      }
       const created = await tx.engagement.create({
         data: {
           opportunityId: dto.opportunityId,
@@ -171,17 +184,10 @@ export class EngagementsService {
           professionalUserId: dto.professionalUserId,
           sourceType: dto.sourceType,
           sourceId: dto.sourceId,
-          grossAmount: dto.grossAmount,
+          grossAmount,
           platformFeeAmount,
           netAmount,
           status: EngagementStatus.PENDING_PAYMENT,
-        },
-      });
-
-      await tx.opportunity.update({
-        where: { id: dto.opportunityId },
-        data: {
-          status: OpportunityStatus.FILLED,
         },
       });
 
