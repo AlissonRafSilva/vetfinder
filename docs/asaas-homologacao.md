@@ -54,6 +54,14 @@ Faz apenas consultas e simulacoes: nao cria clientes, subcontas ou cobrancas.
   cadastro ou pagamentos antigos na nova homologacao.
 - Criacao, recebimento e liquidacao do split ainda precisam ser comprovados juntos.
 
+O reinicio Sandbox reconcilia tentativas CREATE_FAILED sem ID externo antes de
+avaliar splits pendentes. Somente uma consulta bem-sucedida que confirme ausencia
+da cobranca permite liberar esses splits; falhas do gateway mantem o bloqueio.
+O cadastro financeiro e bloqueado em transacao durante a reserva de uma nova
+cobranca e durante o reinicio. Uma tentativa iniciada entre as duas operacoes
+impede o reinicio, e um cadastro removido impede a criacao do Pix.
+Registros identificados como Producao nao sao recuperados com credenciais Sandbox.
+
 No Render, conferir `PAYMENT_PROVIDER`, `ASAAS_ENVIRONMENT`, `ASAAS_API_URL`, `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`, `ASAAS_WEBHOOK_URL` e `ASAAS_WEBHOOK_EMAIL`. Nao revogar uma chave em uso antes de validar a substituta e atualizar o servico.
 
 ## Implantacao coordenada

@@ -17,9 +17,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AsaasService } from '../asaas/asaas.service';
-import {
-  AsaasPaymentReconciliationService,
-} from '../asaas/asaas-payment-reconciliation.service';
+import { AsaasPaymentReconciliationService } from '../asaas/asaas-payment-reconciliation.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { QuotePaymentDto } from './dto/quote-payment.dto';
@@ -43,7 +41,10 @@ export class PaymentsService {
     private readonly reconciliation: AsaasPaymentReconciliationService,
   ) {}
 
-  private async checkoutEngagement(engagementId: string, user: AuthenticatedUser) {
+  private async checkoutEngagement(
+    engagementId: string,
+    user: AuthenticatedUser,
+  ) {
     const engagement = await this.prisma.engagement.findUnique({
       where: { id: engagementId },
       include: {
@@ -70,7 +71,9 @@ export class PaymentsService {
     }
 
     if (engagement.institution.userId !== user.userId) {
-      throw new ForbiddenException('Voce nao pode criar pagamento para este fechamento.');
+      throw new ForbiddenException(
+        'Voce nao pode criar pagamento para este fechamento.',
+      );
     }
 
     return engagement;
@@ -79,12 +82,18 @@ export class PaymentsService {
   async quote(dto: QuotePaymentDto, user: AuthenticatedUser) {
     const engagement = await this.checkoutEngagement(dto.engagementId, user);
     if (engagement.status !== EngagementStatus.PENDING_PAYMENT) {
-      throw new ConflictException('Este contrato nao esta aguardando pagamento.');
+      throw new ConflictException(
+        'Este contrato nao esta aguardando pagamento.',
+      );
     }
     if (!this.asaasService.isEnabled()) {
-      throw new ConflictException('O gateway Asaas precisa estar habilitado para simular o Pix.');
+      throw new ConflictException(
+        'O gateway Asaas precisa estar habilitado para simular o Pix.',
+      );
     }
-    const amounts = await this.asaasService.quotePixCharge(Number(engagement.grossAmount));
+    const amounts = await this.asaasService.quotePixCharge(
+      Number(engagement.grossAmount),
+    );
     return {
       ...amounts,
       serviceAmount: Number(engagement.netAmount),
@@ -100,28 +109,40 @@ export class PaymentsService {
 
   async create(dto: CreatePaymentDto, user: AuthenticatedUser) {
     const engagement = await this.checkoutEngagement(dto.engagementId, user);
-    if (engagement.payment && !(
-      this.asaasService.isEnabled() && engagement.payment.provider === 'asaas' &&
-      engagement.payment.status === PaymentStatus.FAILED && !engagement.payment.providerPaymentId
-    )) {
-      const payment = engagement.payment.provider === 'asaas' && this.asaasService.isEnabled()
-        ? await this.reconciliation.refresh(engagement.payment.id)
-        : engagement.payment;
+    if (
+      engagement.payment &&
+      !(
+        this.asaasService.isEnabled() &&
+        engagement.payment.provider === 'asaas' &&
+        engagement.payment.status === PaymentStatus.FAILED &&
+        !engagement.payment.providerPaymentId
+      )
+    ) {
+      const payment =
+        engagement.payment.provider === 'asaas' && this.asaasService.isEnabled()
+          ? await this.reconciliation.refresh(engagement.payment.id)
+          : engagement.payment;
       return { message: 'Pagamento existente recuperado.', payment };
     }
     if (engagement.status !== EngagementStatus.PENDING_PAYMENT) {
-      throw new ConflictException('Este contrato nao esta aguardando pagamento.');
+      throw new ConflictException(
+        'Este contrato nao esta aguardando pagamento.',
+      );
     }
 
     if (this.asaasService.isEnabled()) {
       if (dto.expectedChargeAmount === undefined) {
-        throw new BadRequestException('Confirme o valor total com a tarifa antes de gerar o Pix.');
+        throw new BadRequestException(
+          'Confirme o valor total com a tarifa antes de gerar o Pix.',
+        );
       }
       return this.createAsaasPayment(engagement, dto.expectedChargeAmount);
     }
 
     if (process.env.NODE_ENV === 'production') {
-      throw new ConflictException('O gateway de pagamentos precisa estar configurado antes de gerar cobrancas.');
+      throw new ConflictException(
+        'O gateway de pagamentos precisa estar configurado antes de gerar cobrancas.',
+      );
     }
 
     const paymentIntent = this.paymentProvider.createPaymentIntent({
@@ -198,8 +219,7 @@ export class PaymentsService {
 
     if (
       !professionalAccount?.asaasWalletId ||
-      professionalAccount.onboardingStatus !==
-        AsaasOnboardingStatus.APPROVED ||
+      professionalAccount.onboardingStatus !== AsaasOnboardingStatus.APPROVED ||
       professionalAccount.accountStatus === AsaasAccountStatus.BLOCKED ||
       professionalAccount.accountStatus === AsaasAccountStatus.REJECTED
     ) {
@@ -208,7 +228,9 @@ export class PaymentsService {
       );
     }
 
-    const quote = await this.asaasService.quotePixCharge(Number(engagement.grossAmount));
+    const quote = await this.asaasService.quotePixCharge(
+      Number(engagement.grossAmount),
+    );
     if (!new Prisma.Decimal(expectedChargeAmount).equals(quote.chargeAmount)) {
       throw new ConflictException(
         'A tarifa do Pix mudou. Atualize a simulacao e confirme o novo total.',
@@ -229,23 +251,42 @@ export class PaymentsService {
     };
     let payment: { id: string };
     if (engagement.payment) {
-      const claimed = await this.prisma.payment.updateMany({
-        where: {
-          id: engagement.payment.id,
-          status: PaymentStatus.FAILED,
-          providerPaymentId: null,
-        },
-        data: {
-          status: PaymentStatus.PENDING,
-          providerStatus: 'CREATING',
-          providerPayload: metadata,
-        },
+      const retryPaymentId = engagement.payment.id;
+      const claimed = await this.prisma.$transaction(async (tx) => {
+        await this.lockFinancialAccount(
+          tx,
+          professionalAccount.id,
+          professionalAccount.asaasWalletId!,
+        );
+        const result = await tx.payment.updateMany({
+          where: {
+            id: retryPaymentId,
+            status: PaymentStatus.FAILED,
+            providerPaymentId: null,
+          },
+          data: {
+            status: PaymentStatus.PENDING,
+            providerStatus: 'CREATING',
+            providerPayload: metadata,
+          },
+        });
+        if (result.count)
+          await tx.paymentSplit.updateMany({
+            where: { paymentId: retryPaymentId, status: SplitStatus.FAILED },
+            data: {
+              status: SplitStatus.PENDING,
+              processedAt: null,
+              transferReference: null,
+            },
+          });
+        return result;
       });
       if (!claimed.count) {
         return {
           message: 'Pagamento existente recuperado.',
           payment: await this.prisma.payment.findUniqueOrThrow({
-            where: { id: engagement.payment.id }, include: { splits: true },
+            where: { id: engagement.payment.id },
+            include: { splits: true },
           }),
         };
       }
@@ -253,45 +294,54 @@ export class PaymentsService {
     } else {
       try {
         payment = await this.prisma.$transaction(async (tx) => {
-        const created = await tx.payment.create({
-          data: {
-            engagementId: engagement.id,
-            provider: 'asaas',
-            providerStatus: 'CREATING',
-            status: PaymentStatus.PENDING,
-            grossAmount: engagement.grossAmount,
-            platformFeeAmount: engagement.platformFeeAmount,
-            netAmount: engagement.netAmount,
-            providerPayload: metadata,
-          },
-        });
-
-        await tx.paymentSplit.createMany({
-          data: [
-            {
-              paymentId: created.id,
-              recipientType: SplitRecipientType.PLATFORM,
-              amount: engagement.platformFeeAmount,
-              status: SplitStatus.PENDING,
+          await this.lockFinancialAccount(
+            tx,
+            professionalAccount.id,
+            professionalAccount.asaasWalletId!,
+          );
+          const created = await tx.payment.create({
+            data: {
+              engagementId: engagement.id,
+              provider: 'asaas',
+              providerStatus: 'CREATING',
+              status: PaymentStatus.PENDING,
+              grossAmount: engagement.grossAmount,
+              platformFeeAmount: engagement.platformFeeAmount,
+              netAmount: engagement.netAmount,
+              providerPayload: metadata,
             },
-            {
-              paymentId: created.id,
-              recipientType: SplitRecipientType.PROFESSIONAL,
-              recipientId: engagement.professionalUserId,
-              amount: engagement.netAmount,
-              status: SplitStatus.PENDING,
-            },
-          ],
-        });
+          });
 
-        return created;
+          await tx.paymentSplit.createMany({
+            data: [
+              {
+                paymentId: created.id,
+                recipientType: SplitRecipientType.PLATFORM,
+                amount: engagement.platformFeeAmount,
+                status: SplitStatus.PENDING,
+              },
+              {
+                paymentId: created.id,
+                recipientType: SplitRecipientType.PROFESSIONAL,
+                recipientId: engagement.professionalUserId,
+                amount: engagement.netAmount,
+                status: SplitStatus.PENDING,
+              },
+            ],
+          });
+
+          return created;
         });
       } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
           return {
             message: 'Pagamento existente recuperado.',
             payment: await this.prisma.payment.findUniqueOrThrow({
-              where: { engagementId: engagement.id }, include: { splits: true },
+              where: { engagementId: engagement.id },
+              include: { splits: true },
             }),
           };
         }
@@ -326,19 +376,21 @@ export class PaymentsService {
       });
       createdChargeId = charge.id;
 
-      let pixQrCode:
-        | { payload?: string; expirationDate?: string }
-        | undefined;
+      let pixQrCode: { payload?: string; expirationDate?: string } | undefined;
       try {
         pixQrCode = await this.asaasService.getPixQrCode(charge.id);
       } catch {
         // A fatura continua valida mesmo quando o QR Code nao esta disponivel.
       }
 
-      const updated = await this.reconciliation.applyCharge(payment.id, charge, {
-        pixCopyPaste: pixQrCode?.payload,
-        pixExpirationDate: pixQrCode?.expirationDate,
-      });
+      const updated = await this.reconciliation.applyCharge(
+        payment.id,
+        charge,
+        {
+          pixCopyPaste: pixQrCode?.payload,
+          pixExpirationDate: pixQrCode?.expirationDate,
+        },
+      );
 
       return {
         message: 'Cobranca Pix Asaas criada com sucesso.',
@@ -346,23 +398,56 @@ export class PaymentsService {
       };
     } catch (error) {
       const recovered = await this.prisma.payment.findUniqueOrThrow({
-        where: { id: payment.id }, include: { splits: true },
+        where: { id: payment.id },
+        include: { splits: true },
       });
-      if (recovered.providerPaymentId && recovered.status !== PaymentStatus.FAILED) {
-        return { message: 'Pagamento existente recuperado.', payment: recovered };
+      if (
+        recovered.providerPaymentId &&
+        recovered.status !== PaymentStatus.FAILED
+      ) {
+        return {
+          message: 'Pagamento existente recuperado.',
+          payment: recovered,
+        };
       }
       await this.prisma.payment.updateMany({
         where: {
-          id: payment.id, providerPaymentId: null,
-          status: PaymentStatus.PENDING, providerStatus: 'CREATING',
+          id: payment.id,
+          providerPaymentId: null,
+          status: PaymentStatus.PENDING,
+          providerStatus: 'CREATING',
         },
         data: {
           status: PaymentStatus.FAILED,
-          providerStatus: createdChargeId ? 'RECONCILIATION_REQUIRED' : 'CREATE_FAILED',
+          providerStatus: createdChargeId
+            ? 'RECONCILIATION_REQUIRED'
+            : 'CREATE_FAILED',
           ...(createdChargeId ? { providerPaymentId: createdChargeId } : {}),
         },
       });
       throw error;
+    }
+  }
+
+  private async lockFinancialAccount(
+    tx: Prisma.TransactionClient,
+    accountId: string,
+    walletId: string,
+  ) {
+    await tx.$queryRaw`SELECT id FROM public.asaas_accounts WHERE id = ${accountId}::uuid FOR UPDATE`;
+    const account = await tx.asaasAccount.findUnique({
+      where: { id: accountId },
+    });
+    if (
+      !account ||
+      account.asaasWalletId !== walletId ||
+      account.onboardingStatus !== AsaasOnboardingStatus.APPROVED ||
+      account.accountStatus === AsaasAccountStatus.BLOCKED ||
+      account.accountStatus === AsaasAccountStatus.REJECTED
+    ) {
+      throw new ConflictException(
+        'O cadastro financeiro mudou. Atualize o contrato antes de gerar o Pix.',
+      );
     }
   }
 
@@ -398,8 +483,13 @@ export class PaymentsService {
       throw new ForbiddenException('Voce nao pode confirmar este pagamento.');
     }
 
-    if (payment.provider !== 'sandbox-split' || process.env.NODE_ENV === 'production') {
-      throw new ForbiddenException('A confirmacao manual so pode ser usada no simulador local.');
+    if (
+      payment.provider !== 'sandbox-split' ||
+      process.env.NODE_ENV === 'production'
+    ) {
+      throw new ForbiddenException(
+        'A confirmacao manual so pode ser usada no simulador local.',
+      );
     }
 
     if (payment.status === PaymentStatus.PAID) {
@@ -469,7 +559,8 @@ export class PaymentsService {
     }
 
     return payment.provider === 'asaas' && this.asaasService.isEnabled()
-      ? this.reconciliation.refresh(payment.id) : payment;
+      ? this.reconciliation.refresh(payment.id)
+      : payment;
   }
 
   async findByEngagement(engagementId: string, user: AuthenticatedUser) {
@@ -488,7 +579,9 @@ export class PaymentsService {
     });
 
     if (!payment) {
-      throw new NotFoundException('Pagamento nao encontrado para este fechamento.');
+      throw new NotFoundException(
+        'Pagamento nao encontrado para este fechamento.',
+      );
     }
 
     const canAccess =
@@ -500,6 +593,7 @@ export class PaymentsService {
     }
 
     return payment.provider === 'asaas' && this.asaasService.isEnabled()
-      ? this.reconciliation.refresh(payment.id) : payment;
+      ? this.reconciliation.refresh(payment.id)
+      : payment;
   }
 }

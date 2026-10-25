@@ -9,11 +9,16 @@ import {
   AsaasEnvironment,
   AsaasOnboardingStatus,
   Prisma,
+  PaymentStatus,
   SplitStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { AuthenticatedUser } from '../auth/current-user.decorator';
 import { AsaasService } from './asaas.service';
+import {
+  AsaasPaymentReconciliationService,
+  asaasPaymentMetadata,
+} from './asaas-payment-reconciliation.service';
 import { CreateAsaasAccountDto } from './dto/create-asaas-account.dto';
 
 @Injectable()
@@ -21,9 +26,13 @@ export class AsaasAccountsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly asaasService: AsaasService,
+    private readonly reconciliation: AsaasPaymentReconciliationService,
   ) {}
 
-  async create(dto: CreateAsaasAccountDto, authenticatedUser: AuthenticatedUser) {
+  async create(
+    dto: CreateAsaasAccountDto,
+    authenticatedUser: AuthenticatedUser,
+  ) {
     this.validateDocumentData(dto);
     const environment = this.getEnvironment();
     const user = await this.prisma.user.findUnique({
@@ -157,22 +166,77 @@ export class AsaasAccountsService {
       throw new NotFoundException('Cadastro financeiro nao encontrado.');
     }
 
-    const pendingSplits = await this.prisma.paymentSplit.count({
-      where: {
-        recipientId: authenticatedUser.userId,
-        status: {
-          in: [SplitStatus.PENDING, SplitStatus.SCHEDULED],
+    if (this.asaasService.isEnabled()) {
+      const productionAccount = await this.prisma.asaasAccount.findFirst({
+        where: {
+          userId: authenticatedUser.userId,
+          environment: AsaasEnvironment.PRODUCTION,
         },
-      },
-    });
-    if (pendingSplits > 0) {
-      throw new ConflictException(
-        'Existem pagamentos pendentes para esta carteira. O cadastro nao pode ser reiniciado.',
-      );
+        select: { id: true },
+      });
+      const failed = await this.prisma.payment.findMany({
+        where: {
+          provider: 'asaas',
+          status: PaymentStatus.FAILED,
+          providerStatus: 'CREATE_FAILED',
+          providerPaymentId: null,
+          engagement: { professionalUserId: authenticatedUser.userId },
+        },
+        select: { id: true, providerPayload: true },
+      });
+      for (const payment of failed) {
+        const sourceEnvironment = asaasPaymentMetadata(
+          payment.providerPayload,
+        ).environment;
+        if (
+          sourceEnvironment === 'sandbox' ||
+          (!sourceEnvironment && !productionAccount)
+        ) {
+          await this.reconciliation.refresh(payment.id);
+        }
+      }
     }
 
-    await this.prisma.$transaction([
-      this.prisma.auditLog.create({
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM public.asaas_accounts WHERE id = ${account.id}::uuid FOR UPDATE`;
+      const current = await tx.asaasAccount.findUnique({
+        where: { id: account.id },
+      });
+      if (!current)
+        throw new NotFoundException('Cadastro financeiro nao encontrado.');
+      const activePayments = await tx.payment.count({
+        where: {
+          provider: 'asaas',
+          engagement: { professionalUserId: authenticatedUser.userId },
+          OR: [
+            {
+              status: {
+                in: [
+                  PaymentStatus.PENDING,
+                  PaymentStatus.AUTHORIZED,
+                  PaymentStatus.PARTIALLY_REFUNDED,
+                ],
+              },
+            },
+            { status: PaymentStatus.FAILED, providerPaymentId: { not: null } },
+          ],
+        },
+      });
+      const pendingSplits = await tx.paymentSplit.count({
+        where: {
+          recipientId: authenticatedUser.userId,
+          status: {
+            in: [SplitStatus.PENDING, SplitStatus.SCHEDULED],
+          },
+        },
+      });
+      if (pendingSplits > 0 || activePayments > 0) {
+        throw new ConflictException(
+          'Existem pagamentos pendentes para esta carteira. O cadastro nao pode ser reiniciado.',
+        );
+      }
+
+      await tx.auditLog.create({
         data: {
           actorUserId: authenticatedUser.userId,
           actorType: 'USER',
@@ -181,15 +245,15 @@ export class AsaasAccountsService {
           entityId: account.id,
           metadataJson: {
             environment,
-            previousAccountStatus: account.accountStatus,
-            previousOnboardingStatus: account.onboardingStatus,
+            previousAccountStatus: current.accountStatus,
+            previousOnboardingStatus: current.onboardingStatus,
           },
         },
-      }),
-      this.prisma.asaasAccount.delete({
+      });
+      await tx.asaasAccount.delete({
         where: { id: account.id },
-      }),
-    ]);
+      });
+    });
 
     return {
       message: 'Cadastro financeiro Sandbox reiniciado com sucesso.',
